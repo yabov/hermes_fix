@@ -125,7 +125,6 @@ class FIXEngineBase():
                 if self.tid == threading.current_thread():
                     self.logout_waiter = self.loop.call_later(2, self.log_out_sleep)
                 else:
-                    logger.debug("registering timer warning")
                     future = asyncio.run_coroutine_threadsafe(self.logout_helper(), self.loop)
                     future.result()
             #self.logout_waiter = self.loop.call_later(30, self.log_out_sleep)
@@ -207,7 +206,6 @@ class FIXEngineBase():
         if self.logout_waiter:
             self.logout_waiter.cancel()
         self.logout_waiter = None
-        logger.debug(f"Reset logon {reset_logon}")
         if reset_logon:
             ENGINE_LOGON_MAP[self.engine_key] = False
 
@@ -228,7 +226,7 @@ class FIXEngineBase():
         return self._send(*args, **kwargs)
 
     def _send(self, msg, resend_seq_num = None):
-        msg.Header.BeginString = self.settings['BeginString']
+        msg.Header.BeginString = msg.Header.BeginString or self.settings['BeginString']
         msg.Header.MsgType = msg._msgtype
         msg.Header.MsgSeqNum = resend_seq_num or self.msg_seq_num_out
         msg.Header.SendingTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')

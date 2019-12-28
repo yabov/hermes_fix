@@ -246,10 +246,56 @@ class Test(unittest.TestCase):
 
         self.do_logout(self.client_app)
 
+    """ BeginString(8) value received as expected and specified in testing profile and matches BeginString on outbound messages	
+    Accept BeginString for the message"""
+    def test_begin_string_valid(self):
+        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg.Header.BeginString = 'FIX.4.2'
+        order_msg.ClOrdID = "test_message"
+        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.Symbol = 'AAPL'
+        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+
+        self.client_app.send_message(order_msg)
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.NewOrderSingle)
+
+        self.do_logout(self.client_app)
+
+    """BeginString(8) value (e.g. "FIX.4.2") received did not match value expected and specified in testing profile or does not match BeginString on outbound messages	
+    Send Logout<5> message referencing incorrect BeginString value
+    (optional) Wait for Logout<5> message response (note likely will have incorrect BeginString) or wait 2 seconds whichever comes first
+    Disconnect
+    Generate an "error" condition in test output"""
+    def test_begin_string_invalid(self):
+        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg.Header.BeginString = 'FIX.BAD'
+        order_msg.ClOrdID = "test_message"
+        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.Symbol = 'AAPL'
+        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+
+        self.client_app.send_message(order_msg)
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_engine.message_validator_mixin.FIXInvalidMessageError)
+
+        sent_logout = CLIENT_QUEUE.get(timeout=5)
+        resp_logout = SERVER_QUEUE.get(timeout=5)
+
+        self.assertIsInstance(resp_logout, fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(sent_logout, fix_messages_4_2_0_base.Logout)
+
     def tearDown(self):
         self.server.stop_all()
-        self.assertTrue(SERVER_QUEUE.empty())
-        self.assertTrue(CLIENT_QUEUE.empty())
+        try:
+            self.assertTrue(SERVER_QUEUE.empty())
+            self.assertTrue(CLIENT_QUEUE.empty())
+        finally:
+            while not SERVER_QUEUE.empty(): SERVER_QUEUE.get()
+            while not CLIENT_QUEUE.empty(): CLIENT_QUEUE.get()
+        
 
 
 
