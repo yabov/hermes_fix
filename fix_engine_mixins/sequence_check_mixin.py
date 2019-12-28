@@ -21,7 +21,6 @@ class SequenceCheckerMixin():
         self.register_callback(self.message_lib.ResendRequest, self.on_resend_request)
 
     def on_sequence_reset(self, msg):
-        print ("RESET")
         in_seq = self.store.get_current_in_seq()+1
         force_seq = None
         if in_seq > msg.NewSeqNo:

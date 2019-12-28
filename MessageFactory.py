@@ -30,7 +30,6 @@ class MessageFactory:
         dictionary_path = settings_map[(senderCompIDValue, targetCompIDValue)]['DataDictionary']
         tree = ET.parse(dictionary_path)
         root = tree.getroot()
-        print (root)
 
         
 

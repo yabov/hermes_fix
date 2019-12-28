@@ -69,7 +69,6 @@ class HeartBeatMixin:
             hrtbt= self.message_lib.Heartbeat()
             self.send_message(hrtbt)"""
     def out_heart_beat(self):
-        print ("HERE")
         hrtbt= self.message_lib.Heartbeat()
         self.send_message(hrtbt)   
         self.out_heart_beat_task = asyncio.run_coroutine_threadsafe(self.schedule_next_beat(), self.loop)
