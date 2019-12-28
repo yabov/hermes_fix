@@ -2,11 +2,7 @@ import logging
 import fix_message_library
 import fix_engine
 import fix_message
-
-class FIXSequenceTooLowError(Exception) : pass
-class FIXEngineResendRequest(Exception) : pass
-class FIXDupeMessageRecv(Exception) : pass
-class FIXSendTimeAccuracyError(Exception) : pass
+import fix_errors
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +20,7 @@ class SequenceCheckerMixin():
         in_seq = self.store.get_current_in_seq()+1
         force_seq = None
         if in_seq > msg.NewSeqNo:
-            raise FIXSequenceTooLowError(f"Expected incoming sequence [{in_seq}] but received [{msg.NewSeqNo}]")
+            raise fix_errors.FIXSequenceTooLowError(f"Expected incoming sequence [{in_seq}] but received [{msg.NewSeqNo}]")
         force_seq = msg.NewSeqNo-1
         self.store.set_current_in_seq(force_seq)
         #if msg.GapFillFlag != self.message_lib.GapFillFlag.ENUM_YES:
@@ -59,7 +55,7 @@ class SequenceCheckerMixin():
                 pass
             self.send_message(reject_msg)
             self.store.set_current_in_seq(in_seq)
-            raise fix_message.RequiredTagMissingError("Required tag missing")
+            raise fix_errors.RequiredTagMissingError("Required tag missing")
         return False
 
     def do_resend_request(self, in_seq):
@@ -67,17 +63,17 @@ class SequenceCheckerMixin():
         resend_request.BeginSeqNo = in_seq
         resend_request.EndSeqNo = 0
         self.send_message(resend_request)
-        raise FIXEngineResendRequest("Resend Requested")
+        raise fix_errors.FIXEngineResendRequest("Resend Requested")
 
     def check_low_seq(self, in_seq, msg):
         if msg.Header.PossDupFlag != self.message_lib.PossDupFlag.ENUM_YES:
             if isinstance(msg, self.message_lib.SequenceReset):
                 return
             error = f"Incoming message sequence too low expected [{in_seq}] but received [{msg.Header.MsgSeqNum}]"
-            raise FIXSequenceTooLowError (error)
+            raise fix_errors.FIXSequenceTooLowError (error)
         if msg.Header.PossDupFlag == self.message_lib.PossDupFlag.ENUM_YES and msg.Header.OrigSendingTime <= msg.Header.SendingTime:
             logger.debug("Discarding dupe message")
-            raise FIXDupeMessageRecv("Duplicate message received, discarding")
+            raise fix_errors.FIXDupeMessageRecv("Duplicate message received, discarding")
 
     def check_seq_same(self, msg):
         self.store.set_current_in_seq(msg.Header.MsgSeqNum)
@@ -92,21 +88,8 @@ class SequenceCheckerMixin():
             except:
                 pass
             self.send_message(reject_msg)
-            raise FIXSendTimeAccuracyError("SendingTime accuracy problem")
+            raise fix_errors.FIXSendTimeAccuracyError("SendingTime accuracy problem")
             
-    def do_callbacks_in_thread(self):
-        try:
-            super().do_callbacks_in_thread()
-        except (FIXEngineResendRequest, FIXDupeMessageRecv, fix_message.RequiredTagMissingError) as e:
-            self.application.on_error(e)
-            return
-        except (FIXSequenceTooLowError, FIXSendTimeAccuracyError) as e:
-            self.application.on_error(e)
-            logger.error(e)
-            #self.close_connection()
-            self.logout(e)
-            return
-
     def send_gap_fill(self, last_sent_msg_num, msg_num):
         gap_msg = self.message_lib.SequenceReset()
         gap_msg.GapFillFlag = self.message_lib.GapFillFlag.ENUM_YES

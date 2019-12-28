@@ -1,7 +1,7 @@
 import unittest 
 import asyncio
 
-import fix_engine
+import fix_errors
 import fix
 import fix_messages_4_2_0_base
 import logging
@@ -91,7 +91,7 @@ class Test(unittest.TestCase):
 
         #self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logon))
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logon)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_engine.sequence_check_mixin.FIXEngineResendRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.ResendRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
 
@@ -115,7 +115,7 @@ class Test(unittest.TestCase):
 
         error = SERVER_QUEUE.get(timeout=2)
 
-        self.assertIsInstance(error, fix_engine.FIXSessionExistsError)
+        self.assertIsInstance(error, fix_errors.FIXSessionExistsError)
 
         self.do_logout(client_app)
 
@@ -141,7 +141,7 @@ class Test(unittest.TestCase):
         client_bad.start()
 
         error = SERVER_QUEUE.get(timeout=2)
-        self.assertIsInstance(error, fix_engine.FIXSessionNotFound)
+        self.assertIsInstance(error, fix_errors.FIXSessionNotFound)
         self.assertTrue(CLIENT_QUEUE.empty())
 
 
@@ -180,17 +180,19 @@ class Test(unittest.TestCase):
 
         client.start()
 
-        error = SERVER_QUEUE.get(timeout=2)
-        self.assertIsInstance(error, fix_engine.message_validator_mixin.FIXInvalidFirstMessage)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidFirstMessage)
         self.assertTrue(CLIENT_QUEUE.empty())
 
 
 
     def tearDown(self):
-        #print("TearDown", self._testMethodName)
         self.server.stop_all()
-        #print("Done", self._testMethodName)
-
+        try:
+            self.assertTrue(SERVER_QUEUE.empty())
+            self.assertTrue(CLIENT_QUEUE.empty())
+        finally:
+            while not SERVER_QUEUE.empty(): logging.error(f"Extra server message {SERVER_QUEUE.get()}")
+            while not CLIENT_QUEUE.empty(): logging.error(f"Extra client message {CLIENT_QUEUE.get()}")
 
 
 

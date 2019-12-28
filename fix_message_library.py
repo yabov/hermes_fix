@@ -6,6 +6,7 @@ import fix_message
 from fix_message import SEP, EQU, b_SEP, b_EQU
 import io
 import logging
+import fix_errors
 
 logger = logging.getLogger(__name__)
 
@@ -13,20 +14,17 @@ MESSAGE_LIBRARY = {}
 MESSAGE_LIBRARY[fix_messages_4_4_0_base.BEGINSTRING] = fix_messages_4_4_0_base
 MESSAGE_LIBRARY[fix_messages_4_2_0_base.BEGINSTRING] = fix_messages_4_2_0_base
 
-class FIXCheckSumError(Exception): pass
-class FIXGarbledMessageError(Exception) : pass
-
 async def create_message_from_stream(reader, messages = None ):
     buffer = io.BytesIO()
     try:
         return await _parse_into_buffer(reader, buffer, messages)
     except (asyncio.streams.IncompleteReadError, ConnectionAbortedError):
         raise
-    except FIXCheckSumError:
+    except fix_errors.FIXCheckSumError:
         raise
     except Exception as e:
         logger.exception(f"Failed to create message from stream [{buffer.getvalue()}]")
-        raise FIXGarbledMessageError(e)
+        raise fix_errors.FIXGarbledMessageError(e)
 
 async def _parse_into_buffer(reader, buffer, messages):
     buffer_size = 0
@@ -55,11 +53,19 @@ async def _parse_into_buffer(reader, buffer, messages):
     checkSum = await reader.readuntil(b_SEP)
     checkSum = checkSum
     checkSumTag, checkSumValue = checkSum[:-len(b_SEP)].split(b_EQU)
-    
+
+    """
+    What constitutes a garbled message
+    BeginString(8) is not the first tag in a message or is not of the format 8=FIX.n.m.
+    BodyLength(9) is not the second tag in a message or does not contain the correct byte count.
+    MsgType(35) is not the third tag in a message.
+    Checksum(10) is not the last tag or contains an incorrect value.
+    """
+
     calced_checksum = fix_message.calc_checksum(buffer)
     buffer.write(checkSum)
     if checkSumValue.decode() != calced_checksum:
-        raise FIXCheckSumError(f"Faield Checksum expected {checkSumValue.decode()} but got calculated {calced_checksum}")
+        raise fix_errors.FIXCheckSumError(f"Faield Checksum expected {checkSumValue.decode()} but got calculated {calced_checksum}")
 
     #TODO check tags, buffer size for sanity 
     if not messages:

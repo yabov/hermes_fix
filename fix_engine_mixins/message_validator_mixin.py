@@ -2,9 +2,7 @@ import logging
 import asyncio
 import fix_engine
 import heapq
-
-class FIXInvalidMessageError(Exception) : pass
-class FIXInvalidFirstMessage(Exception) : pass
+import fix_errors
 
 logger = logging.getLogger(__name__)
 
@@ -42,29 +40,15 @@ class MessageValidatorMixin():
 
     def on_first_message(self, msg):
         if not isinstance(msg, self.message_lib.Logon):
-            raise FIXInvalidFirstMessage("First message not a logon")
+            raise fix_errors.FIXInvalidFirstMessage("First message not a logon")
         heapq.heappop(self.call_back_register[None])
 
 
     def on_validate_message(self, msg):
         if msg.Header.SenderCompID != self.__TargetCompID:
-            raise FIXInvalidMessageError(f"Invalid SenderCompID [{msg.Header.SenderCompID}] on message, expecting [{self.__TargetCompID}]")
+            raise fix_errors.FIXInvalidMessageError(f"Invalid SenderCompID [{msg.Header.SenderCompID}] on message, expecting [{self.__TargetCompID}]")
         if msg.Header.TargetCompID != self.__SenderCompID:
-            raise FIXInvalidMessageError(f"Invalid TargetCompID [{msg.Header.TargetCompID}] on message, expecting [{self.__SenderCompID}]")   
+            raise fix_errors.FIXInvalidMessageError(f"Invalid TargetCompID [{msg.Header.TargetCompID}] on message, expecting [{self.__SenderCompID}]")   
         if msg.Header.BeginString != self.__BeginString:
-            raise FIXInvalidMessageError(f"Invalid BeginString [{msg.Header.BeginString}] on message, expecting [{self.__BeginString}]")   
+            raise fix_errors.FIXInvalidMessageError(f"Invalid BeginString [{msg.Header.BeginString}] on message, expecting [{self.__BeginString}]")   
 
-
-    def do_callbacks_in_thread(self):
-        try:
-            super().do_callbacks_in_thread()
-        except FIXInvalidMessageError as e:
-            self.application.on_error(e)
-            logger.error(e)
-            self.logout(e)
-            return
-        except FIXInvalidFirstMessage as e:
-            self.application.on_error(e)
-            logger.error(e)
-            self.close_connection(False)
-            return

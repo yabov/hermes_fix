@@ -1,6 +1,7 @@
 import unittest 
 import asyncio
 
+import fix_errors
 import fix_engine
 import fix
 import fix_messages_4_2_0_base
@@ -93,7 +94,7 @@ class Test(unittest.TestCase):
         self.client.start()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logon)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_engine.sequence_check_mixin.FIXEngineResendRequest)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.ResendRequest)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
 
@@ -135,7 +136,7 @@ class Test(unittest.TestCase):
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logon)
         error = CLIENT_QUEUE.get(timeout=2)
-        self.assertIsInstance(error, fix_engine.message_validator_mixin.FIXInvalidFirstMessage)
+        self.assertIsInstance(error, fix_errors.FIXInvalidFirstMessage)
 
 
     def tearDown(self):

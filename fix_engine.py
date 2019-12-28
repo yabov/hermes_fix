@@ -8,18 +8,13 @@ import heapq
 import threading
 
 from fix_engine_mixins import heartbeat_mixin, sequence_check_mixin, message_validator_mixin
+import fix_errors
 
 logger = logging.getLogger(__name__)
 
 B_TABLE = bytes.maketrans(b'\x01', b'|')
 
 ENGINE_LOGON_MAP = {}
-
-class FIXEngineError(Exception): pass
-class FIXSessionExistsError(Exception): pass
-class FIXSessionNotFound(Exception):pass
-class FIXSessionLogoutTimeoutWarning(Exception) : pass
-
 
 class CallbackWrapper:
     class CALLBACK_PRIORITY:
@@ -100,7 +95,7 @@ class FIXEngineBase():
 
     def log_out_sleep(self):
         logger.warning("Failed to get logout while waiting, closing connection")
-        self.application.on_error(FIXSessionLogoutTimeoutWarning("Failed to get logout while waiting, closing connection"))
+        self.application.on_error(fix_errors.FIXSessionLogoutTimeoutWarning("Failed to get logout while waiting, closing connection"))
         self.close_connection()
 
     def on_logout(self, msg):
@@ -154,7 +149,7 @@ class FIXEngineBase():
                 return section
         
         logger.debug(f"Available Sessions {[section for section in settings.values()]}")
-        raise FIXSessionNotFound("Session not found")
+        raise fix_errors.FIXSessionNotFound("Session not found")
 
     async def parse_message(self):
         msg, buffer = await fix_message_library.create_message_from_stream(self.reader, self.message_lib)
@@ -189,16 +184,19 @@ class FIXEngineBase():
             response_msg = None
             try:
                 response_msg = callback(msg)
-            except (FIXEngineError, FIXSessionNotFound)  as e:
-                    self.application.on_error(e)
-                    logger.error(e)
-                    self.close_connection()
-                    return
-            except (FIXSessionExistsError) as e:
-                    self.application.on_error(e)
-                    logger.error(e)
-                    self.close_connection(False)
-                    raise
+            except fix_errors.FIXDropMessageError as e:
+                self.application.on_error(e)
+                return
+            except fix_errors.FIXLogoutError as e:
+                self.application.on_error(e)
+                logger.error(e)
+                self.logout(e)
+                return
+            except fix_errors.FIXHardKillError as e:
+                self.application.on_error(e)
+                logger.error(e)
+                self.close_connection(False)
+                raise
             if response_msg is not None:
                 self.send_message(response_msg)
 
@@ -288,7 +286,7 @@ class FIXEngineAcceptor(FIXEngine):
         self.settings = self.find_session(msg.Header, self.session_settings)
         self.init_settings()
         if self.is_logged_on():
-            raise FIXSessionExistsError("Session is already logged on")
+            raise fix_errors.FIXSessionExistsError("Session is already logged on")
 
         ENGINE_LOGON_MAP[self.engine_key] = True
         

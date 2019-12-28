@@ -1,6 +1,7 @@
 import logging
 from collections import OrderedDict
 import io
+import fix_errors
 
 logger = logging.getLogger(__name__)
 
@@ -8,9 +9,6 @@ SEP = '\x01'
 EQU = '='
 b_SEP = SEP.encode()
 b_EQU = EQU.encode()
-
-class FieldNotFoundError(Exception) : pass
-class RequiredTagMissingError(Exception) : pass
 
 def calc_checksum(buffer):
     checksum =  '%03d' % (sum(c for c in buffer.getbuffer()) % 256) 
@@ -148,9 +146,8 @@ class MessageBase(object):
             else:
                 content.value = content.field_type(value)
         else:
-            raise FieldNotFoundError("Field {name} does not exist in message".format(name = name))
-           # raise FieldNotFoundError("Expected type {0} but got type {1}".format(var_type, type(value)))
-        #self.__dict__['name'] = value
+            raise fix_errors.FieldNotFoundError("Field {name} does not exist in message".format(name = name))
+
 
 
 class FIXGroup(MessageBase): pass

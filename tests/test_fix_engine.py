@@ -1,10 +1,7 @@
 import unittest 
 import asyncio
 
-import fix_engine
-import fix_engine_mixins
-import fix_message_library
-import fix_message
+import fix_errors
 import fix
 import fix_messages_4_2_0_base
 import logging
@@ -113,7 +110,7 @@ class Test(unittest.TestCase):
 
         self.client_app.send_message(order_msg)
         
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_engine.sequence_check_mixin.FIXEngineResendRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.ResendRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.NewOrderSingle)
@@ -137,9 +134,9 @@ class Test(unittest.TestCase):
         self.client_app.engine.msg_seq_num_out = 0
 
         self.client_app.send_message(order_msg)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_engine_mixins.sequence_check_mixin.FIXSequenceTooLowError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXSequenceTooLowError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_engine_mixins.sequence_check_mixin.FIXSequenceTooLowError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXSequenceTooLowError)
         #self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_engine.FIXSessionLogoutTimeoutWarning)
 
         
@@ -156,12 +153,12 @@ class Test(unittest.TestCase):
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_message_library.FIXGarbledMessageError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXGarbledMessageError)
 
         #self.do_logout(self.client_app)
         self.client_app.engine.logout()
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_engine.sequence_check_mixin.FIXEngineResendRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=5), fix_messages_4_2_0_base.ResendRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=5), fix_messages_4_2_0_base.SequenceReset)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Logout)
@@ -186,7 +183,7 @@ class Test(unittest.TestCase):
 
         self.client_app.send_message(order_msg)
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_engine.sequence_check_mixin.FIXDupeMessageRecv)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXDupeMessageRecv)
 
         self.do_logout(self.client_app)
 
@@ -215,7 +212,7 @@ class Test(unittest.TestCase):
 
         self.client_app.send_message(order_msg)
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_engine.sequence_check_mixin.FIXSendTimeAccuracyError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXSendTimeAccuracyError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
 
         sent_logout = CLIENT_QUEUE.get(timeout=5)
@@ -241,7 +238,7 @@ class Test(unittest.TestCase):
 
         self.client_app.send_message(order_msg)
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_message.RequiredTagMissingError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.RequiredTagMissingError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
 
         self.do_logout(self.client_app)
@@ -279,7 +276,7 @@ class Test(unittest.TestCase):
 
         self.client_app.send_message(order_msg)
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_engine.message_validator_mixin.FIXInvalidMessageError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageError)
 
         sent_logout = CLIENT_QUEUE.get(timeout=5)
         resp_logout = SERVER_QUEUE.get(timeout=5)
