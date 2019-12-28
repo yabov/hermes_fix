@@ -82,7 +82,6 @@ class FIXEngineBase():
 
     async def send_logon(self):
         logon_msg = self.build_logon_msg()
-        #self.send_message(logon_msg)
         self.send_message(logon_msg)
 
     def on_logon(self, msg):
