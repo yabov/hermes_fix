@@ -49,7 +49,7 @@ class FIXEngineBase():
         self.writer = writer
 
         #I don't like setting the message_lib to a default but without it I cannot register admin messages callback cleanly
-        self.message_lib = fix_message_library.MESSAGE_BASE_LIBRARY['FIX.4.2'] 
+        self.message_lib = None#fix_message_library.MESSAGE_BASE_LIBRARY['FIX.4.2'] 
 
         self.engine_key = None
 
@@ -63,9 +63,7 @@ class FIXEngineBase():
         self.loop = asyncio.get_running_loop()
         self.tid = threading.current_thread()
 
-        self.register_admin_messages()
         self.application.engine = self
-        self.application.on_register_callbacks()
         self.pool = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
         self.msg_queue = queue.Queue()
 
@@ -177,7 +175,6 @@ class FIXEngineBase():
         callbacks = list(heapq.merge(self.call_back_register.get(None, []), self.call_back_register.get(msg._msgtype, [])))
         #callbacks = self.call_back_register.get(None, []) + self.call_back_register.get(msg._msgtype, [])
         if not callbacks:
-            logger.warning(f"Received unregistered message type {msg._msgtype}")
             return
 
         for callback in callbacks:
@@ -193,10 +190,11 @@ class FIXEngineBase():
                 self.logout(e)
                 return
             except fix_errors.FIXHardKillError as e:
+                logger.exception ("##################")
                 self.application.on_error(e)
                 logger.error(e)
                 self.close_connection(False)
-                raise
+                return
             if response_msg is not None:
                 self.send_message(response_msg)
 
@@ -252,6 +250,8 @@ class FIXEngineInitiator(FIXEngine):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.init_settings()
+        self.register_admin_messages()
+        self.application.on_register_callbacks()
 
     def make_engine_key(self):
         ip = self.settings.get('SocketConnectHost', 'localhost')
@@ -263,13 +263,17 @@ class FIXEngineInitiator(FIXEngine):
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_callback(self.message_lib.Logon, self.on_logon, priority = CallbackWrapper.CALLBACK_PRIORITY.HIGH) #High priority to init_settings before other checks
+        self.register_callback(self.message_lib.Logon, self.on_logon, priority = CallbackWrapper.CALLBACK_PRIORITY.HIGH)
         
     def on_logon(self, msg):
         ENGINE_LOGON_MAP[self.engine_key] = True
 
 
 class FIXEngineAcceptor(FIXEngine):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.register_callback(None, self.on_first_acceptor_msg, priority=CallbackWrapper.CALLBACK_PRIORITY.FIRST-1)
+
     def make_engine_key(self):
         ip = self.settings.get('SocketAcceptHost', 'localhost')
         port = self.settings['SocketAcceptPort']
@@ -278,13 +282,21 @@ class FIXEngineAcceptor(FIXEngine):
 
         return (ip, port, sender_comp_id, target_comp_id)
 
+    #creating the lets us get the beginstring and set a default message_lib based on version
+    def on_first_acceptor_msg(self, msg):
+        heapq.heappop(self.call_back_register[None])
+        self.settings = self.find_session(msg.Header, self.session_settings)
+        self.init_settings()
+        self.register_admin_messages()
+        self.application.on_register_callbacks()
+        self.msg_queue.put(msg)
+        self.do_callbacks_in_thread()
+
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
         self.register_callback(self.message_lib.Logon, self.on_logon, priority = CallbackWrapper.CALLBACK_PRIORITY.HIGH) #High priority to init_settings before other checks
         
     def on_logon(self, msg):
-        self.settings = self.find_session(msg.Header, self.session_settings)
-        self.init_settings()
         if self.is_logged_on():
             raise fix_errors.FIXSessionExistsError("Session is already logged on")
 

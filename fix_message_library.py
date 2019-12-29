@@ -76,7 +76,6 @@ async def _parse_into_buffer(reader, buffer, messages):
     if checkSumValue.decode() != calced_checksum:
         raise fix_errors.FIXCheckSumError(f"Faield Checksum expected {checkSumValue.decode()} but got calculated {calced_checksum}")
 
-    #TODO check tags, buffer size for sanity 
     if not messages:
         messages = MESSAGE_BASE_LIBRARY[beginStringValue]
 
