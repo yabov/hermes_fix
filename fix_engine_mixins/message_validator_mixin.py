@@ -32,7 +32,7 @@ class MessageValidatorMixin():
             self.application.on_error(e)
             return None
         except Exception as e:
-           raise
+            raise
 
 
     def on_first_message(self, msg):

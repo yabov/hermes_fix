@@ -15,35 +15,55 @@ MESSAGE_BASE_LIBRARY = {}
 MESSAGE_BASE_LIBRARY[fix_messages_4_4_0_base.BEGINSTRING] = fix_messages_4_4_0_base
 MESSAGE_BASE_LIBRARY[fix_messages_4_2_0_base.BEGINSTRING] = fix_messages_4_2_0_base
 
+DEFAULT_MESSAGE_READ_TIMEOUT = 2
+
 async def create_message_from_stream(reader, messages = None ):
     buffer = io.BytesIO()
     try:
-        return await _parse_into_buffer(reader, buffer, messages)
+        byte = await reader.read(1) #read 1 byte to make sure strem has data on it        
+        return await  asyncio.wait_for(_parse_into_buffer(byte, reader, buffer, messages), timeout = DEFAULT_MESSAGE_READ_TIMEOUT)
     except (asyncio.streams.IncompleteReadError, ConnectionAbortedError):
         raise
     except Exception as e:
         logger.exception(f"Failed to create message from stream [{buffer.getvalue()}]")
         raise fix_errors.FIXGarbledMessageError(e)
 
-async def _parse_into_buffer(reader, buffer, messages):
-    buffer_size = 0
+async def _parse_into_buffer(first_byte, reader, buffer, messages):
+    """
+    What constitutes a garbled message
+    BeginString(8) is not the first tag in a message or is not of the format 8=FIX.n.m.
+    BodyLength(9) is not the second tag in a message or does not contain the correct byte count.
+    MsgType(35) is not the third tag in a message.
+    Checksum(10) is not the last tag or contains an incorrect value.
+    """
 
-    beginString = await reader.readuntil(b_SEP)
+    buffer_size = 1
+
+    beginString = first_byte + await reader.readuntil(b_SEP)
     buffer_size += buffer.write(beginString)
     beginString = beginString.decode()
+    beginStringTag, beginStringValue = beginString[:-len(SEP)].split(EQU,1)
+
+    if beginStringTag != fix_core_fields.BeginString._tag:
+        raise fix_errors.FIXGarbledMessageError("BeginString is not first field")
 
     bodyLength = await reader.readuntil(b_SEP)
     buffer_size += buffer.write(bodyLength)
     bodyLength = bodyLength.decode()
+    bodyLengthTag, bodyLengthValue = bodyLength[:-len(SEP)].split(EQU,1)
+
+    if bodyLengthTag != fix_core_fields.BodyLength._tag:
+        raise fix_errors.FIXGarbledMessageError("BodyLength is not second field")
 
     msgType = await reader.readuntil(b_SEP)
     buffer_size += buffer.write(msgType)
     msgType = msgType.decode()
-
-    beginStringTag, beginStringValue = beginString[:-len(SEP)].split(EQU,1)
-    bodyLengthTag, bodyLengthValue = bodyLength[:-len(SEP)].split(EQU,1)
     msgTypeTag, msgTypeValue = msgType[:-len(SEP)].split(EQU,1)
 
+    if msgTypeTag != fix_core_fields.MsgType._tag:
+        raise fix_errors.FIXGarbledMessageError("MsgType is not third field")
+
+   
     data = await reader.readexactly(int(bodyLengthValue) - len(msgType))
     buffer_size += buffer.write(data)
     data_list = data.decode().split(SEP)
@@ -54,20 +74,6 @@ async def _parse_into_buffer(reader, buffer, messages):
     checkSumTag, checkSumValue = checkSum[:-len(b_SEP)].split(b_EQU,1)
     checkSumTag = checkSumTag.decode()
 
-    """
-    What constitutes a garbled message
-    BeginString(8) is not the first tag in a message or is not of the format 8=FIX.n.m.
-    BodyLength(9) is not the second tag in a message or does not contain the correct byte count.
-    MsgType(35) is not the third tag in a message.
-    Checksum(10) is not the last tag or contains an incorrect value.
-    """
-
-    if beginStringTag != fix_core_fields.BeginString._tag:
-        raise fix_errors.FIXGarbledMessageError("BeginString is not first field")
-    if bodyLengthTag != fix_core_fields.BodyLength._tag:
-        raise fix_errors.FIXGarbledMessageError("BodyLength is not second field")
-    if msgTypeTag != fix_core_fields.MsgType._tag:
-        raise fix_errors.FIXGarbledMessageError("MsgType is not third field")
     if checkSumTag != fix_core_fields.CheckSum._tag:
         raise fix_errors.FIXGarbledMessageError(f"CheckSum is not last field")
 
@@ -105,11 +111,14 @@ def create_message_from_binary(data, msg_class, messages):
     header.build_from_list(data_list, True)
 
     msg = messages.MESSAGE_TYPES[msg_class]()
-    msg.Header = header
     msg.build_from_list(data_list)
 
     trailer = messages.Trailer()
     trailer.build_from_list(data_list, True)
 
-    return msg
+    #msg.Header = header
+    #msg.Trailer = trailer
+
+
+    return header, msg, trailer
 

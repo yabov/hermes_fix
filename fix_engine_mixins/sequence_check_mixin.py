@@ -100,13 +100,13 @@ class SequenceCheckerMixin():
         last_sent_msg_num = msg.BeginSeqNo-1
         for msg_num, msg_type_str, resend_msg in self.store.get_messages(msg.BeginSeqNo, msg.EndSeqNo):
             try:
-                msg = fix_message_library.create_message_from_binary(resend_msg, msg_type_str, self.message_lib)
+                header, msg, _ = fix_message_library.create_message_from_binary(resend_msg, msg_type_str, self.message_lib)
             except:
                 self.send_gap_fill(last_sent_msg_num+1, msg_num+1)
                 last_sent_msg_num = msg_num
                 continue
             msg.Header.PossDupFlag = 'Y'
-            msg.Header.OrigSendingTime = msg.Header.SendingTime
+            msg.Header.OrigSendingTime = header.SendingTime
             if msg._msgcat == 'app' or isinstance(msg, self.message_lib.Logout):
                 if last_sent_msg_num < msg_num-1:
                     self.send_gap_fill(last_sent_msg_num+1, msg_num)

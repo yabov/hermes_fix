@@ -100,7 +100,7 @@ class MessageBase(object):
         buffer.write(self.Header.BeginString.encode())
         buffer.write(b_SEP)
 
-        self.Header.BodyLength = tmp_buffer_len
+        self.Header.BodyLength = self.Header.BodyLength or tmp_buffer_len
         buffer.write(self.Header.BodyLength._tag.encode())
         buffer.write(b_EQU)
         buffer.write(str(self.Header.BodyLength).encode())
