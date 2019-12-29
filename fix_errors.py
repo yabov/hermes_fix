@@ -11,6 +11,7 @@ class FIXHardKillError(FIXEngineError) : pass
 class FieldNotFoundError(FIXEngineError) : pass
 
 class RequiredTagMissingError(FIXRejectError) : pass
+class FIXBadCompIDError(FIXLogoutError) : pass
 
 class FIXGarbledMessageError(FIXDropMessageError) : pass
 class FIXCheckSumError(FIXGarbledMessageError): pass

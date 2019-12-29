@@ -42,10 +42,33 @@ class MessageValidatorMixin():
 
 
     def on_validate_message(self, msg):
-        if msg.Header.SenderCompID != self.__TargetCompID:
-            raise fix_errors.FIXInvalidMessageError(f"Invalid SenderCompID [{msg.Header.SenderCompID}] on message, expecting [{self.__TargetCompID}]")
-        if msg.Header.TargetCompID != self.__SenderCompID:
-            raise fix_errors.FIXInvalidMessageError(f"Invalid TargetCompID [{msg.Header.TargetCompID}] on message, expecting [{self.__SenderCompID}]")   
         if msg.Header.BeginString != self.__BeginString:
-            raise fix_errors.FIXInvalidMessageError(f"Invalid BeginString [{msg.Header.BeginString}] on message, expecting [{self.__BeginString}]")   
+            error= f"Invalid BeginString [{msg.Header.BeginString}] on message, expecting [{self.__BeginString}]"
+            raise fix_errors.FIXInvalidMessageError(error)
+        if msg.Header.TargetCompID != self.__SenderCompID:
+            error= f"Invalid SenderCompID [{msg.Header.SenderCompID}] on message, expecting [{self.__TargetCompID}]"
+            reject_msg = self.message_lib.Reject()
+            try:
+                reject_msg.RefSeqNum = msg.Header.MsgSeqNum
+                reject_msg.RefMsgType = msg._msgtype
+                reject_msg.RefTagID = msg.Header.tags.OrigSendingTime
+                reject_msg.Text = error             
+                reject_msg.SessionRejectReason = self.message_lib.SessionRejectReason.ENUM_COMPID_PROBLEM
+            except:
+                pass
+            self.send_message(reject_msg)
+            raise fix_errors.FIXBadCompIDError(error)   
+        if msg.Header.SenderCompID != self.__TargetCompID:
+            error= f"Invalid SenderCompID [{msg.Header.SenderCompID}] on message, expecting [{self.__TargetCompID}]"
+            reject_msg = self.message_lib.Reject()
+            try:
+                reject_msg.RefSeqNum = msg.Header.MsgSeqNum
+                reject_msg.RefMsgType = msg._msgtype
+                reject_msg.RefTagID = msg.Header.tags.OrigSendingTime
+                reject_msg.Text = error             
+                reject_msg.SessionRejectReason = self.message_lib.SessionRejectReason.ENUM_COMPID_PROBLEM
+            except:
+                pass
+            self.send_message(reject_msg)
+            raise fix_errors.FIXBadCompIDError(error)   
 

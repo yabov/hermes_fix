@@ -284,6 +284,34 @@ class Test(unittest.TestCase):
         self.assertIsInstance(resp_logout, fix_messages_4_2_0_base.Logout)
         self.assertIsInstance(sent_logout, fix_messages_4_2_0_base.Logout)
 
+    """ SenderCompID(49) and TargetCompID(56) values received did not match values expected and specified in testing profile	
+    Send Reject<3> (session-level) message referencing invalid SenderCompID or TargetCompID (≥ FIX 4.2: SessionRejectReason(373) = 9 - "CompID problem")
+    Increment inbound MsgSeqNum(34)
+    Send Logout<5> message referencing incorrect SenderCompID or TargetCompID value
+    (optional) Wait for Logout<5> message response (note likely will have incorrect SenderCompID or TargetCompID) or wait 2 seconds whichever comes first
+    Disconnect
+    Generate an "error" condition in test output"""
+    def test_bad_sender(self):
+        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg.Header.SenderCompID = 'BAD_SENDER'
+        order_msg.ClOrdID = "test_message"
+        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.Symbol = 'AAPL'
+        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+
+        self.client_app.send_message(order_msg)
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXBadCompIDError)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+
+
+        sent_logout = CLIENT_QUEUE.get(timeout=5)
+        resp_logout = SERVER_QUEUE.get(timeout=5)
+
+        self.assertIsInstance(resp_logout, fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(sent_logout, fix_messages_4_2_0_base.Logout)
+
     def tearDown(self):
         self.server.stop_all()
         try:

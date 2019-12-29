@@ -80,9 +80,10 @@ class FIXEngineBase():
     def on_logon(self, msg):
         raise NotImplementedError
 
-    def init_settings(self):
-        self.message_lib = fix_message_library.MESSAGE_BASE_LIBRARY[self.settings['BeginString']]
+    def init_message_lib(self, begin_string):
+        self.message_lib = fix_message_library.MESSAGE_BASE_LIBRARY[begin_string]
 
+    def init_settings(self):
         #TODO generate messages and swap in for generated class
 
         self.store = self.store_factory.create_storage(self.settings)
@@ -190,7 +191,6 @@ class FIXEngineBase():
                 self.logout(e)
                 return
             except fix_errors.FIXHardKillError as e:
-                logger.exception ("##################")
                 self.application.on_error(e)
                 logger.error(e)
                 self.close_connection(False)
@@ -226,8 +226,8 @@ class FIXEngineBase():
         msg.Header.MsgType = msg._msgtype
         msg.Header.MsgSeqNum = resend_seq_num or self.msg_seq_num_out
         msg.Header.SendingTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
-        msg.Header.TargetCompID = self.settings['TargetCompID']
-        msg.Header.SenderCompID = self.settings['SenderCompID']
+        msg.Header.TargetCompID = msg.Header.TargetCompID or self.settings['TargetCompID']
+        msg.Header.SenderCompID = msg.Header.SenderCompID or self.settings['SenderCompID']
 
         buffer =  bytes(msg)
         logger.info(f"Outgoing msg [{buffer.translate(B_TABLE)}]")
@@ -249,6 +249,7 @@ class FIXEngine(message_validator_mixin.MessageValidatorMixin, heartbeat_mixin.H
 class FIXEngineInitiator(FIXEngine):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.init_message_lib(self.settings['BeginString'])
         self.init_settings()
         self.register_admin_messages()
         self.application.on_register_callbacks()
@@ -282,11 +283,10 @@ class FIXEngineAcceptor(FIXEngine):
 
         return (ip, port, sender_comp_id, target_comp_id)
 
-    #creating the lets us get the beginstring and set a default message_lib based on version
+    #creating the first callback lets us get the beginstring and set a default message_lib based on version
     def on_first_acceptor_msg(self, msg):
+        self.init_message_lib(msg.Header.BeginString)
         heapq.heappop(self.call_back_register[None])
-        self.settings = self.find_session(msg.Header, self.session_settings)
-        self.init_settings()
         self.register_admin_messages()
         self.application.on_register_callbacks()
         self.msg_queue.put(msg)
@@ -297,6 +297,9 @@ class FIXEngineAcceptor(FIXEngine):
         self.register_callback(self.message_lib.Logon, self.on_logon, priority = CallbackWrapper.CALLBACK_PRIORITY.HIGH) #High priority to init_settings before other checks
         
     def on_logon(self, msg):
+        self.settings = self.find_session(msg.Header, self.session_settings)
+        self.init_settings()
+
         if self.is_logged_on():
             raise fix_errors.FIXSessionExistsError("Session is already logged on")
 
