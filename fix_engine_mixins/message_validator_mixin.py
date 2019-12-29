@@ -24,19 +24,16 @@ class MessageValidatorMixin():
     async def parse_message(self, *args, **kwargs):
         try:
             return await super().parse_message(*args, **kwargs)
-        except ConnectionError:
-            logger.debug("Connection closed")
+        except (asyncio.streams.IncompleteReadError, ConnectionError) as e:
+            logger.debug(f"Connection closed {e}")
             self.close_connection()
             return None
-        except asyncio.streams.IncompleteReadError:
-            logger.debug("Incomplete read")
-            self.close_connection()
+        except fix_errors.FIXGarbledMessageError as e:
+            self.application.on_error(e)
             return None
         except Exception as e:
-            logger.exception("FAIL")
-            self.application.on_error(e)
-            logger.error(f"Skipping message because failed to parse message: {e}")
-            return None
+           raise
+
 
     def on_first_message(self, msg):
         if not isinstance(msg, self.message_lib.Logon):

@@ -48,11 +48,11 @@ class SequenceCheckerMixin():
             try:
                 reject_msg.RefSeqNum = msg.Header.MsgSeqNum
                 reject_msg.RefMsgType = msg._msgtype
-                reject_msg.RefTagID = msg.Header.tags.OrigSendingTime
+                reject_msg.RefTagID = msg.Header.OrigSendingTime._tag
                 reject_msg.Text = "Required tag missing"
                 reject_msg.SessionRejectReason = self.message_lib.SessionRejectReason.ENUM_REQUIRED_TAG_MISSING
             except:
-                pass
+                logger.exception("FAIL")
             self.send_message(reject_msg)
             self.store.set_current_in_seq(in_seq)
             raise fix_errors.RequiredTagMissingError("Required tag missing")

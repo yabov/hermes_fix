@@ -49,7 +49,7 @@ class FIXEngineBase():
         self.writer = writer
 
         #I don't like setting the message_lib to a default but without it I cannot register admin messages callback cleanly
-        self.message_lib = fix_message_library.MESSAGE_LIBRARY['FIX.4.2'] 
+        self.message_lib = fix_message_library.MESSAGE_BASE_LIBRARY['FIX.4.2'] 
 
         self.engine_key = None
 
@@ -83,7 +83,7 @@ class FIXEngineBase():
         raise NotImplementedError
 
     def init_settings(self):
-        self.message_lib = fix_message_library.MESSAGE_LIBRARY[self.settings['BeginString']]
+        self.message_lib = fix_message_library.MESSAGE_BASE_LIBRARY[self.settings['BeginString']]
 
         #TODO generate messages and swap in for generated class
 

@@ -3,16 +3,18 @@ import xml.etree.ElementTree as ET
 
 import fields
 import inspect
+import fix_core_fields
 
 FILE_HEADER = """import fields
 import fix_message
+import fix_core_fields
 
 BEGINSTRING = '{begin_string}'
 MESSAGE_TYPES = {{}}
 """
 
 FIELD_CLASS_FORMATTER = """
-class {name} (fields.{type}) :
+class {name} ({subclass}) :
     _tag = '{number}'
 """
 
@@ -41,16 +43,18 @@ class {name}(fix_message.MessageBase):
         super().__init__()
 """
 
+
 MESSAGE_CLASS_TRAILER = """
 MESSAGE_TYPES['{msgtype}'] = {name}
 """
 
-FIELD_FORMATTER = """{indent}self.register_field({field}, {required})
-"""
+FIELD_FORMATTER = """
+{indent}self.register_field({field}, {required})"""
 
 GROUP_FORMATTER = """
 {indent}class {group}Group(fix_message.FIXGroup):
 {indent}    def __init__(self):
+{indent}        super().__init__()
 """
 
 GROUP_FORMATTER_TRAILER = """
@@ -59,6 +63,8 @@ GROUP_FORMATTER_TRAILER = """
 
 FIELD_CLASSES = { name.upper(): obj for name, obj in inspect.getmembers(fields) if inspect.isclass(obj)}        
 COMPONENTS = {}
+
+CORE_FIELDS = dict(inspect.getmembers(fix_core_fields, inspect.isclass))
 
 def generate_fix_classes(file_name, begin_string):
     tree = ET.parse(file_name)
@@ -93,9 +99,14 @@ def generate_fields(root, writer):
         name = child.get('name')
         type = get_field_type(child.get('type')) 
         number = child.get('number')
+        subclass = ""
+        if name in CORE_FIELDS:
+            subclass = f"fix_core_fields.{name}"
+        else:
+            subclass = f"fields.{type.__name__}"
 
         writer.write(
-            FIELD_CLASS_FORMATTER.format(name = name, type = type.__name__, number = number)
+            FIELD_CLASS_FORMATTER.format(name = name, subclass = subclass, number = number)
         )
         """<value enum='1' description='NOT_HELD' />"""
         for enum in child.findall('value'):
@@ -110,11 +121,26 @@ def generate_recursive(root, writer, indent = ' '*8, parents = ""):
         elif child.tag == 'group':
             generate_group(child, writer, indent, parents)
             delay_group_write += [child]
+        #elif child.tag == 'component':
+        #    generate_recursive(COMPONENTS[child.get('name')], writer, indent, parents)
         elif child.tag == 'component':
-            generate_recursive(COMPONENTS[child.get('name')], writer, indent, "%s.%s"%(parents, child.get('name')))
+            delay_group_write += generate_recursive_component(COMPONENTS[child.get('name')], writer, indent, parents)      
 
     for child in delay_group_write:
         generate_group_delayed(child, writer, indent[:-4], parents)
+
+def generate_recursive_component(root, writer, indent = ' '*8, parents = ""):
+    delay_group_write = []
+    for child in root:
+        if child.tag == 'field':
+            generate_field(child, writer, indent)
+        elif child.tag == 'group':
+            generate_group(child, writer, indent, parents)
+            delay_group_write += [child]
+        elif child.tag == 'component':
+            delay_group_write += generate_recursive_component(COMPONENTS[child.get('name')], writer, indent, parents)      
+
+    return delay_group_write
 
 def generate_group(group_root, writer, indent = ' '*4, parents= ""):
     name = group_root.get('name')
@@ -125,7 +151,7 @@ def generate_group(group_root, writer, indent = ' '*4, parents= ""):
 
 def generate_group_delayed(group_root, writer, indent = ' '*4, parents = ""):
     name = group_root.get('name')
-    required = group_root.get('required')
+    #required = group_root.get('required')
     #generate_field(group_root, writer, indent)
     writer.write(GROUP_FORMATTER.format(group = name, indent = indent))
     generate_recursive(group_root, writer,indent + ' '*8, "%s.%sGroup"%(parents, name))
@@ -146,7 +172,8 @@ def generate_trailer(root, writer):
 
 def generate_messages(root, writer):
     for child in root.find('messages'):
-        writer.write(MESSAGE_CLASS_FORMATTER.format(name = child.get('name'), msgtype = child.get('msgtype'), msgcat = child.get('msgcat')))
+        msgcat = child.get('msgcat')
+        writer.write(MESSAGE_CLASS_FORMATTER.format(name = child.get('name'), msgtype = child.get('msgtype'), msgcat = msgcat))
         generate_recursive(child, writer, parents = child.get('name'))
         writer.write(MESSAGE_CLASS_TRAILER.format(name = child.get('name'), msgtype = child.get('msgtype')))
 
