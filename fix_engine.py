@@ -43,6 +43,7 @@ class FIXEngineBase():
         self.store_factory = store_factory
         self.session_settings = session_settings
         self.store = None
+        self.time_format = None
         self.application = application
         self.settings = settings
         self.reader = reader
@@ -87,6 +88,7 @@ class FIXEngineBase():
         #TODO generate messages and swap in for generated class
 
         self.store = self.store_factory.create_storage(self.settings)
+        self.time_format = '%Y%m%d-%H:%M:%S' if self.settings.get('ForceSecondsPrecision', None)  == 'True' else '%Y%m%d-%H:%M:%S.%f'
 
         self.msg_seq_num_out = self.store.get_current_out_seq()
         self.engine_key = self.make_engine_key()
@@ -225,7 +227,7 @@ class FIXEngineBase():
         msg.Header.BeginString = msg.Header.BeginString or self.settings['BeginString']
         msg.Header.MsgType = msg._msgtype
         msg.Header.MsgSeqNum = resend_seq_num or self.msg_seq_num_out
-        msg.Header.SendingTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        msg.Header.SendingTime = msg.Header.SendingTime or datetime.datetime.utcnow().strftime(self.time_format)
         msg.Header.TargetCompID = msg.Header.TargetCompID or self.settings['TargetCompID']
         msg.Header.SenderCompID = msg.Header.SenderCompID or self.settings['SenderCompID']
 

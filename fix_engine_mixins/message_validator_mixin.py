@@ -3,6 +3,7 @@ import asyncio
 import fix_engine
 import heapq
 import fix_errors
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -70,5 +71,23 @@ class MessageValidatorMixin():
             except:
                 pass
             self.send_message(reject_msg)
-            raise fix_errors.FIXBadCompIDError(error)   
+            raise fix_errors.FIXBadCompIDError(error)
+
+        self.validate_sendtime(msg)
+
+    def validate_sendtime(self, msg):        
+        send_time = datetime.datetime.strptime(msg.Header.SendingTime, self.time_format)
+        if abs(datetime.datetime.utcnow() - send_time) > datetime.timedelta(minutes=2):
+            reject_msg = self.message_lib.Reject()
+            try:
+                reject_msg.RefSeqNum = msg.Header.MsgSeqNum
+                reject_msg.RefMsgType = msg._msgtype
+                reject_msg.RefTagID = msg.Header.tags.SendingTime
+                reject_msg.Text = "SendingTime accuracy problem"                
+                reject_msg.SessionRejectReason = self.message_lib.SessionRejectReason.ENUM_SENDINGTIME_ACCURACY_PROBLEM
+            except:
+                pass
+            self.send_message(reject_msg)
+            raise fix_errors.FIXSendTimeAccuracyError("SendingTime accuracy problem")
+            
 
