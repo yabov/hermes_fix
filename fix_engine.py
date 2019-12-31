@@ -6,6 +6,7 @@ import concurrent.futures
 import queue
 import heapq
 import threading
+import itertools
 
 from fix_engine_mixins import heartbeat_mixin, sequence_check_mixin, message_validator_mixin
 import fix_errors
@@ -56,7 +57,8 @@ class FIXEngineBase():
 
         self.logout_waiter = None
 
-        self.call_back_register = {}
+        self.admin_callback_register = {}
+        self.callback_register = {}
         self.in_loop_callback_register = {}
 
         self.msg_seq_num_out = 1
@@ -82,13 +84,25 @@ class FIXEngineBase():
         reject_msg = self.message_lib.Reject()
         try:
             if ref_seq_num : reject_msg.RefSeqNum = ref_seq_num
+            if text : reject_msg.Text = text
             if ref_msg_type : reject_msg.RefMsgType = ref_msg_type
             if ref_tag_id : reject_msg.RefTagID = ref_tag_id
-            if text : reject_msg.Text = text
             if reason : reject_msg.SessionRejectReason = reason
         except:
             pass
         self.send_message(reject_msg)
+
+    def send_biz_reject(self, ref_seq_num, ref_msg_type, ref_id, text, reason):
+        try: #try to send business reject message, if it fails, fall back on session reject
+            reject_msg = self.message_lib.BusinessMessageReject()
+            if ref_seq_num : reject_msg.RefSeqNum = ref_seq_num
+            if text : reject_msg.Text = text
+            if ref_msg_type : reject_msg.RefMsgType = ref_msg_type
+            if ref_id : reject_msg.BusinessRejectRefID = ref_id
+            if reason : reject_msg.BusinessRejectReason = reason
+            self.send_message(reject_msg)
+        except:
+            self.send_reject( ref_seq_num, ref_msg_type, ref_id, text, reason)
 
     def on_logon(self, msg):
         raise NotImplementedError
@@ -135,26 +149,30 @@ class FIXEngineBase():
                 else:
                     future = asyncio.run_coroutine_threadsafe(self.logout_helper(), self.loop)
                     future.result()
-            #self.logout_waiter = self.loop.call_later(30, self.log_out_sleep)
-                
+
+    def register_admin_callback(self, msg_class, callback, priority = CallbackWrapper.CALLBACK_PRIORITY.NORMAL):
+        self._register_cb(self.admin_callback_register, msg_class, callback, priority)
+
     def register_callback(self, msg_class, callback, priority = CallbackWrapper.CALLBACK_PRIORITY.NORMAL):
+        self._register_cb(self.callback_register, msg_class, callback, priority)
+
+    def _register_cb(self, cb_map, msg_class, callback, priority):
         priority_cb = [CallbackWrapper(priority, callback)]
         if msg_class is None: #None will be used to register a callback for all messages
-            if None not in self.call_back_register:
+            if None not in cb_map:
                 heapq.heapify(priority_cb)
-                self.call_back_register[None] = priority_cb
+                cb_map[None] = priority_cb
             else:
-                heapq.heappush(self.call_back_register[None], priority_cb[0])
+                heapq.heappush(cb_map[None], priority_cb[0])
         else:
-            if msg_class._msgtype not in self.call_back_register:
+            if msg_class._msgtype not in cb_map:
                 heapq.heapify([priority_cb])
-                self.call_back_register[msg_class._msgtype] = priority_cb
+                cb_map[msg_class._msgtype] = priority_cb
             else:
-                heapq.heappush(self.call_back_register[msg_class._msgtype], priority_cb[0])
+                heapq.heappush(cb_map[msg_class._msgtype], priority_cb[0])
 
     def register_admin_messages(self):
-        #self.register_callback(None, self.on_first_message)
-        self.register_callback(self.message_lib.Logout, self.on_logout)
+        self.register_admin_callback(self.message_lib.Logout, self.on_logout)
 
     def find_session(self, header, settings):
         for section in settings.values():
@@ -187,33 +205,43 @@ class FIXEngineBase():
 
     def do_callbacks_in_thread(self):
         msg = self.msg_queue.get()
-        callbacks = list(heapq.merge(self.call_back_register.get(None, []), self.call_back_register.get(msg._msgtype, [])))
-        #callbacks = self.call_back_register.get(None, []) + self.call_back_register.get(msg._msgtype, [])
-        if not callbacks:
-            return
+        admin_callbacks = list(heapq.merge(self.admin_callback_register.get(None, []), self.admin_callback_register.get(msg._msgtype, [])))
+        callbacks = list(heapq.merge(self.callback_register.get(None, []), self.callback_register.get(msg._msgtype, [])))
 
+        if self._do_callbacks(msg, admin_callbacks):
+            if len(callbacks) == 0 and msg._msgcat != 'admin':
+                error = f"Unsupported Message Type [{msg._msgtype}]"
+                logger.error(error)
+                self.application.on_error(fix_errors.FIXUnsupportedMessageTypeError(error))
+                self.send_biz_reject(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE)
+
+            self._do_callbacks(msg, callbacks)
+
+    def _do_callbacks(self, msg, callbacks):
         for callback in callbacks:
             response_msg = None
             try:
                 response_msg = callback(msg)
             except fix_errors.FIXDropMessageError as e:
                 self.application.on_error(e)
-                return
+                return False
             except fix_errors.FIXRejectError as e:
                 self.application.on_error(e)
-                return
+                return False
             except fix_errors.FIXLogoutError as e:
                 self.application.on_error(e)
                 logger.error(e)
                 self.logout(e)
-                return
+                return False
             except fix_errors.FIXHardKillError as e:
                 self.application.on_error(e)
                 logger.error(e)
                 self.close_connection(False)
-                return
+                return False
             if response_msg is not None:
                 self.send_message(response_msg)
+
+        return True
 
     def close_connection(self, reset_logon = True):
         if self.logout_waiter:
@@ -279,7 +307,7 @@ class FIXEngineInitiator(FIXEngine):
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_callback(self.message_lib.Logon, self.on_logon, priority = CallbackWrapper.CALLBACK_PRIORITY.HIGH)
+        self.register_admin_callback(self.message_lib.Logon, self.on_logon, priority = CallbackWrapper.CALLBACK_PRIORITY.HIGH)
         
     def on_logon(self, msg):
         ENGINE_LOGON_MAP[self.engine_key] = True
@@ -288,7 +316,7 @@ class FIXEngineInitiator(FIXEngine):
 class FIXEngineAcceptor(FIXEngine):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.register_callback(None, self.on_first_acceptor_msg, priority=CallbackWrapper.CALLBACK_PRIORITY.FIRST-1)
+        self.register_admin_callback(None, self.on_first_acceptor_msg, priority=CallbackWrapper.CALLBACK_PRIORITY.FIRST-1)
 
     def make_engine_key(self):
         ip = self.settings.get('SocketAcceptHost', 'localhost')
@@ -301,7 +329,7 @@ class FIXEngineAcceptor(FIXEngine):
     #creating the first callback lets us get the beginstring and set a default message_lib based on version
     def on_first_acceptor_msg(self, msg):
         self.init_message_lib(msg.Header.BeginString)
-        heapq.heappop(self.call_back_register[None])
+        heapq.heappop(self.admin_callback_register[None])
         self.register_admin_messages()
         self.application.on_register_callbacks()
         self.msg_queue.put(msg)
@@ -309,8 +337,8 @@ class FIXEngineAcceptor(FIXEngine):
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_callback(self.message_lib.Logon, self.on_logon, priority = CallbackWrapper.CALLBACK_PRIORITY.HIGH) #High priority to init_settings before other checks
-        
+        self.register_admin_callback(self.message_lib.Logon, self.on_logon, priority = CallbackWrapper.CALLBACK_PRIORITY.HIGH) #High priority to init_settings before other checks
+
     def on_logon(self, msg):
         self.settings = self.find_session(msg.Header, self.session_settings)
         self.init_settings()

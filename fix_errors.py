@@ -38,3 +38,4 @@ class FIXSessionNotFound(FIXHardKillError):pass
 class FIXSessionLogoutTimeoutWarning(FIXEngineWarning) : pass
 
 class FIXInvalidMessageTypeError(FIXRejectError) : pass
+class FIXUnsupportedMessageTypeError(FIXRejectError) : pass

@@ -128,7 +128,7 @@ class Test(unittest.TestCase):
 
         def register_hack():
             self.server_app.register_callback(None, self.server_app.on_queue_msg)
-            self.server_app.register_callback(fix_messages_4_2_0_base.Logon, on_logon_hack, priority = fix_engine.CallbackWrapper.CALLBACK_PRIORITY.FIRST)
+            self.server_app.engine.register_admin_callback(fix_messages_4_2_0_base.Logon, on_logon_hack, priority = fix_engine.CallbackWrapper.CALLBACK_PRIORITY.FIRST)
 
         self.server_app.on_register_callbacks = register_hack
         self.server.start()

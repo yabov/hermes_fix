@@ -24,9 +24,9 @@ class HeartBeatMixin:
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_callback(self.message_lib.Logon, self.on_logon_hb)
-        self.register_callback(self.message_lib.Heartbeat, self.on_heart_beat)
-        self.register_callback(None, self.on_any_msg)
+        self.register_admin_callback(self.message_lib.Logon, self.on_logon_hb)
+        self.register_admin_callback(self.message_lib.Heartbeat, self.on_heart_beat)
+        self.register_admin_callback(None, self.on_any_msg)
 
     def build_logon_msg(self, *args, **kwargs):
         msg = super().build_logon_msg(*args, **kwargs)

@@ -12,9 +12,9 @@ class SequenceCheckerMixin():
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_callback(None, self.on_msg_check_seq, fix_engine.CallbackWrapper.CALLBACK_PRIORITY.HIGH)
-        self.register_callback(self.message_lib.SequenceReset, self.on_sequence_reset, fix_engine.CallbackWrapper.CALLBACK_PRIORITY.HIGH+1)
-        self.register_callback(self.message_lib.ResendRequest, self.on_resend_request)
+        self.register_admin_callback(None, self.on_msg_check_seq, fix_engine.CallbackWrapper.CALLBACK_PRIORITY.HIGH)
+        self.register_admin_callback(self.message_lib.SequenceReset, self.on_sequence_reset, fix_engine.CallbackWrapper.CALLBACK_PRIORITY.HIGH+1)
+        self.register_admin_callback(self.message_lib.ResendRequest, self.on_resend_request)
 
     def on_sequence_reset(self, msg):
         in_seq = self.store.get_current_in_seq()+1

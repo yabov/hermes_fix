@@ -412,6 +412,32 @@ class Test(unittest.TestCase):
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
         self.do_logout(self.client_app)
 
+    """MsgType(35) value received is valid (defined in spec or classified as user-defined) but not supported or registered in testing profile	
+    If < FIX 4.2
+    Send Reject<3> (session-level) message referencing valid but unsupported MsgType
+    If ≥ FIX 4.2
+    Send Business Message Reject<j> message referencing valid but unsupported MsgType (≥ FIX 4.2: BusinessRejectReason(380) = 3 - "Unsupported Message Type")
+    Increment inbound MsgSeqNum(34)
+    Generate a "warning" condition in test output"""
+    def test_unsupported_msg(self):
+        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg.ClOrdID = "test_message"
+        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.Symbol = 'AAPL'
+        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+
+        self.server_app.engine.callback_register = {} #destroy all callbacks
+
+        self.client_app.send_message(order_msg)
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXUnsupportedMessageTypeError)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.BusinessMessageReject)
+
+        self.server_app.register_callback(None,  self.server_app.on_queue_msg)
+
+        self.do_logout(self.client_app)
+
     def tearDown(self):
         self.server.stop_all()
         try:

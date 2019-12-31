@@ -7,7 +7,7 @@ import datetime
 
 logger = logging.getLogger(__name__)
 
-class MessageValidatorMixin():
+class MessageValidatorMixin(object):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -19,8 +19,8 @@ class MessageValidatorMixin():
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_callback(None, self.on_first_message, priority = fix_engine.CallbackWrapper.CALLBACK_PRIORITY.FIRST)
-        self.register_callback(None, self.on_validate_message, priority = fix_engine.CallbackWrapper.CALLBACK_PRIORITY.HIGH)
+        self.register_admin_callback(None, self.on_first_message, priority = fix_engine.CallbackWrapper.CALLBACK_PRIORITY.FIRST)
+        self.register_admin_callback(None, self.on_validate_message, priority = fix_engine.CallbackWrapper.CALLBACK_PRIORITY.NORMAL)
         
     async def parse_message(self, *args, **kwargs):
         try:
@@ -31,8 +31,9 @@ class MessageValidatorMixin():
             return None
         except fix_errors.FIXInvalidMessageTypeError as e:
             self.application.on_error(e)
-            self.store.set_current_in_seq(self.store.get_current_in_seq() + 1)
-            self.send_reject(e.RefSeqNum, e.RefMsgType, e.RefTagID, e.Text, e.SessionRejectReason)
+            curr_seq = self.store.get_current_in_seq()
+            self.store.set_current_in_seq(curr_seq + 1)
+            self.send_reject(curr_seq, e.RefMsgType, e.RefTagID, e.Text, e.SessionRejectReason)
             return None
         except fix_errors.FIXDropMessageError as e:
             self.application.on_error(e)
@@ -44,7 +45,7 @@ class MessageValidatorMixin():
     def on_first_message(self, msg):
         if not isinstance(msg, self.message_lib.Logon):
             raise fix_errors.FIXInvalidFirstMessage("First message not a logon")
-        heapq.heappop(self.call_back_register[None])
+        heapq.heappop(self.admin_callback_register[None])
 
 
     def on_validate_message(self, msg):

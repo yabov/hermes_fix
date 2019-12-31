@@ -81,8 +81,8 @@ async def _parse_into_buffer(first_byte, reader, buffer, messages):
 
     calced_checksum = fix_message.calc_checksum(buffer)
     buffer.write(checkSum)
-    if checkSumValue.decode() != calced_checksum:
-        raise fix_errors.FIXCheckSumError(f"Faield Checksum expected {checkSumValue.decode()} but got calculated {calced_checksum}")
+    if len(checkSumValue) != 3 or checkSumValue.decode() != calced_checksum:
+        raise fix_errors.FIXCheckSumError(f"Faield Checksum got {checkSumValue.decode()} but expected {calced_checksum}")
 
     if not messages:
         messages = MESSAGE_BASE_LIBRARY[beginStringValue]
