@@ -29,7 +29,12 @@ class MessageValidatorMixin():
             logger.debug(f"Connection closed {e}")
             self.close_connection()
             return None
-        except fix_errors.FIXGarbledMessageError as e:
+        except fix_errors.FIXInvalidMessageTypeError as e:
+            self.application.on_error(e)
+            self.store.set_current_in_seq(self.store.get_current_in_seq() + 1)
+            self.send_reject(e.RefSeqNum, e.RefMsgType, e.RefTagID, e.Text, e.SessionRejectReason)
+            return None
+        except fix_errors.FIXDropMessageError as e:
             self.application.on_error(e)
             return None
         except Exception as e:
@@ -47,30 +52,14 @@ class MessageValidatorMixin():
             error= f"Invalid BeginString [{msg.Header.BeginString}] on message, expecting [{self.__BeginString}]"
             raise fix_errors.FIXInvalidMessageError(error)
         if msg.Header.TargetCompID != self.__SenderCompID:
-            error= f"Invalid SenderCompID [{msg.Header.SenderCompID}] on message, expecting [{self.__TargetCompID}]"
-            reject_msg = self.message_lib.Reject()
-            try:
-                reject_msg.RefSeqNum = msg.Header.MsgSeqNum
-                reject_msg.RefMsgType = msg._msgtype
-                reject_msg.RefTagID = msg.Header.tags.OrigSendingTime
-                reject_msg.Text = error             
-                reject_msg.SessionRejectReason = self.message_lib.SessionRejectReason.ENUM_COMPID_PROBLEM
-            except:
-                pass
-            self.send_message(reject_msg)
+            error= f"Invalid TargetCompID [{msg.Header.SenderCompID}] on message, expecting [{self.__TargetCompID}]"
+            self.send_reject(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.TargetCompID, 
+                error, self.message_lib.SessionRejectReason.ENUM_COMPID_PROBLEM)
             raise fix_errors.FIXBadCompIDError(error)   
         if msg.Header.SenderCompID != self.__TargetCompID:
             error= f"Invalid SenderCompID [{msg.Header.SenderCompID}] on message, expecting [{self.__TargetCompID}]"
-            reject_msg = self.message_lib.Reject()
-            try:
-                reject_msg.RefSeqNum = msg.Header.MsgSeqNum
-                reject_msg.RefMsgType = msg._msgtype
-                reject_msg.RefTagID = msg.Header.tags.OrigSendingTime
-                reject_msg.Text = error             
-                reject_msg.SessionRejectReason = self.message_lib.SessionRejectReason.ENUM_COMPID_PROBLEM
-            except:
-                pass
-            self.send_message(reject_msg)
+            self.send_reject(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.SenderCompID, 
+                error, self.message_lib.SessionRejectReason.ENUM_COMPID_PROBLEM)
             raise fix_errors.FIXBadCompIDError(error)
 
         self.validate_sendtime(msg)
@@ -78,16 +67,8 @@ class MessageValidatorMixin():
     def validate_sendtime(self, msg):        
         send_time = datetime.datetime.strptime(msg.Header.SendingTime, self.time_format)
         if abs(datetime.datetime.utcnow() - send_time) > datetime.timedelta(minutes=2):
-            reject_msg = self.message_lib.Reject()
-            try:
-                reject_msg.RefSeqNum = msg.Header.MsgSeqNum
-                reject_msg.RefMsgType = msg._msgtype
-                reject_msg.RefTagID = msg.Header.tags.SendingTime
-                reject_msg.Text = "SendingTime accuracy problem"                
-                reject_msg.SessionRejectReason = self.message_lib.SessionRejectReason.ENUM_SENDINGTIME_ACCURACY_PROBLEM
-            except:
-                pass
-            self.send_message(reject_msg)
+            self.send_reject(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.SendingTime, 
+                 "SendingTime accuracy problem", self.message_lib.SessionRejectReason.ENUM_SENDINGTIME_ACCURACY_PROBLEM)
             raise fix_errors.FIXSendTimeAccuracyError("SendingTime accuracy problem")
             
 

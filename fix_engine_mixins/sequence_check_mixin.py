@@ -30,8 +30,11 @@ class SequenceCheckerMixin():
     def on_msg_check_seq(self, msg):
         in_seq = self.store.get_current_in_seq()+1
         
-        if self.check_poss_dupe_sendtime(in_seq, msg):
-            pass
+        if msg.Header.PossDupFlag == self.message_lib.PossDupFlag.ENUM_YES and msg.Header.OrigSendingTime is None:
+            self.send_reject(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.OrigSendingTime, 
+                "Required tag missing", self.message_lib.SessionRejectReason.ENUM_REQUIRED_TAG_MISSING)
+            self.store.set_current_in_seq(in_seq)
+            raise fix_errors.RequiredTagMissingError("Required tag missing")
         elif msg.Header.MsgSeqNum == in_seq:
             self.check_seq_same(msg)
         elif msg.Header.MsgSeqNum > in_seq:
@@ -42,21 +45,6 @@ class SequenceCheckerMixin():
             
         #self.store.set_current_in_seq(in_seq)
 
-    def check_poss_dupe_sendtime(self, in_seq, msg):
-        if msg.Header.PossDupFlag == self.message_lib.PossDupFlag.ENUM_YES and msg.Header.OrigSendingTime is None:
-            reject_msg = self.message_lib.Reject()
-            try:
-                reject_msg.RefSeqNum = msg.Header.MsgSeqNum
-                reject_msg.RefMsgType = msg._msgtype
-                reject_msg.RefTagID = msg.Header.OrigSendingTime._tag
-                reject_msg.Text = "Required tag missing"
-                reject_msg.SessionRejectReason = self.message_lib.SessionRejectReason.ENUM_REQUIRED_TAG_MISSING
-            except:
-                logger.exception("FAIL")
-            self.send_message(reject_msg)
-            self.store.set_current_in_seq(in_seq)
-            raise fix_errors.RequiredTagMissingError("Required tag missing")
-        return False
 
     def do_resend_request(self, in_seq):
         resend_request = self.message_lib.ResendRequest()
@@ -78,23 +66,16 @@ class SequenceCheckerMixin():
     def check_seq_same(self, msg):
         self.store.set_current_in_seq(msg.Header.MsgSeqNum)
         if msg.Header.PossDupFlag == self.message_lib.PossDupFlag.ENUM_YES and msg.Header.OrigSendingTime > msg.Header.SendingTime:
-            reject_msg = self.message_lib.Reject()
-            try:
-                reject_msg.RefSeqNum = msg.Header.MsgSeqNum
-                reject_msg.RefMsgType = msg._msgtype
-                reject_msg.RefTagID = msg.Header.tags.OrigSendingTime
-                reject_msg.Text = "SendingTime accuracy problem"                
-                reject_msg.SessionRejectReason = self.message_lib.SessionRejectReason.ENUM_SENDINGTIME_ACCURACY_PROBLEM
-            except:
-                pass
-            self.send_message(reject_msg)
+            self.send_reject(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.OrigSendingTime._tag, 
+                        "SendingTime accuracy problem", self.message_lib.SessionRejectReason.ENUM_SENDINGTIME_ACCURACY_PROBLEM)
             raise fix_errors.FIXSendTimeAccuracyError("SendingTime accuracy problem")
             
     def send_gap_fill(self, last_sent_msg_num, msg_num):
         gap_msg = self.message_lib.SequenceReset()
         gap_msg.GapFillFlag = self.message_lib.GapFillFlag.ENUM_YES
         gap_msg.NewSeqNo = msg_num
-        self.send_message(gap_msg, last_sent_msg_num)
+        gap_msg.Header.MsgSeqNum = last_sent_msg_num+1
+        self.send_message(gap_msg, resend = True)
 
     def on_resend_request(self, msg):
         last_sent_msg_num = msg.BeginSeqNo-1
@@ -102,16 +83,17 @@ class SequenceCheckerMixin():
             try:
                 header, msg, _ = fix_message_library.create_message_from_binary(resend_msg, msg_type_str, self.message_lib)
             except:
-                self.send_gap_fill(last_sent_msg_num+1, msg_num+1)
+                self.send_gap_fill(last_sent_msg_num, msg_num+1)
                 last_sent_msg_num = msg_num
                 continue
             msg.Header.PossDupFlag = 'Y'
             msg.Header.OrigSendingTime = header.SendingTime
+            msg.Header.MsgSeqNum = msg_num
             if msg._msgcat == 'app' or isinstance(msg, self.message_lib.Logout):
                 if last_sent_msg_num < msg_num-1:
-                    self.send_gap_fill(last_sent_msg_num+1, msg_num)
-                self.send_message(msg, msg_num)
+                    self.send_gap_fill(last_sent_msg_num, msg_num)
+                self.send_message(msg, resend = True)
                 last_sent_msg_num = msg_num
         
         if last_sent_msg_num < self.msg_seq_num_out-1:
-            self.send_gap_fill(last_sent_msg_num+1, self.msg_seq_num_out)
+            self.send_gap_fill(last_sent_msg_num, self.msg_seq_num_out)

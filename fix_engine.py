@@ -78,6 +78,18 @@ class FIXEngineBase():
         logon_msg = self.build_logon_msg()
         self.send_message(logon_msg)
 
+    def send_reject(self, ref_seq_num, ref_msg_type, ref_tag_id, text, reason):
+        reject_msg = self.message_lib.Reject()
+        try:
+            if ref_seq_num : reject_msg.RefSeqNum = ref_seq_num
+            if ref_msg_type : reject_msg.RefMsgType = ref_msg_type
+            if ref_tag_id : reject_msg.RefTagID = ref_tag_id
+            if text : reject_msg.Text = text
+            if reason : reject_msg.SessionRejectReason = reason
+        except:
+            pass
+        self.send_message(reject_msg)
+
     def on_logon(self, msg):
         raise NotImplementedError
 
@@ -187,6 +199,9 @@ class FIXEngineBase():
             except fix_errors.FIXDropMessageError as e:
                 self.application.on_error(e)
                 return
+            except fix_errors.FIXRejectError as e:
+                self.application.on_error(e)
+                return
             except fix_errors.FIXLogoutError as e:
                 self.application.on_error(e)
                 logger.error(e)
@@ -212,21 +227,21 @@ class FIXEngineBase():
         logon.EncryptMethod = self.message_lib.EncryptMethod.ENUM_NONE
         return logon
 
-    def send_message(self, msg, resend_seq_num = None):
+    def send_message(self, msg, resend = False):
         #We want send_message to block but blocking in the loop's thread will deadlock
         if self.tid == threading.current_thread():
-            self._send( msg, resend_seq_num)
+            self._send( msg, resend)
         else:
-            future = asyncio.run_coroutine_threadsafe(self._send_await(msg, resend_seq_num), self.loop)
+            future = asyncio.run_coroutine_threadsafe(self._send_await(msg, resend), self.loop)
             future.result()
 
     async def _send_await(self, *args, **kwargs):
         return self._send(*args, **kwargs)
 
-    def _send(self, msg, resend_seq_num = None):
+    def _send(self, msg, resend = False):
         msg.Header.BeginString = msg.Header.BeginString or self.settings['BeginString']
         msg.Header.MsgType = msg._msgtype
-        msg.Header.MsgSeqNum = resend_seq_num or self.msg_seq_num_out
+        msg.Header.MsgSeqNum = msg.Header.MsgSeqNum  or self.msg_seq_num_out
         msg.Header.SendingTime = msg.Header.SendingTime or datetime.datetime.utcnow().strftime(self.time_format)
         msg.Header.TargetCompID = msg.Header.TargetCompID or self.settings['TargetCompID']
         msg.Header.SenderCompID = msg.Header.SenderCompID or self.settings['SenderCompID']
@@ -239,12 +254,10 @@ class FIXEngineBase():
             logger.exception(f"Failed to send message [{buffer.translate(B_TABLE)}]")
             return
         
-        if not resend_seq_num:
+        if not resend:
             self.store.add_message(self.msg_seq_num_out, msg._msgtype, buffer)
             self.msg_seq_num_out +=1
             self.store.set_current_out_seq(self.msg_seq_num_out)
-
-
 
 class FIXEngine(message_validator_mixin.MessageValidatorMixin, heartbeat_mixin.HeartBeatMixin, sequence_check_mixin.SequenceCheckerMixin, FIXEngineBase): pass
 

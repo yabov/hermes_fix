@@ -24,6 +24,8 @@ async def create_message_from_stream(reader, messages = None ):
         return await  asyncio.wait_for(_parse_into_buffer(byte, reader, buffer, messages), timeout = DEFAULT_MESSAGE_READ_TIMEOUT)
     except (asyncio.streams.IncompleteReadError, ConnectionAbortedError):
         raise
+    except fix_errors.FIXInvalidMessageTypeError:
+        raise
     except Exception as e:
         logger.exception(f"Failed to create message from stream [{buffer.getvalue()}]")
         raise fix_errors.FIXGarbledMessageError(e)
@@ -85,7 +87,12 @@ async def _parse_into_buffer(first_byte, reader, buffer, messages):
     if not messages:
         messages = MESSAGE_BASE_LIBRARY[beginStringValue]
 
-    msg_class = messages.MESSAGE_TYPES[msgTypeValue]
+    msg_class = messages.MESSAGE_TYPES.get(msgTypeValue)
+    if not msg_class:
+        error = fix_errors.FIXInvalidMessageTypeError("Invalid MsgType")
+        error.RefMsgType = msgTypeValue
+        error.SessionRejectReason = messages.SessionRejectReason.ENUM_INVALID_MSGTYPE
+        raise error
 
     header = messages.Header()
     header.BeginString = beginStringValue

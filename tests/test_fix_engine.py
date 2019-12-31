@@ -368,9 +368,7 @@ class Test(unittest.TestCase):
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Logout)
 
     """SendingTime(52 value received is either not specified in UTC (Universal Time Coordinated also known as GMT) or is not within a reasonable time (e.g. 2 minutes) of atomic clock-based time.
-
     Rationale: Verify system clocks on both sides are in sync and that SendingTime must be current time
-
     Send Reject<3> (session-level) message referencing inaccurate SendingTime (≥ FIX 4.2: SessionRejectReason(373) = 10 - "SendingTime accuracy problem")
     Increment inbound MsgSeqNum(34)
     Send Logout<5> message referencing inaccurate SendingTime value
@@ -390,6 +388,27 @@ class Test(unittest.TestCase):
         self.client_app.send_message(order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXSendTimeAccuracyError)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+        self.do_logout(self.client_app)
+
+    """MsgType(35) value received is not valid (defined in spec or classified as user-defined)	
+    Send Reject<3> (session-level) message referencing invalid MsgType (≥ FIX 4.2: SessionRejectReason(373) = 11 - "Invalid MsgType")
+    Increment inbound MsgSeqNum(34)
+    Generate a "warning" condition in test output"""
+    def test_bad_msg_type(self):
+        fix_messages_4_2_0_base.NewOrderSingle._msgtype = 'BAD'
+        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg.ClOrdID = "test_message"
+        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.Symbol = 'AAPL'
+        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+
+        self.client_app.send_message(order_msg)
+
+        fix_messages_4_2_0_base.NewOrderSingle._msgtype = 'D'
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageTypeError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
         self.do_logout(self.client_app)
 

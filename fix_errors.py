@@ -3,7 +3,14 @@ class FIXEngineWarning(Exception) : pass
 
 
 class FIXDropMessageError(FIXEngineError) : pass
-class FIXRejectError(FIXDropMessageError) : pass
+class FIXRejectError(FIXEngineError) : 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.RefSeqNum = None
+        self.RefMsgType = None
+        self.RefTagID = None
+        self.Text = None
+        self.SessionRejectReason = None
 
 class FIXLogoutError(FIXEngineError) : pass
 class FIXHardKillError(FIXEngineError) : pass
@@ -29,3 +36,5 @@ class FIXSessionExistsError(FIXHardKillError): pass
 class FIXSessionNotFound(FIXHardKillError):pass
 
 class FIXSessionLogoutTimeoutWarning(FIXEngineWarning) : pass
+
+class FIXInvalidMessageTypeError(FIXRejectError) : pass
