@@ -110,7 +110,7 @@ class MessageBase(object):
 
         checksum = calc_checksum(buffer)
 
-        self.Trailer.CheckSum = checksum
+        self.Trailer.CheckSum = self.Trailer.CheckSum or checksum
         buffer.write(self.Trailer.CheckSum._tag.encode())
         buffer.write(b_EQU)
         buffer.write(self.Trailer.CheckSum.encode())

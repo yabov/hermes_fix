@@ -140,9 +140,7 @@ class Test(unittest.TestCase):
 
 
     def tearDown(self):
-        #print("TearDown", self._testMethodName)
         self.server.stop_all()
-        #print("Done", self._testMethodName)
 
 
 
