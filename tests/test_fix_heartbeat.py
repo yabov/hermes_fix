@@ -8,8 +8,9 @@ import fix_messages_4_2_0_base
 import logging
 import queue
 import datetime
+import time
 
-logging.basicConfig(level=logging.DEBUG, format= '%(levelname)s-%(thread)d-%(filename)s:%(lineno)d - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format= '%(levelname)s-%(asctime)s-%(thread)d-%(filename)s:%(lineno)d - %(message)s')
 
 SERVER_QUEUE = queue.Queue()
 CLIENT_QUEUE = queue.Queue()
@@ -82,18 +83,55 @@ class Test(unittest.TestCase):
         self.assertIsInstance(resp_logout, fix_messages_4_2_0_base.Logout)
         self.assertIsInstance(sent_logout, fix_messages_4_2_0_base.Logout)
 
-    """MsgSeqNum(34) received as expected	
-        Accept MsgSeqNum for the messagee"""
+    """No data sent during preset heartbeat interval (HeartBeatInt(108) field)	
+    Send Heartbeat message"""
     def test_valid_msg(self):
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Heartbeat)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
 
+        #waiting for 2nd heartbeat
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
         self.do_logout(self.client_app)
 
+    """Data sent during preset heartbeat interval (HeartBeatInt(108) field)	
+    skip Heartbeat message"""
+    def test_msg_instead_of_hb(self):
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+
+        time.sleep(.7)
+
+        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg.ClOrdID = "test_message"
+        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.Symbol = 'AAPL'
+        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+
+        self.client_app.send_message(order_msg)
+
+        #waiting for 2nd heartbeat
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.NewOrderSingle)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.do_logout(self.client_app)
+
+    """No Heartbeat during preset interval
+    send TestMessage"""
+    def test_msg_no_hb(self):
+        self.server_app.engine.out_heart_beat_int = 10
+        future_out = asyncio.run_coroutine_threadsafe(self.server_app.engine.schedule_next_out_beat_await(), self.server_app.engine.loop)
+        future_out.result()
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=20), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+
+        self.do_logout(self.client_app)
+    
     def tearDown(self):
-        #print("TearDown", self._testMethodName)
         self.server.stop_all()
-        #print("Done", self._testMethodName)
 
 
 if __name__ == "__main__":

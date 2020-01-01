@@ -219,6 +219,7 @@ class FIXEngineBase():
 
     def _do_callbacks(self, msg, callbacks):
         for callback in callbacks:
+            #print (callback)
             response_msg = None
             try:
                 response_msg = callback(msg)
