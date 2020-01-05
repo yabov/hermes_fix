@@ -19,8 +19,8 @@ class MessageValidatorMixin(object):
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_admin_callback(None, self.on_first_message, priority = fix_engine.CallbackWrapper.CALLBACK_PRIORITY.FIRST)
-        self.register_admin_callback(None, self.on_validate_message, priority = fix_engine.CallbackWrapper.CALLBACK_PRIORITY.NORMAL)
+        self.register_admin_callback(None, self.on_first_message, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST, one_time = True)
+        self.register_admin_callback(None, self.on_validate_message, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.NORMAL)
         
     async def parse_message(self, *args, **kwargs):
         try:
@@ -45,31 +45,28 @@ class MessageValidatorMixin(object):
     def on_first_message(self, msg):
         if not isinstance(msg, self.message_lib.Logon):
             raise fix_errors.FIXInvalidFirstMessage("First message not a logon")
-        heapq.heappop(self.admin_callback_register[None])
 
 
     def on_validate_message(self, msg):
         if msg.Header.BeginString != self.__BeginString:
             error= f"Invalid BeginString [{msg.Header.BeginString}] on message, expecting [{self.__BeginString}]"
-            raise fix_errors.FIXInvalidMessageError(error)
+            raise fix_errors.FIXInvalidMessageError(error, wait_interval=2, send_test_msg=False)
         if msg.Header.TargetCompID != self.__SenderCompID:
-            error= f"Invalid TargetCompID [{msg.Header.SenderCompID}] on message, expecting [{self.__TargetCompID}]"
-            self.send_reject(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.TargetCompID, 
-                error, self.message_lib.SessionRejectReason.ENUM_COMPID_PROBLEM)
-            raise fix_errors.FIXBadCompIDError(error)   
+            error= f"Invalid TargetCompID [{msg.Header.TargetCompID}] on message, expecting [{self.__SenderCompID}]"
+            raise fix_errors.FIXBadCompIDError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.TargetCompID, 
+                error, self.message_lib.SessionRejectReason.ENUM_COMPID_PROBLEM, wait_interval=2, send_test_msg=False)
         if msg.Header.SenderCompID != self.__TargetCompID:
             error= f"Invalid SenderCompID [{msg.Header.SenderCompID}] on message, expecting [{self.__TargetCompID}]"
-            self.send_reject(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.SenderCompID, 
-                error, self.message_lib.SessionRejectReason.ENUM_COMPID_PROBLEM)
-            raise fix_errors.FIXBadCompIDError(error)
+            raise fix_errors.FIXBadCompIDError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.SenderCompID, 
+                error, self.message_lib.SessionRejectReason.ENUM_COMPID_PROBLEM, wait_interval=2, send_test_msg=False)
 
         self.validate_sendtime(msg)
 
     def validate_sendtime(self, msg):        
         send_time = datetime.datetime.strptime(msg.Header.SendingTime, self.time_format)
         if abs(datetime.datetime.utcnow() - send_time) > datetime.timedelta(minutes=2):
-            self.send_reject(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.SendingTime, 
-                 "SendingTime accuracy problem", self.message_lib.SessionRejectReason.ENUM_SENDINGTIME_ACCURACY_PROBLEM)
-            raise fix_errors.FIXSendTimeAccuracyError("SendingTime accuracy problem")
+            raise fix_errors.FIXSendTimeAccuracyError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.SendingTime, 
+                 "SendingTime accuracy problem", self.message_lib.SessionRejectReason.ENUM_SENDINGTIME_ACCURACY_PROBLEM,
+                 wait_interval=2, send_test_msg=False)
             
 

@@ -12,8 +12,8 @@ class SequenceCheckerMixin():
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_admin_callback(None, self.on_msg_check_seq, fix_engine.CallbackWrapper.CALLBACK_PRIORITY.HIGH)
-        self.register_admin_callback(self.message_lib.SequenceReset, self.on_sequence_reset, fix_engine.CallbackWrapper.CALLBACK_PRIORITY.HIGH+1)
+        self.register_admin_callback(None, self.on_msg_check_seq, fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.HIGH)
+        self.register_admin_callback(self.message_lib.SequenceReset, self.on_sequence_reset, fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.HIGH+1)
         self.register_admin_callback(self.message_lib.ResendRequest, self.on_resend_request)
 
     def on_sequence_reset(self, msg):
@@ -31,19 +31,22 @@ class SequenceCheckerMixin():
         in_seq = self.store.get_current_in_seq()+1
         
         if msg.Header.PossDupFlag == self.message_lib.PossDupFlag.ENUM_YES and msg.Header.OrigSendingTime is None:
-            self.send_reject(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.OrigSendingTime, 
+            raise fix_errors.RequiredTagMissingError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.OrigSendingTime, 
                 "Required tag missing", self.message_lib.SessionRejectReason.ENUM_REQUIRED_TAG_MISSING)
-            self.store.set_current_in_seq(in_seq)
-            raise fix_errors.RequiredTagMissingError("Required tag missing")
         elif msg.Header.MsgSeqNum == in_seq:
             self.check_seq_same(msg)
         elif msg.Header.MsgSeqNum > in_seq:
             logger.warning(f"Expected incoming sequence [{in_seq}] but received [{msg.Header.MsgSeqNum}]")
             self.do_resend_request(in_seq)
+            if msg._msgcat != 'admin': #since admin messages do not get resent we'll let this one through but will not update seq num
+                raise fix_errors.FIXEngineResendRequest("Resend Requested")
+            else:
+                self.application.on_error(fix_errors.FIXEngineResendRequest("Resend Requested"))
+            return
         elif msg.Header.MsgSeqNum < in_seq:
             self.check_low_seq(in_seq, msg)
             
-        #self.store.set_current_in_seq(in_seq)
+        self.store.set_current_in_seq(msg.Header.MsgSeqNum)
 
 
     def do_resend_request(self, in_seq):
@@ -51,7 +54,6 @@ class SequenceCheckerMixin():
         resend_request.BeginSeqNo = in_seq
         resend_request.EndSeqNo = 0
         self.send_message(resend_request)
-        raise fix_errors.FIXEngineResendRequest("Resend Requested")
 
     def check_low_seq(self, in_seq, msg):
         if msg.Header.PossDupFlag != self.message_lib.PossDupFlag.ENUM_YES:
@@ -64,11 +66,10 @@ class SequenceCheckerMixin():
             raise fix_errors.FIXDupeMessageRecv("Duplicate message received, discarding")
 
     def check_seq_same(self, msg):
-        self.store.set_current_in_seq(msg.Header.MsgSeqNum)
         if msg.Header.PossDupFlag == self.message_lib.PossDupFlag.ENUM_YES and msg.Header.OrigSendingTime > msg.Header.SendingTime:
-            self.send_reject(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.OrigSendingTime._tag, 
+            raise fix_errors.FIXSendTimeAccuracyError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.OrigSendingTime._tag, 
                         "SendingTime accuracy problem", self.message_lib.SessionRejectReason.ENUM_SENDINGTIME_ACCURACY_PROBLEM)
-            raise fix_errors.FIXSendTimeAccuracyError("SendingTime accuracy problem")
+
             
     def send_gap_fill(self, last_sent_msg_num, msg_num):
         gap_msg = self.message_lib.SequenceReset()

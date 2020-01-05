@@ -3,6 +3,7 @@ import asyncio
 
 import fix_engine
 import fix_engine_mixins
+import fix_errors
 import fix
 import fix_messages_4_2_0_base
 import logging
@@ -77,11 +78,11 @@ class Test(unittest.TestCase):
     def do_logout(self, client_app):
         client_app.engine.logout()
 
-        resp_logout = SERVER_QUEUE.get(timeout=5)
-        sent_logout = CLIENT_QUEUE.get(timeout=5)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
 
-        self.assertIsInstance(resp_logout, fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(sent_logout, fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
 
     """No data sent during preset heartbeat interval (HeartBeatInt(108) field)	
     Send Heartbeat message"""
@@ -125,10 +126,34 @@ class Test(unittest.TestCase):
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=20), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
 
         self.do_logout(self.client_app)
+
+    """No Test Message response
+    Logout"""
+    def test_no_response_to_test_msg(self):
+        self.server_app.engine.out_heart_beat_int = 10
+        self.server_app.engine.in_heart_beat_int = 10
+        future_out = asyncio.run_coroutine_threadsafe(self.server_app.engine.schedule_next_out_beat_await(), self.server_app.engine.loop)
+        future_out.result()
+
+        def on_test_msg(msg):
+            raise fix_errors.FIXRejectError(1, '1', '1', 'TestReject', 1)
+
+
+        self.server_app.engine.register_admin_callback(fix_messages_4_2_0_base.TestRequest, on_test_msg, fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.NORMAL -1)
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXRejectError)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
     
     def tearDown(self):
         self.server.stop_all()

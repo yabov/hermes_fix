@@ -60,11 +60,13 @@ class Test(unittest.TestCase):
     def do_logout(self, client_app):
         client_app.engine.logout()
 
-        resp_logout = SERVER_QUEUE.get(timeout=5)
-        sent_logout = CLIENT_QUEUE.get(timeout=5)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
 
-        self.assertIsInstance(resp_logout, fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(sent_logout, fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+
+
 
     """	Receive Logon<A> message"""
     """Respond with Logon<A> response message"""
@@ -89,9 +91,9 @@ class Test(unittest.TestCase):
         client_app.on_engine_initialized = lambda : setattr(client_app.engine, 'msg_seq_num_out', 10)
         client.start()
 
-        #self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logon))
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logon)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logon)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logon)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.ResendRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
 
@@ -137,7 +139,7 @@ class Test(unittest.TestCase):
         client_bad = FIXTestAppClient()
         client_bad = fix.SocketConnection(client_bad, self.store, settings_bad_client)
         
-        self.server.start()
+        #self.server.start()
         client_bad.start()
 
         error = SERVER_QUEUE.get(timeout=2)
@@ -170,7 +172,7 @@ class Test(unittest.TestCase):
         client = fix.SocketConnection(client_app, self.store, self.settings_client)
 
         async def send_logon_hack():
-            await client_app.engine._send(hb)
+            client_app.engine._send(hb)
 
         def register_hack():
             client_app.register_callback(None, self.server_app.on_queue_msg)
@@ -183,7 +185,26 @@ class Test(unittest.TestCase):
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidFirstMessage)
         self.assertTrue(CLIENT_QUEUE.empty())
 
+    """First message never received
+        Disconnect
+    """
+    def test_no_first_message(self):
+        client_app = FIXTestAppClient()
+        client = fix.SocketConnection(client_app, self.store, self.settings_client)
 
+        async def send_logon_hack():
+            return
+
+        def register_hack():
+            client_app.register_callback(None, self.server_app.on_queue_msg)
+            client_app.engine.send_logon = send_logon_hack
+
+        client_app.on_register_callbacks = register_hack
+
+        client.start()        
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=12), fix_errors.FIXHardKillError)
+        self.assertTrue(CLIENT_QUEUE.empty())
+        
 
     def tearDown(self):
         self.server.stop_all()

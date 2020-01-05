@@ -20,8 +20,11 @@ class Application:
     def send_message(self, msg):
         self.engine.send_message(msg)
 
-    def register_callback(self, msg_class, callback, priority=fix_engine.CallbackWrapper.CALLBACK_PRIORITY.NORMAL):
-        self.engine.register_callback(msg_class, callback, priority)
+    def register_callback(self, msg_class, callback, priority=fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.NORMAL, check_func = None, one_time = False):
+        self.engine.register_callback(msg_class, callback, priority, check_func, one_time)
 
     def on_error(self, error): 
         pass
+
+    def close_connection(self):
+        self.engine.close_connection()

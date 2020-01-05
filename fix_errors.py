@@ -4,21 +4,38 @@ class FIXEngineWarning(Exception) : pass
 
 class FIXDropMessageError(FIXEngineError) : pass
 class FIXRejectError(FIXEngineError) : 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.RefSeqNum = None
-        self.RefMsgType = None
-        self.RefTagID = None
-        self.Text = None
-        self.SessionRejectReason = None
+    def __init__(self, RefSeqNum, RefMsgType, RefTagID, Text, SessionRejectReason):
+        super().__init__(Text)
+        self.RefSeqNum = RefSeqNum
+        self.RefMsgType = RefMsgType
+        self.RefTagID = RefTagID
+        self.Text = Text
+        self.SessionRejectReason = SessionRejectReason
 
-class FIXLogoutError(FIXEngineError) : pass
+class FIXRejectAndLogoutError(FIXEngineError):
+    def __init__(self, RefSeqNum, RefMsgType, RefTagID, Text, SessionRejectReason, wait_interval = 2, send_test_msg = False):
+        super().__init__(Text)
+        self.RefSeqNum = RefSeqNum
+        self.RefMsgType = RefMsgType
+        self.RefTagID = RefTagID
+        self.Text = Text
+        self.SessionRejectReason = SessionRejectReason
+        self.wait_interval = wait_interval
+        self.send_test_msg = send_test_msg
+
+class FIXLogoutError(FIXEngineError) :
+    def __init__(self, Text, wait_interval = 2, send_test_msg = False):
+        super().__init__(Text)
+        self.Text = Text
+        self.wait_interval = wait_interval
+        self.send_test_msg = send_test_msg
+
 class FIXHardKillError(FIXEngineError) : pass
 
 class FieldNotFoundError(FIXEngineError) : pass
 
 class RequiredTagMissingError(FIXRejectError) : pass
-class FIXBadCompIDError(FIXLogoutError) : pass
+class FIXBadCompIDError(FIXRejectAndLogoutError) : pass
 
 class FIXGarbledMessageError(FIXDropMessageError) : pass
 class FIXCheckSumError(FIXGarbledMessageError): pass
@@ -26,7 +43,7 @@ class FIXCheckSumError(FIXGarbledMessageError): pass
 class FIXSequenceTooLowError(FIXLogoutError) : pass
 class FIXEngineResendRequest(FIXDropMessageError) : pass
 class FIXDupeMessageRecv(FIXDropMessageError) : pass
-class FIXSendTimeAccuracyError(FIXLogoutError) : pass
+class FIXSendTimeAccuracyError(FIXRejectAndLogoutError) : pass
 
 class FIXInvalidMessageError(FIXLogoutError) : pass
 class FIXInvalidFirstMessage(FIXHardKillError) : pass

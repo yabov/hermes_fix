@@ -2,6 +2,7 @@ import asyncio
 import logging
 import fix_message_library
 import threading
+import concurrent
 from threading import Thread
 from fix_engine import FIXEngineInitiator, FIXEngineAcceptor
 
@@ -47,8 +48,10 @@ class SocketConnection:
         event_sync.set()
         try:
             await self.engine_tasks
-        except:
+        except concurrent.futures._base.CancelledError:
             pass
+        except:
+            logger.exception("engine ended with errors")
 
 
     async def start_acceptor(self, section):
@@ -59,13 +62,16 @@ class SocketConnection:
         async with self.lock:
             if (ip, port) in self.server_map:
                 logger.debug(f"Server already created on {ip}:{port}")
-                server = self.server_map[(ip, port)]
+                server, _ = self.server_map[(ip, port)]
                 self.settings_map[(self.settings[section]['SenderCompID'], self.settings[section]['TargetCompID'])] = self.settings[section]
                 return
             else:
                 logger.debug(f"Creating Acceptor on {ip}:{port}")
-                server = await asyncio.start_server(self.on_connected_client, ip, port)
-                self.server_map[(ip,port)] = server
+                try:
+                    server = await asyncio.start_server(self.on_connected_client, ip, port)
+                except:
+                    logger.exception(f"Failed to start server on {ip}:{port}")
+                self.server_map[(ip,port)] = (server, asyncio.get_running_loop())
 
         addr = server.sockets[0].getsockname()
         logger.debug(f"Connection Created, serving on {addr}")
@@ -76,7 +82,7 @@ class SocketConnection:
                 #await asyncio.gather(server.serve_forever())
             except asyncio.CancelledError:
                 pass
-        logger.debug("Ending Server")
+        logger.debug("-----------------Ending Server-----------------")
 
 
     async def start_initiator(self, section):
@@ -99,11 +105,11 @@ class SocketConnection:
         self.settings_map[(self.settings[section]['SenderCompID'], self.settings[section]['TargetCompID'])] = self.settings[section]
         addr = writer.get_extra_info('peername')
         sockname = writer.get_extra_info('sockname')
-        engine = FIXEngineInitiator(self.application, self.storeFactory, self.session_settings, reader, writer, self.settings[section])
         try:
+            engine = FIXEngineInitiator(self.application, self.storeFactory, self.session_settings, reader, writer, self.settings[section])
             await engine.send_logon()
             await engine.serve_client()
-        except asyncio.streams.ConnectionResetError:
+        except ConnectionResetError:
             logger.error("Server Closed Connection")
         except:
             logger.exception("Error in client")
@@ -131,9 +137,11 @@ class SocketConnection:
 
     def stop_all(self):
         logger.debug("Stopping All")
-        for server in self.server_map.values():
+        for server, loop in self.server_map.values():
             try:
                 server.close() 
+                future = asyncio.run_coroutine_threadsafe(server.wait_closed(), loop)
+                future.result()
             except:
                 logger.debug("Server already closed")
         self.engine_tasks.cancel()

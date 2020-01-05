@@ -6,7 +6,8 @@ import concurrent.futures
 import queue
 import heapq
 import threading
-import itertools
+import functools
+
 
 from fix_engine_mixins import heartbeat_mixin, sequence_check_mixin, message_validator_mixin
 import fix_errors
@@ -17,22 +18,82 @@ B_TABLE = bytes.maketrans(b'\x01', b'|')
 
 ENGINE_LOGON_MAP = {}
 
-class CallbackWrapper:
+class CallBackPriorityExistsError(Exception): pass
+class CallbackRegistrar:
     class CALLBACK_PRIORITY:
         FIRST = 0
-        HIGH = 10
-        NORMAL = 20
-        LOW = 30
-        LAST = 40
-    def __init__(self, priority, callback):
+        HIGH = 100
+        NORMAL = 200
+        LOW = 300
+        LAST = 400
+        BEFORE = -1
+        AFTER = 1
+    def __init__(self, loop):
+        self.priority_callback_map = {}
+        self.loop = loop
+
+    def add_callback(self, msg_class, callback, priority, check_func = None, one_time= False, timeout= None, timeout_cb = None):
+        priority_cb = CallbackWrapper(priority, callback, check_func, self.loop, timeout = timeout, timeout_cb = timeout_cb)
+        if one_time:
+            priority_cb.clean_up_func = lambda : self.remove_callback(msg_class, priority, callback)
+        
+
+        if msg_class is None: #None will be used to register a callback for all messages
+            if None not in self.priority_callback_map:
+                self.priority_callback_map[None] = [priority_cb]
+            else:                    
+                self.priority_callback_map[None].append(priority_cb)
+        else:
+            if msg_class._msgtype not in self.priority_callback_map:
+                self.priority_callback_map[msg_class._msgtype] = [priority_cb]
+            else:
+                self.priority_callback_map[msg_class._msgtype].append(priority_cb)
+        
+
+    def get_callbacks(self, msg):
+        temp_list = self.priority_callback_map.get(None, []) + self.priority_callback_map.get(msg._msgtype, [])
+        temp_list.sort() 
+        return temp_list
+
+    def remove_callback(self, msg_class, priority, callback):
+        if msg_class is None:
+            self.priority_callback_map[None].remove(CallbackWrapper(priority, callback, None))
+        else:
+            self.priority_callback_map[msg_class._msgtype].remove(CallbackWrapper(priority, callback, None))
+
+
+
+
+class CallbackWrapper:
+    def __init__(self, priority, callback, check_func = None, loop = None, clean_up_func = None, timeout = None, timeout_cb = None):
         self.priority = priority
         self.callback = callback
+        self.check_func = check_func or (lambda x: True)
+        self.clean_up_func = clean_up_func
+        self.loop = loop
+        self.timer_handle = None
+        self.timeout_cb = timeout_cb
+        if timeout:
+            self.loop.call_soon_threadsafe(self.schedule_timer, timeout)
+    
+    def schedule_timer(self, timeout):
+        self.timer_handle = self.loop.call_later(timeout, self.timeout_cb)
 
     def __lt__(self, other):
         return self.priority < other.priority
+    
+    def __eq__(self, other):
+        return self.priority == other.priority and self.callback == other.callback
 
-    def __call__(self, *args, **kwargs):
-        return self.callback(*args, **kwargs)
+    def __call__(self, msg):
+        if self.check_func(msg) or msg is None:
+            if self.timer_handle:
+                self.timer_handle.cancel()
+            if self.clean_up_func:
+                self.clean_up_func()
+            return self.callback(msg)
+
+        return None
 
     def __repr__(self):
         return f"{self.priority},{self.callback}"
@@ -50,24 +111,22 @@ class FIXEngineBase():
         self.reader = reader
         self.writer = writer
 
-        #I don't like setting the message_lib to a default but without it I cannot register admin messages callback cleanly
-        self.message_lib = None#fix_message_library.MESSAGE_BASE_LIBRARY['FIX.4.2'] 
+        self.message_lib = None
 
         self.engine_key = None
-
-        self.logout_waiter = None
-
-        self.admin_callback_register = {}
-        self.callback_register = {}
-        self.in_loop_callback_register = {}
 
         self.msg_seq_num_out = 1
 
         self.loop = asyncio.get_running_loop()
+
         self.tid = threading.current_thread()
 
         self.application.engine = self
         self.pool = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
+
+        self.admin_callback_register = CallbackRegistrar(self.loop)
+        self.callback_register = CallbackRegistrar(self.loop)
+
         self.msg_queue = queue.Queue()
 
     def make_engine_key(self):
@@ -121,55 +180,38 @@ class FIXEngineBase():
         self.application.on_engine_initialized() #pass in the engine to the application
 
     def log_out_sleep(self):
-        logger.warning("Failed to get logout while waiting, closing connection")
-        self.application.on_error(fix_errors.FIXSessionLogoutTimeoutWarning("Failed to get logout while waiting, closing connection"))
-        self.close_connection()
+        raise fix_errors.FIXHardKillError("Failed to get logout while waiting, closing connection")
 
     def on_logout(self, msg):
-        if self.logout_waiter:
-            self.logout_waiter.cancel()
-            self.close_connection()
-            return
-
         if self.is_logged_on():
-            self.logout(wait =False)
+            self.logout(None, wait_interval =0, send_test_msg=False)
             self.close_connection()
 
-    async def logout_helper(self):
-        self.logout_waiter = self.loop.call_later(2, self.log_out_sleep)
+    def on_logout_response(self, msg):
+        self.close_connection()
 
-    def logout(self, text= None, wait = True):
-        if self.is_logged_on() and self.logout_waiter is None:
+
+    def logout(self, text= None, wait_interval = 10, send_test_msg = True):
+        if self.is_logged_on():
+            if wait_interval:
+                self.register_admin_callback(self.message_lib.Logout, self.on_logout_response, 
+                        priority= CallbackRegistrar.CALLBACK_PRIORITY.HIGH,
+                        one_time=True, timeout=wait_interval, timeout_cb=self.log_out_sleep)
+
             msg = self.message_lib.Logout()
-            msg.Text = text
+            if text: msg.Text = text
             self.send_message(msg)
-            if wait:
-                if self.tid == threading.current_thread():
-                    self.logout_waiter = self.loop.call_later(2, self.log_out_sleep)
-                else:
-                    future = asyncio.run_coroutine_threadsafe(self.logout_helper(), self.loop)
-                    future.result()
 
-    def register_admin_callback(self, msg_class, callback, priority = CallbackWrapper.CALLBACK_PRIORITY.NORMAL):
-        self._register_cb(self.admin_callback_register, msg_class, callback, priority)
 
-    def register_callback(self, msg_class, callback, priority = CallbackWrapper.CALLBACK_PRIORITY.NORMAL):
-        self._register_cb(self.callback_register, msg_class, callback, priority)
+    def register_admin_callback(self, msg_class, callback, priority = CallbackRegistrar.CALLBACK_PRIORITY.NORMAL, check_func = None, one_time = False, timeout = None, timeout_cb = None):
+        self._register_cb(self.admin_callback_register, msg_class, callback, priority, check_func, one_time, timeout, timeout_cb)
 
-    def _register_cb(self, cb_map, msg_class, callback, priority):
-        priority_cb = [CallbackWrapper(priority, callback)]
-        if msg_class is None: #None will be used to register a callback for all messages
-            if None not in cb_map:
-                heapq.heapify(priority_cb)
-                cb_map[None] = priority_cb
-            else:
-                heapq.heappush(cb_map[None], priority_cb[0])
-        else:
-            if msg_class._msgtype not in cb_map:
-                heapq.heapify([priority_cb])
-                cb_map[msg_class._msgtype] = priority_cb
-            else:
-                heapq.heappush(cb_map[msg_class._msgtype], priority_cb[0])
+    def register_callback(self, msg_class, callback, priority = CallbackRegistrar.CALLBACK_PRIORITY.NORMAL, check_func = None, one_time = False, timeout = None, timeout_cb = None):
+        self._register_cb(self.callback_register, msg_class, callback, priority, check_func, one_time, timeout, timeout_cb)
+
+    def _register_cb(self, cb_register, msg_class, callback, priority, check_func, one_time, timeout, timeout_cb):
+        timeout_func_wrapper = lambda : self.pool.submit(self.do_callbacks, None, [lambda x : timeout_cb()])
+        cb_register.add_callback(msg_class, callback, priority, check_func, one_time, timeout, timeout_func_wrapper)
 
     def register_admin_messages(self):
         self.register_admin_callback(self.message_lib.Logout, self.on_logout)
@@ -199,40 +241,49 @@ class FIXEngineBase():
         try:
             if msg is not None: 
                 self.msg_queue.put(msg)
-                await self.loop.run_in_executor(None, self.do_callbacks_in_thread)
+                await self.loop.run_in_executor(self.pool, self.do_callbacks_in_thread)
         finally:
             await self.writer.drain()
 
     def do_callbacks_in_thread(self):
         msg = self.msg_queue.get()
-        admin_callbacks = list(heapq.merge(self.admin_callback_register.get(None, []), self.admin_callback_register.get(msg._msgtype, [])))
-        callbacks = list(heapq.merge(self.callback_register.get(None, []), self.callback_register.get(msg._msgtype, [])))
+        admin_callbacks = self.admin_callback_register.get_callbacks(msg)
+        callbacks = self.callback_register.get_callbacks(msg)
 
-        if self._do_callbacks(msg, admin_callbacks):
+        if self.do_callbacks(msg, admin_callbacks):
             if len(callbacks) == 0 and msg._msgcat != 'admin':
                 error = f"Unsupported Message Type [{msg._msgtype}]"
                 logger.error(error)
-                self.application.on_error(fix_errors.FIXUnsupportedMessageTypeError(error))
+                self.application.on_error(fix_errors.FIXUnsupportedMessageTypeError(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE))
                 self.send_biz_reject(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE)
 
-            self._do_callbacks(msg, callbacks)
+            self.do_callbacks(msg, callbacks)
 
-    def _do_callbacks(self, msg, callbacks):
+    def do_callbacks(self, msg, callbacks):
         for callback in callbacks:
-            #print (callback)
             response_msg = None
             try:
                 response_msg = callback(msg)
             except fix_errors.FIXDropMessageError as e:
                 self.application.on_error(e)
                 return False
+            except fix_errors.FIXRejectAndLogoutError as e:
+                self.application.on_error(e)
+                self.store.set_current_in_seq(msg.Header.MsgSeqNum)
+                self.send_reject(msg.Header.MsgSeqNum, e.RefMsgType, e.RefTagID, e.Text, e.SessionRejectReason)
+                self.logout(e.Text, wait_interval=e.wait_interval, send_test_msg = e.send_test_msg)
+                return False
             except fix_errors.FIXRejectError as e:
                 self.application.on_error(e)
-                return False
+                self.store.set_current_in_seq(msg.Header.MsgSeqNum)
+                self.send_reject(msg.Header.MsgSeqNum, e.RefMsgType, e.RefTagID, e.Text, e.SessionRejectReason)
+                return False            
             except fix_errors.FIXLogoutError as e:
                 self.application.on_error(e)
                 logger.error(e)
-                self.logout(e)
+                self.logout(e.Text, e.wait_interval, e.send_test_msg)
+                if not e.wait_interval:
+                    self.close_connection(True)
                 return False
             except fix_errors.FIXHardKillError as e:
                 self.application.on_error(e)
@@ -245,9 +296,6 @@ class FIXEngineBase():
         return True
 
     def close_connection(self, reset_logon = True):
-        if self.logout_waiter:
-            self.logout_waiter.cancel()
-        self.logout_waiter = None
         if reset_logon:
             ENGINE_LOGON_MAP[self.engine_key] = False
 
@@ -296,6 +344,7 @@ class FIXEngineInitiator(FIXEngine):
         self.init_message_lib(self.settings['BeginString'])
         self.init_settings()
         self.register_admin_messages()
+
         self.application.on_register_callbacks()
 
     def make_engine_key(self):
@@ -308,7 +357,7 @@ class FIXEngineInitiator(FIXEngine):
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_admin_callback(self.message_lib.Logon, self.on_logon, priority = CallbackWrapper.CALLBACK_PRIORITY.HIGH)
+        self.register_admin_callback(self.message_lib.Logon, self.on_logon, priority = CallbackRegistrar.CALLBACK_PRIORITY.HIGH)
         
     def on_logon(self, msg):
         ENGINE_LOGON_MAP[self.engine_key] = True
@@ -317,7 +366,8 @@ class FIXEngineInitiator(FIXEngine):
 class FIXEngineAcceptor(FIXEngine):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.register_admin_callback(None, self.on_first_acceptor_msg, priority=CallbackWrapper.CALLBACK_PRIORITY.FIRST-1)
+        self.register_admin_callback(None, self.on_first_acceptor_msg, priority=CallbackRegistrar.CALLBACK_PRIORITY.FIRST+CallbackRegistrar.CALLBACK_PRIORITY.BEFORE, 
+            one_time=True, timeout=10, timeout_cb = self.on_no_logon)
 
     def make_engine_key(self):
         ip = self.settings.get('SocketAcceptHost', 'localhost')
@@ -327,18 +377,22 @@ class FIXEngineAcceptor(FIXEngine):
 
         return (ip, port, sender_comp_id, target_comp_id)
 
+    def on_no_logon(self):
+        raise fix_errors.FIXHardKillError("No Logon received")
+
     #creating the first callback lets us get the beginstring and set a default message_lib based on version
     def on_first_acceptor_msg(self, msg):
         self.init_message_lib(msg.Header.BeginString)
-        heapq.heappop(self.admin_callback_register[None])
         self.register_admin_messages()
         self.application.on_register_callbacks()
         self.msg_queue.put(msg)
         self.do_callbacks_in_thread()
 
     def register_admin_messages(self, *args, **kwargs):
+        self.register_admin_callback(self.message_lib.Logon, self.on_logon, 
+            priority = CallbackRegistrar.CALLBACK_PRIORITY.HIGH +CallbackRegistrar.CALLBACK_PRIORITY.BEFORE) #High priority to init_settings before other checks
         super().register_admin_messages(*args, **kwargs)
-        self.register_admin_callback(self.message_lib.Logon, self.on_logon, priority = CallbackWrapper.CALLBACK_PRIORITY.HIGH) #High priority to init_settings before other checks
+
 
     def on_logon(self, msg):
         self.settings = self.find_session(msg.Header, self.session_settings)
@@ -353,12 +407,3 @@ class FIXEngineAcceptor(FIXEngine):
 
         return logon_msg
 
-    """
-    def on_first_message(self, msg):
-        if not isinstance(msg, self.message_lib.Logon):
-            raise FIXInvalidFirstMessage("First message not a logon")
-        self.settings = self.find_session(msg.Header, self.session_settings)
-        self.init_settings()
-        self.call_back_register[None].pop(0)
-        return self.on_logon(msg)
-        """

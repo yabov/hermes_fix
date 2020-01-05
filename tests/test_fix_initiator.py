@@ -65,11 +65,11 @@ class Test(unittest.TestCase):
     def do_logout(self, client_app):
         client_app.engine.logout()
 
-        resp_logout = SERVER_QUEUE.get(timeout=5)
-        sent_logout = CLIENT_QUEUE.get(timeout=5)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
 
-        self.assertIsInstance(resp_logout, fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(sent_logout, fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
 
     """	Receive Logon<A> message"""
     """Respond with Logon<A> response message"""
@@ -92,9 +92,12 @@ class Test(unittest.TestCase):
         self.server_app.on_engine_initialized = lambda : setattr(self.server_app.engine, 'msg_seq_num_out', 10)
         self.server.start()
         self.client.start()
+                
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logon)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
+
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logon)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.ResendRequest)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
 
@@ -128,7 +131,7 @@ class Test(unittest.TestCase):
 
         def register_hack():
             self.server_app.register_callback(None, self.server_app.on_queue_msg)
-            self.server_app.engine.register_admin_callback(fix_messages_4_2_0_base.Logon, on_logon_hack, priority = fix_engine.CallbackWrapper.CALLBACK_PRIORITY.FIRST)
+            self.server_app.engine.register_admin_callback(fix_messages_4_2_0_base.Logon, on_logon_hack, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST)
 
         self.server_app.on_register_callbacks = register_hack
         self.server.start()

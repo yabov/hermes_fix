@@ -100,12 +100,18 @@ class Test(unittest.TestCase):
         self.client_app.engine.logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
+
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=5), fix_messages_4_2_0_base.ResendRequest)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.NewOrderSingle)
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Logout)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Logout)
-        
+
     """Invalid CheckSum(10)	
     Consider garbled and ignore message (do not increment inbound MsgSeqNum(34)) and continue accepting messages
     Generate a "warning" condition in test output
@@ -133,8 +139,14 @@ class Test(unittest.TestCase):
         self.client_app.engine.logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
+
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=5), fix_messages_4_2_0_base.ResendRequest)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.NewOrderSingle)
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Logout)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Logout)
@@ -158,8 +170,14 @@ class Test(unittest.TestCase):
         self.client_app.engine.logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
+
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=5), fix_messages_4_2_0_base.ResendRequest)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.NewOrderSingle)
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Logout)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Logout)

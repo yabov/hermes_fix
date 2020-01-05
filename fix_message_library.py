@@ -87,17 +87,17 @@ async def _parse_into_buffer(first_byte, reader, buffer, messages):
     if not messages:
         messages = MESSAGE_BASE_LIBRARY[beginStringValue]
 
-    msg_class = messages.MESSAGE_TYPES.get(msgTypeValue)
-    if not msg_class:
-        error = fix_errors.FIXInvalidMessageTypeError("Invalid MsgType")
-        error.RefMsgType = msgTypeValue
-        error.SessionRejectReason = messages.SessionRejectReason.ENUM_INVALID_MSGTYPE
-        raise error
-
     header = messages.Header()
     header.BeginString = beginStringValue
     header.BodyLength = bodyLengthValue
     header.build_from_list(data_list, True)
+
+    msg_class = messages.MESSAGE_TYPES.get(msgTypeValue)
+    if not msg_class:
+        error = fix_errors.FIXInvalidMessageTypeError(header.MsgSeqNum, msgTypeValue, msgTypeTag, "Invalid MsgType", messages.SessionRejectReason.ENUM_INVALID_MSGTYPE)
+        raise error
+
+
 
     msg = msg_class()
     msg.Header = header

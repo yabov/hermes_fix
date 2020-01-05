@@ -2,6 +2,7 @@ import unittest
 import asyncio
 
 import fix_errors
+import fix_engine
 import fix
 import fix_messages_4_2_0_base
 import logging
@@ -75,11 +76,11 @@ class Test(unittest.TestCase):
     def do_logout(self, client_app):
         client_app.engine.logout()
 
-        resp_logout = SERVER_QUEUE.get(timeout=5)
-        sent_logout = CLIENT_QUEUE.get(timeout=5)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
 
-        self.assertIsInstance(resp_logout, fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(sent_logout, fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
 
     """MsgSeqNum(34) received as expected	
         Accept MsgSeqNum for the messagee"""
@@ -159,10 +160,15 @@ class Test(unittest.TestCase):
         self.client_app.engine.logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=5), fix_messages_4_2_0_base.ResendRequest)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=5), fix_messages_4_2_0_base.SequenceReset)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.ResendRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
+
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
 
     """ PossDupFlag(43) set to Y; OrigSendingTime(122) specified is less than or equal to SendingTime(52) and MsgSeqNum(34) lower than expected
     Note: OrigSendingTime should be earlier than SendingTime unless the message is being resent within the same second during which it was sent
@@ -215,8 +221,8 @@ class Test(unittest.TestCase):
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXSendTimeAccuracyError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
 
-        sent_logout = CLIENT_QUEUE.get(timeout=5)
-        resp_logout = SERVER_QUEUE.get(timeout=5)
+        sent_logout = CLIENT_QUEUE.get(timeout=2)
+        resp_logout = SERVER_QUEUE.get(timeout=2)
 
         self.assertIsInstance(resp_logout, fix_messages_4_2_0_base.Logout)
         self.assertIsInstance(sent_logout, fix_messages_4_2_0_base.Logout)
@@ -278,8 +284,8 @@ class Test(unittest.TestCase):
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageError)
 
-        sent_logout = CLIENT_QUEUE.get(timeout=5)
-        resp_logout = SERVER_QUEUE.get(timeout=5)
+        sent_logout = CLIENT_QUEUE.get(timeout=2)
+        resp_logout = SERVER_QUEUE.get(timeout=2)
 
         self.assertIsInstance(resp_logout, fix_messages_4_2_0_base.Logout)
         self.assertIsInstance(sent_logout, fix_messages_4_2_0_base.Logout)
@@ -306,11 +312,9 @@ class Test(unittest.TestCase):
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
 
 
-        sent_logout = CLIENT_QUEUE.get(timeout=5)
-        resp_logout = SERVER_QUEUE.get(timeout=5)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
 
-        self.assertIsInstance(resp_logout, fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(sent_logout, fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
 
     """ SenderCompID(49) and TargetCompID(56) values received did not match values expected and specified in testing profile	
     Send Reject<3> (session-level) message referencing invalid SenderCompID or TargetCompID (≥ FIX 4.2: SessionRejectReason(373) = 9 - "CompID problem")
@@ -334,11 +338,10 @@ class Test(unittest.TestCase):
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
 
 
-        sent_logout = CLIENT_QUEUE.get(timeout=5)
-        resp_logout = SERVER_QUEUE.get(timeout=5)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
 
-        self.assertIsInstance(resp_logout, fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(sent_logout, fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+
 
     """BodyLength(9) value received is not correct.	
     Consider garbled and ignore message (do not increment inbound MsgSeqNum(34)) and continue accepting messages
@@ -356,16 +359,19 @@ class Test(unittest.TestCase):
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=5), fix_errors.FIXGarbledMessageError)
         for _ in range(10):
-            self.assertIsInstance(SERVER_QUEUE.get(timeout=5), fix_errors.FIXGarbledMessageError)
+            self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXGarbledMessageError)
 
         self.client_app.engine.logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=5), fix_messages_4_2_0_base.ResendRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.ResendRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.NewOrderSingle)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=5), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
 
     """SendingTime(52 value received is either not specified in UTC (Universal Time Coordinated also known as GMT) or is not within a reasonable time (e.g. 2 minutes) of atomic clock-based time.
     Rationale: Verify system clocks on both sides are in sync and that SendingTime must be current time
@@ -389,7 +395,9 @@ class Test(unittest.TestCase):
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXSendTimeAccuracyError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
-        self.do_logout(self.client_app)
+
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
 
     """MsgType(35) value received is not valid (defined in spec or classified as user-defined)	
     Send Reject<3> (session-level) message referencing invalid MsgType (≥ FIX 4.2: SessionRejectReason(373) = 11 - "Invalid MsgType")
@@ -427,7 +435,7 @@ class Test(unittest.TestCase):
         order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.server_app.engine.callback_register = {} #destroy all callbacks
+        self.server_app.engine.callback_register = fix_engine.CallbackRegistrar(self.server_app.engine.loop)
 
         self.client_app.send_message(order_msg)
 
@@ -439,6 +447,8 @@ class Test(unittest.TestCase):
         self.do_logout(self.client_app)
 
     def tearDown(self):
+        self.client_app.close_connection()
+        self.server_app.close_connection()
         self.server.stop_all()
         try:
             self.assertTrue(SERVER_QUEUE.empty())
