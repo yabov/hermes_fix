@@ -41,6 +41,8 @@ class FIXGarbledMessageError(FIXDropMessageError) : pass
 class FIXCheckSumError(FIXGarbledMessageError): pass
 
 class FIXSequenceTooLowError(FIXLogoutError) : pass
+class FIXResetSequenceToLowerError(FIXRejectError) : pass
+
 class FIXEngineResendRequest(FIXDropMessageError) : pass
 class FIXDupeMessageRecv(FIXDropMessageError) : pass
 class FIXSendTimeAccuracyError(FIXRejectAndLogoutError) : pass

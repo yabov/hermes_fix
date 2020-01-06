@@ -129,6 +129,8 @@ class FIXEngineBase():
 
         self.msg_queue = queue.Queue()
 
+        self.waiting_for_logout = False
+
     def make_engine_key(self):
         raise NotImplementedError
 
@@ -184,6 +186,7 @@ class FIXEngineBase():
 
     def on_logout(self, msg):
         if self.is_logged_on():
+            self.waiting_for_logout = False
             self.logout(None, wait_interval =0, send_test_msg=False)
             self.close_connection()
 
@@ -192,6 +195,9 @@ class FIXEngineBase():
 
 
     def logout(self, text= None, wait_interval = 10, send_test_msg = True):
+        if self.waiting_for_logout:
+            logger.warning("Already sent logout not sending another")
+            return
         if self.is_logged_on():
             if wait_interval:
                 self.register_admin_callback(self.message_lib.Logout, self.on_logout_response, 
@@ -201,6 +207,9 @@ class FIXEngineBase():
             msg = self.message_lib.Logout()
             if text: msg.Text = text
             self.send_message(msg)
+            self.waiting_for_logout = True
+        else:
+            logger.warning("logout called on logged off session")
 
 
     def register_admin_callback(self, msg_class, callback, priority = CallbackRegistrar.CALLBACK_PRIORITY.NORMAL, check_func = None, one_time = False, timeout = None, timeout_cb = None):
@@ -290,6 +299,8 @@ class FIXEngineBase():
                 logger.error(e)
                 self.close_connection(False)
                 return False
+            except:
+                logger.exception("Uncaught exception")
             if response_msg is not None:
                 self.send_message(response_msg)
 
@@ -316,6 +327,9 @@ class FIXEngineBase():
         return self._send(*args, **kwargs)
 
     def _send(self, msg, resend = False):
+        if self.waiting_for_logout:
+            logger.warning("Logout sent, not sending anymore messages")
+            return
         msg.Header.BeginString = msg.Header.BeginString or self.settings['BeginString']
         msg.Header.MsgType = msg._msgtype
         msg.Header.MsgSeqNum = msg.Header.MsgSeqNum  or self.msg_seq_num_out
@@ -390,7 +404,7 @@ class FIXEngineAcceptor(FIXEngine):
 
     def register_admin_messages(self, *args, **kwargs):
         self.register_admin_callback(self.message_lib.Logon, self.on_logon, 
-            priority = CallbackRegistrar.CALLBACK_PRIORITY.HIGH +CallbackRegistrar.CALLBACK_PRIORITY.BEFORE) #High priority to init_settings before other checks
+            priority = CallbackRegistrar.CALLBACK_PRIORITY.FIRST) #High priority to init_settings before other checks
         super().register_admin_messages(*args, **kwargs)
 
 

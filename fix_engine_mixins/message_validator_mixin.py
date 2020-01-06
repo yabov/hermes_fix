@@ -17,10 +17,11 @@ class MessageValidatorMixin(object):
         self.__SenderCompID = self.settings['SenderCompID']
         self.__BeginString = self.settings['BeginString']
 
+
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_admin_callback(None, self.on_first_message, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST, one_time = True)
-        self.register_admin_callback(None, self.on_validate_message, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.NORMAL)
+        self.register_admin_callback(None, self.on_first_message, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST , one_time = True)
+        self.register_admin_callback(None, self.on_validate_message, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST + fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.AFTER)
         
     async def parse_message(self, *args, **kwargs):
         try:
@@ -59,6 +60,10 @@ class MessageValidatorMixin(object):
             error= f"Invalid SenderCompID [{msg.Header.SenderCompID}] on message, expecting [{self.__TargetCompID}]"
             raise fix_errors.FIXBadCompIDError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.SenderCompID, 
                 error, self.message_lib.SessionRejectReason.ENUM_COMPID_PROBLEM, wait_interval=2, send_test_msg=False)
+
+        if msg.Header.PossDupFlag == self.message_lib.PossDupFlag.ENUM_YES and msg.Header.OrigSendingTime is None:
+            raise fix_errors.RequiredTagMissingError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.OrigSendingTime, 
+                "Required tag missing", self.message_lib.SessionRejectReason.ENUM_REQUIRED_TAG_MISSING)
 
         self.validate_sendtime(msg)
 
