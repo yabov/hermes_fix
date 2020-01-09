@@ -23,9 +23,9 @@ class HeartBeatMixin:
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_admin_callback(self.message_lib.Logon, self.on_logon_hb)
-        self.register_admin_callback(self.message_lib.Heartbeat, self.on_heart_beat)
-        self.register_admin_callback(self.message_lib.TestRequest, self.on_test_request)
+        self.register_admin_callback(self.message_lib.fix_messages.Logon, self.on_logon_hb)
+        self.register_admin_callback(self.message_lib.fix_messages.Heartbeat, self.on_heart_beat)
+        self.register_admin_callback(self.message_lib.fix_messages.TestRequest, self.on_test_request)
         self.register_admin_callback(None, self.on_any_msg, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.LAST)
 
     def build_logon_msg(self, *args, **kwargs):
@@ -76,12 +76,12 @@ class HeartBeatMixin:
 
 
     def out_heart_beat(self):
-        hrtbt= self.message_lib.Heartbeat()
+        hrtbt= self.message_lib.fix_messages.Heartbeat()
         self.send_message(hrtbt)   
         self.schedule_next_out_beat()
 
     def on_test_request(self, msg):
-        hrtbt= self.message_lib.Heartbeat()
+        hrtbt= self.message_lib.fix_messages.Heartbeat()
         hrtbt.TestReqID = msg.TestReqID
         return hrtbt
 
@@ -96,7 +96,7 @@ class HeartBeatMixin:
     def send_test_message(self):
         if self.waiting_for_test_msg_id:
             return #do not send another TestRequest
-        msg = self.message_lib.TestRequest()
+        msg = self.message_lib.fix_messages.TestRequest()
         msg.TestReqID = self.msg_seq_num_out
         self.waiting_for_test_msg_id = self.msg_seq_num_out
         self.send_message(msg)
@@ -118,7 +118,7 @@ class HeartBeatMixin:
     def logout(self, text = None, wait_interval =10, send_test_msg = True):
         if send_test_msg:
             curr_seq = str(self.msg_seq_num_out)
-            self.register_admin_callback(self.message_lib.Heartbeat, lambda msg : self.on_hb_logout(msg, text, wait_interval), 
+            self.register_admin_callback(self.message_lib.fix_messages.Heartbeat, lambda msg : self.on_hb_logout(msg, text, wait_interval), 
                                         check_func = lambda msg: (msg.TestReqID == curr_seq),
                                         priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.HIGH,
                                         one_time=True, timeout=wait_interval, timeout_cb=self.no_heart_beat)

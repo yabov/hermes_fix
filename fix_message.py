@@ -146,7 +146,7 @@ class MessageBase(object):
             else:
                 content.value = content.field_type(value)
         else:
-            raise fix_errors.FieldNotFoundError("Field {name} does not exist in message".format(name = name))
+            raise fix_errors.FieldNotFoundError(f"Field {name} does not exist in message")
 
 
 

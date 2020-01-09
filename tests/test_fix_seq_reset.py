@@ -5,7 +5,7 @@ import fix_engine
 import fix_engine_mixins
 import fix_errors
 import fix
-import fix_messages_4_2_0_base
+import message_lib.FIX_4_2.fix_messages as fix_messages_4_2_0_base
 import logging
 import queue
 import datetime
@@ -80,7 +80,7 @@ class Test(unittest.TestCase):
     def test_reset_high(self):
         reset_msg = fix_messages_4_2_0_base.SequenceReset()
         reset_msg.NewSeqNo = 10
-        reset_msg.GapFillFlag = fix_messages_4_2_0_base.GapFillFlag.ENUM_YES
+        reset_msg.GapFillFlag = 'Y'
         reset_msg.Header.MsgSeqNum = 5
 
         self.client_app.send_message(reset_msg)
@@ -102,7 +102,7 @@ class Test(unittest.TestCase):
     def test_reset_normal(self):
         reset_msg = fix_messages_4_2_0_base.SequenceReset()
         reset_msg.NewSeqNo = 10
-        reset_msg.GapFillFlag = fix_messages_4_2_0_base.GapFillFlag.ENUM_YES
+        reset_msg.GapFillFlag = 'Y'
 
         self.client_app.send_message(reset_msg)
 
@@ -119,10 +119,10 @@ class Test(unittest.TestCase):
 
         reset_msg = fix_messages_4_2_0_base.SequenceReset()
         reset_msg.NewSeqNo = 10
-        reset_msg.Header.PossDupFlag = fix_messages_4_2_0_base.PossDupFlag.ENUM_YES
+        reset_msg.Header.PossDupFlag = 'Y'
         reset_msg.Header.OrigSendingTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         reset_msg.Header.MsgSeqNum = 1
-        reset_msg.GapFillFlag = fix_messages_4_2_0_base.GapFillFlag.ENUM_YES
+        reset_msg.GapFillFlag = 'Y'
 
 
         self.client_app.send_message(reset_msg)
@@ -143,7 +143,7 @@ class Test(unittest.TestCase):
         reset_msg = fix_messages_4_2_0_base.SequenceReset()
         reset_msg.NewSeqNo = 10
         reset_msg.Header.MsgSeqNum = 1
-        reset_msg.GapFillFlag = fix_messages_4_2_0_base.GapFillFlag.ENUM_YES
+        reset_msg.GapFillFlag = 'Y'
 
 
         self.client_app.send_message(reset_msg)
@@ -164,7 +164,7 @@ class Test(unittest.TestCase):
 
         reset_msg = fix_messages_4_2_0_base.SequenceReset()
         reset_msg.NewSeqNo = 0
-        reset_msg.GapFillFlag = fix_messages_4_2_0_base.GapFillFlag.ENUM_YES
+        reset_msg.GapFillFlag = 'Y'
 
 
         self.client_app.send_message(reset_msg)
@@ -183,7 +183,7 @@ class Test(unittest.TestCase):
         reset_msg = fix_messages_4_2_0_base.SequenceReset()
         reset_msg.NewSeqNo = 10
         reset_msg.Header.MsgSeqNum = 999
-        reset_msg.GapFillFlag = fix_messages_4_2_0_base.GapFillFlag.ENUM_NO
+        reset_msg.GapFillFlag = 'N'
 
         self.client_app.send_message(reset_msg)
         self.client_app.engine.msg_seq_num_out = 10
@@ -198,7 +198,7 @@ class Test(unittest.TestCase):
     def test_reset_reset_same(self):
         reset_msg = fix_messages_4_2_0_base.SequenceReset()
         reset_msg.NewSeqNo = 3
-        reset_msg.GapFillFlag = fix_messages_4_2_0_base.GapFillFlag.ENUM_NO
+        reset_msg.GapFillFlag = 'N'
         reset_msg.Header.MsgSeqNum = 999
 
         self.client_app.send_message(reset_msg)
@@ -218,7 +218,7 @@ class Test(unittest.TestCase):
     def test_reset_reset_low(self):
         reset_msg = fix_messages_4_2_0_base.SequenceReset()
         reset_msg.NewSeqNo = 0
-        reset_msg.GapFillFlag = fix_messages_4_2_0_base.GapFillFlag.ENUM_NO
+        reset_msg.GapFillFlag = 'N'
 
         self.client_app.send_message(reset_msg)
         self.client_app.engine.msg_seq_num_out = 3

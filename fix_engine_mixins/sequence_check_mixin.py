@@ -13,14 +13,14 @@ class SequenceCheckerMixin():
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
         self.register_admin_callback(None, self.on_msg_check_seq, fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.HIGH)
-        self.register_admin_callback(self.message_lib.SequenceReset, self.on_sequence_reset, fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.NORMAL)
-        self.register_admin_callback(self.message_lib.ResendRequest, self.on_resend_request)
+        self.register_admin_callback(self.message_lib.fix_messages.SequenceReset, self.on_sequence_reset, fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.NORMAL)
+        self.register_admin_callback(self.message_lib.fix_messages.ResendRequest, self.on_resend_request)
 
     def on_sequence_reset(self, msg):
         in_seq = self.store.get_current_in_seq()
         force_seq = msg.NewSeqNo-1
 
-        if msg.GapFillFlag != self.message_lib.GapFillFlag.ENUM_YES and msg.NewSeqNo >= in_seq: #don't check sequences if they are being hard reset
+        if msg.GapFillFlag != self.message_lib.fields.GapFillFlag.ENUM_GAP_FILL_MESSAGE and msg.NewSeqNo >= in_seq: #don't check sequences if they are being hard reset
             logger.warning(f"Updating Seq number and Dropping processing of SequenceReset because its a non-GapFill reset")
             self.store.set_current_in_seq(force_seq)
             return
@@ -28,7 +28,7 @@ class SequenceCheckerMixin():
         if in_seq >= msg.NewSeqNo:
             '''Send Reject<3> (session-level) message with message "attempt to lower sequnce number, invalid value NewSeqNum=<x>"'''
             raise fix_errors.FIXResetSequenceToLowerError(msg.Header.MsgSeqNum, msg._msgtype, msg.tags.NewSeqNo,
-                f"attempt to lower sequnce number, invalid value NewSeqNum={msg.NewSeqNo}", self.message_lib.SessionRejectReason.ENUM_VALUE_IS_INCORRECT)
+                f"attempt to lower sequnce number, invalid value NewSeqNum={msg.NewSeqNo}", self.message_lib.fields.SessionRejectReason.ENUM_VALUE_IS_INCORRECT)
 
         if msg.Header.MsgSeqNum != in_seq: #discard sequence reset if numbers don't match but process for potential resend request
             return
@@ -36,7 +36,7 @@ class SequenceCheckerMixin():
         self.store.set_current_in_seq(force_seq)
 
     def on_msg_check_seq(self, msg):
-        if isinstance(msg, self.message_lib.SequenceReset) and msg.GapFillFlag != self.message_lib.GapFillFlag.ENUM_YES:
+        if isinstance(msg, self.message_lib.fix_messages.SequenceReset) and msg.GapFillFlag != self.message_lib.fields.GapFillFlag.ENUM_GAP_FILL_MESSAGE:
             #SequenceReset - Reset: ignore all sequence checks
             return
 
@@ -59,17 +59,17 @@ class SequenceCheckerMixin():
             self.check_low_seq(in_seq, msg)
             
     def do_resend_request(self, in_seq):
-        resend_request = self.message_lib.ResendRequest()
+        resend_request = self.message_lib.fix_messages.ResendRequest()
         resend_request.BeginSeqNo = in_seq
         resend_request.EndSeqNo = 0
         self.send_message(resend_request)
 
 
     def check_low_seq(self, in_seq, msg):
-        if msg.Header.PossDupFlag != self.message_lib.PossDupFlag.ENUM_YES:
+        if msg.Header.PossDupFlag != self.message_lib.fields.PossDupFlag.ENUM_POSSIBLE_DUPLICATE:
             error = f"Incoming message sequence too low expected [{in_seq}] but received [{msg.Header.MsgSeqNum}]"
             raise fix_errors.FIXSequenceTooLowError (error)
-        if msg.Header.PossDupFlag == self.message_lib.PossDupFlag.ENUM_YES and msg.Header.OrigSendingTime <= msg.Header.SendingTime:
+        if msg.Header.PossDupFlag == self.message_lib.fields.PossDupFlag.ENUM_POSSIBLE_DUPLICATE and msg.Header.OrigSendingTime <= msg.Header.SendingTime:
             logger.debug("Discarding dupe message")
             raise fix_errors.FIXDupeMessageRecv("Duplicate message received, discarding")
         else:
@@ -77,14 +77,14 @@ class SequenceCheckerMixin():
 
 
     def check_seq_same(self, msg):
-        if msg.Header.PossDupFlag == self.message_lib.PossDupFlag.ENUM_YES and msg.Header.OrigSendingTime > msg.Header.SendingTime:
+        if msg.Header.PossDupFlag == self.message_lib.fields.PossDupFlag.ENUM_POSSIBLE_DUPLICATE and msg.Header.OrigSendingTime > msg.Header.SendingTime:
             raise fix_errors.FIXSendTimeAccuracyError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.OrigSendingTime, 
-                        "SendingTime accuracy problem", self.message_lib.SessionRejectReason.ENUM_SENDINGTIME_ACCURACY_PROBLEM)
-
+                        "SendingTime accuracy problem", self.message_lib.fields.SessionRejectReason.ENUM_SENDING_TIME_ACCURACY_PROBLEM)
+                                                                                                    
             
     def send_gap_fill(self, last_sent_msg_num, msg_num):
-        gap_msg = self.message_lib.SequenceReset()
-        gap_msg.GapFillFlag = self.message_lib.GapFillFlag.ENUM_YES
+        gap_msg = self.message_lib.fix_messages.SequenceReset()
+        gap_msg.GapFillFlag = self.message_lib.fields.GapFillFlag.ENUM_GAP_FILL_MESSAGE
         gap_msg.NewSeqNo = msg_num
         gap_msg.Header.MsgSeqNum = last_sent_msg_num+1
         self.send_message(gap_msg, resend = True)
@@ -98,10 +98,10 @@ class SequenceCheckerMixin():
                 self.send_gap_fill(last_sent_msg_num, msg_num+1)
                 last_sent_msg_num = msg_num
                 continue
-            msg.Header.PossDupFlag = 'Y'
+            msg.Header.PossDupFlag = self.message_lib.fields.PossDupFlag.ENUM_POSSIBLE_DUPLICATE
             msg.Header.OrigSendingTime = header.SendingTime
             msg.Header.MsgSeqNum = msg_num
-            if msg._msgcat == 'app' or isinstance(msg, self.message_lib.Logout):
+            if msg._msgcat == 'app' or isinstance(msg, self.message_lib.fix_messages.Logout):
                 if last_sent_msg_num < msg_num-1:
                     self.send_gap_fill(last_sent_msg_num, msg_num)
                 self.send_message(msg, resend = True)

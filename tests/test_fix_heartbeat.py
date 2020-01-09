@@ -5,7 +5,7 @@ import fix_engine
 import fix_engine_mixins
 import fix_errors
 import fix
-import fix_messages_4_2_0_base
+import message_lib.FIX_4_2.fix_messages as fix_messages_4_2_0_base
 import logging
 import queue
 import datetime
@@ -103,17 +103,17 @@ class Test(unittest.TestCase):
 
         time.sleep(.7)
 
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
 
         #waiting for 2nd heartbeat
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.NewOrderSingle)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
         self.do_logout(self.client_app)
 

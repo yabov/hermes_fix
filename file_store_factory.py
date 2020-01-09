@@ -13,7 +13,7 @@ class FileStore:
 
         if session_settings['FileStorePath'] == ":memory:":
             file_path = session_settings['FileStorePath']
-            self.db = sqlite3.connect(file_path, check_same_thread=False)
+            self.db = sqlite3.connect(file_path, check_same_thread=False) # pylint: disable=no-member
             self.create_schema()
         else:
             file_name = "%s.%s.%s.db"%(session_settings['BeginString'],session_settings['SenderCompID'],session_settings['TargetCompID'])
@@ -23,10 +23,10 @@ class FileStore:
 
             if not os.path.exists(file_path): 
                 os.makedirs(path, exist_ok=True)
-                self.db = sqlite3.connect(file_path, check_same_thread=False)
+                self.db = sqlite3.connect(file_path, check_same_thread=False)# pylint: disable=no-member
                 self.create_schema()
             else:
-                self.db = sqlite3.connect(file_path, check_same_thread=False)
+                self.db = sqlite3.connect(file_path, check_same_thread=False)# pylint: disable=no-member
         
     def create_schema(self):
         with self.lock:

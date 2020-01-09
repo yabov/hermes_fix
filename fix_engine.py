@@ -142,7 +142,7 @@ class FIXEngineBase():
         self.send_message(logon_msg)
 
     def send_reject(self, ref_seq_num, ref_msg_type, ref_tag_id, text, reason):
-        reject_msg = self.message_lib.Reject()
+        reject_msg = self.message_lib.fix_messages.Reject()
         try:
             if ref_seq_num : reject_msg.RefSeqNum = ref_seq_num
             if text : reject_msg.Text = text
@@ -155,7 +155,7 @@ class FIXEngineBase():
 
     def send_biz_reject(self, ref_seq_num, ref_msg_type, ref_id, text, reason):
         try: #try to send business reject message, if it fails, fall back on session reject
-            reject_msg = self.message_lib.BusinessMessageReject()
+            reject_msg = self.message_lib.fix_messages.BusinessMessageReject()
             if ref_seq_num : reject_msg.RefSeqNum = ref_seq_num
             if text : reject_msg.Text = text
             if ref_msg_type : reject_msg.RefMsgType = ref_msg_type
@@ -200,11 +200,11 @@ class FIXEngineBase():
             return
         if self.is_logged_on():
             if wait_interval:
-                self.register_admin_callback(self.message_lib.Logout, self.on_logout_response, 
+                self.register_admin_callback(self.message_lib.fix_messages.Logout, self.on_logout_response, 
                         priority= CallbackRegistrar.CALLBACK_PRIORITY.HIGH,
                         one_time=True, timeout=wait_interval, timeout_cb=self.log_out_sleep)
 
-            msg = self.message_lib.Logout()
+            msg = self.message_lib.fix_messages.Logout()
             if text: msg.Text = text
             self.send_message(msg)
             self.waiting_for_logout = True
@@ -223,7 +223,7 @@ class FIXEngineBase():
         cb_register.add_callback(msg_class, callback, priority, check_func, one_time, timeout, timeout_func_wrapper)
 
     def register_admin_messages(self):
-        self.register_admin_callback(self.message_lib.Logout, self.on_logout)
+        self.register_admin_callback(self.message_lib.fix_messages.Logout, self.on_logout)
 
     def find_session(self, header, settings):
         for section in settings.values():
@@ -263,8 +263,8 @@ class FIXEngineBase():
             if len(callbacks) == 0 and msg._msgcat != 'admin':
                 error = f"Unsupported Message Type [{msg._msgtype}]"
                 logger.error(error)
-                self.application.on_error(fix_errors.FIXUnsupportedMessageTypeError(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE))
-                self.send_biz_reject(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE)
+                self.application.on_error(fix_errors.FIXUnsupportedMessageTypeError(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE))
+                self.send_biz_reject(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE)
 
             self.do_callbacks(msg, callbacks)
 
@@ -311,8 +311,8 @@ class FIXEngineBase():
             ENGINE_LOGON_MAP[self.engine_key] = False
 
     def build_logon_msg(self):
-        logon = self.message_lib.Logon()
-        logon.EncryptMethod = self.message_lib.EncryptMethod.ENUM_NONE
+        logon = self.message_lib.fix_messages.Logon()
+        logon.EncryptMethod = self.message_lib.fields.EncryptMethod.ENUM_NONE
         return logon
 
     def send_message(self, msg, resend = False):
@@ -371,7 +371,7 @@ class FIXEngineInitiator(FIXEngine):
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_admin_callback(self.message_lib.Logon, self.on_logon, priority = CallbackRegistrar.CALLBACK_PRIORITY.HIGH)
+        self.register_admin_callback(self.message_lib.fix_messages.Logon, self.on_logon, priority = CallbackRegistrar.CALLBACK_PRIORITY.HIGH)
         
     def on_logon(self, msg):
         ENGINE_LOGON_MAP[self.engine_key] = True
@@ -403,7 +403,7 @@ class FIXEngineAcceptor(FIXEngine):
         self.do_callbacks_in_thread()
 
     def register_admin_messages(self, *args, **kwargs):
-        self.register_admin_callback(self.message_lib.Logon, self.on_logon, 
+        self.register_admin_callback(self.message_lib.fix_messages.Logon, self.on_logon, 
             priority = CallbackRegistrar.CALLBACK_PRIORITY.FIRST) #High priority to init_settings before other checks
         super().register_admin_messages(*args, **kwargs)
 

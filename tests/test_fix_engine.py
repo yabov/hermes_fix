@@ -4,7 +4,7 @@ import asyncio
 import fix_errors
 import fix_engine
 import fix
-import fix_messages_4_2_0_base
+import message_lib.FIX_4_2.fix_messages as fix_messages_4_2_0_base
 import logging
 import queue
 import datetime
@@ -85,26 +85,26 @@ class Test(unittest.TestCase):
     """MsgSeqNum(34) received as expected	
         Accept MsgSeqNum for the messagee"""
     def test_valid_msg(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.NewOrderSingle)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
 
         self.do_logout(self.client_app)
         
     
     """Respond with Resend Request<2> message"""
     def test_msg_seq_high(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.engine.msg_seq_num_out = 10
@@ -114,7 +114,7 @@ class Test(unittest.TestCase):
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.ResendRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.NewOrderSingle)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
 
         self.do_logout(self.client_app)
 
@@ -125,11 +125,11 @@ class Test(unittest.TestCase):
     Disconnect
     Generate an "error" condition in test output"""
     def test_msg_seq_low(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.engine.msg_seq_num_out = 0
@@ -146,11 +146,11 @@ class Test(unittest.TestCase):
         Consider garbled and ignore message (do not increment inbound MsgSeqNum) and continue accepting messages
         Generate a "warning" condition in test output"""
     def test_garbled_msg(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'+'\x01'+'BORKED'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
@@ -175,15 +175,15 @@ class Test(unittest.TestCase):
     Check to see if MsgSeqNum has already been received
     If already received then ignore the message, otherwise accept and process the message"""
     def test_poss_dupe_discard(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         order_msg.Header.OrigSendingTime = order_msg.TransactTime
-        order_msg.Header.PossDupFlag = fix_messages_4_2_0_base.PossDupFlag.ENUM_YES
+        order_msg.Header.PossDupFlag = 'Y'
 
         self.client_app.engine.msg_seq_num_out -= 1
 
@@ -206,15 +206,15 @@ class Test(unittest.TestCase):
     Disconnect
     Generate an "error" condition in test output."""
     def test_send_time_accuracy(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         order_msg.Header.OrigSendingTime = (datetime.datetime.utcnow() + datetime.timedelta(hours=1)).strftime('%Y%m%d-%H:%M:%S.%f')
-        order_msg.Header.PossDupFlag = fix_messages_4_2_0_base.PossDupFlag.ENUM_YES
+        order_msg.Header.PossDupFlag = 'Y'
 
         self.client_app.send_message(order_msg)
 
@@ -233,14 +233,14 @@ class Test(unittest.TestCase):
     Send Reject<3> (session-level) message referencing missing OrigSendingTime(122) (≥ FIX 4.2: SessionRejectReason(373) = 1 - "Required tag missing")
     Increment inbound MsgSeqNum"""
     def test_send_time_missing(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        order_msg.Header.PossDupFlag = fix_messages_4_2_0_base.PossDupFlag.ENUM_YES
+        order_msg.Header.PossDupFlag = 'Y'
 
         self.client_app.send_message(order_msg)
 
@@ -252,17 +252,17 @@ class Test(unittest.TestCase):
     """ BeginString(8) value received as expected and specified in testing profile and matches BeginString on outbound messages	
     Accept BeginString for the message"""
     def test_begin_string_valid(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.Header.BeginString = 'FIX.4.2'
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.NewOrderSingle)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
 
         self.do_logout(self.client_app)
 
@@ -272,12 +272,12 @@ class Test(unittest.TestCase):
     Disconnect
     Generate an "error" condition in test output"""
     def test_begin_string_invalid(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.Header.BeginString = 'FIX.BAD'
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
@@ -298,12 +298,12 @@ class Test(unittest.TestCase):
     Disconnect
     Generate an "error" condition in test output"""
     def test_bad_sender(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.Header.SenderCompID = 'BAD_SENDER'
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
@@ -324,12 +324,12 @@ class Test(unittest.TestCase):
     Disconnect
     Generate an "error" condition in test output"""
     def test_bad_target(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.Header.TargetCompID = 'BAD_TARGET'
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
@@ -347,12 +347,12 @@ class Test(unittest.TestCase):
     Consider garbled and ignore message (do not increment inbound MsgSeqNum(34)) and continue accepting messages
     Generate a "warning" condition in test output"""
     def test_bad_body_len(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.Header.BodyLength = 999
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
@@ -366,7 +366,7 @@ class Test(unittest.TestCase):
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.ResendRequest)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.NewOrderSingle)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
 
@@ -382,11 +382,11 @@ class Test(unittest.TestCase):
     Disconnect
     Generate an "error" condition in test output."""
     def test_send_time_late(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         order_msg.Header.SendingTime = (datetime.datetime.utcnow() + datetime.timedelta(hours=1)).strftime('%Y%m%d-%H:%M:%S.%f')
@@ -404,17 +404,17 @@ class Test(unittest.TestCase):
     Increment inbound MsgSeqNum(34)
     Generate a "warning" condition in test output"""
     def test_bad_msg_type(self):
-        fix_messages_4_2_0_base.NewOrderSingle._msgtype = 'BAD'
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        fix_messages_4_2_0_base.OrderSingle._msgtype = 'BAD'
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
 
-        fix_messages_4_2_0_base.NewOrderSingle._msgtype = 'D'
+        fix_messages_4_2_0_base.OrderSingle._msgtype = 'D'
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageTypeError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
@@ -428,11 +428,11 @@ class Test(unittest.TestCase):
     Increment inbound MsgSeqNum(34)
     Generate a "warning" condition in test output"""
     def test_unsupported_msg(self):
-        order_msg = fix_messages_4_2_0_base.NewOrderSingle()
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.ClOrdID = "test_message"
-        order_msg.HandlInst = fix_messages_4_2_0_base.HandlInst.ENUM_AUTOMATED_EXECUTION_ORDER_PRIVATE_NO_BROKER_INTERVENTION
+        order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
-        order_msg.Side = fix_messages_4_2_0_base.Side.ENUM_BUY
+        order_msg.Side = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.server_app.engine.callback_register = fix_engine.CallbackRegistrar(self.server_app.engine.loop)

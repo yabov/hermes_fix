@@ -1,37 +1,67 @@
 import sys
 import xml.etree.ElementTree as ET
+import re
+import os
 
-import fields
-import inspect
-import fix_core_fields
-
-FILE_HEADER = """import fields
+FILE_HEADER = """
 import fix_message
-import fix_core_fields
+from . import fields
+from . import field_types
 
-BEGINSTRING = '{begin_string}'
+BEGINSTRING = '{fix_version}'
 MESSAGE_TYPES = {{}}
+
+
+class Header(fix_message.MessageBase):
+    def __init__(self):
+        super().__init__()
+        register_StandardHeader_component(self)
+        
+class Trailer(fix_message.MessageBase): 
+    def __init__(self):
+        super().__init__()
+        register_StandardTrailer_component(self)
+"""
+FIELD_HEADER ="""from . import field_types
 """
 
+FIELD_BASE_TYPE_FORMATTER = """
+class {name}({subclass}):
+    def __bytes__(self):
+        return str(self).encode()
+"""
+
+FIELD_TYPE_FORMATTER = """
+class {name}({subclass}): pass
+"""
+
+BASE_TYPE_MAP = {'String' : 'str', 'char' : 'str', 'Pattern' : 'str', 'data' : 'str', 'date' : 'str', 'time' : 'str'}
+
 FIELD_CLASS_FORMATTER = """
-class {name} ({subclass}) :
+class {name} (field_types.{type}_Type) :
     _tag = '{number}'
 """
 
 ENUM_FORMATTER = """    ENUM_{description} = {value}
 """
 
-HEADER_CLASS_FORMATTER  = """
-class Header(fix_message.MessageBase):
-    def __init__(self):
-        super().__init__()
+COMPONENT_HEADER = """def register_{component}_component(self):
 """
 
-TRAILER_CLASS_FORMATTER  = """
-class Trailer(fix_message.MessageBase):
-    def __init__(self):
-        super().__init__()
+COMPONENT_FORMATTER = """{indent}register_{component}_component({instance})
 """
+
+FIELD_FORMATTER = """{indent}self.register_field(fields.{field}, {required})
+"""
+
+GROUP_FORMATTER = """{indent}class {group}Group(fix_message.FIXGroup):
+{indent}    def __init__(self):
+{indent}        super().__init__()
+"""
+
+GROUP_FORMATTER_TRAILER = """{indent}self.register_group(fields.{group_no_name}, {group}Group, {required})
+"""
+
 
 MESSAGE_CLASS_FORMATTER  = """
 class {name}(fix_message.MessageBase):
@@ -48,137 +78,150 @@ MESSAGE_CLASS_TRAILER = """
 MESSAGE_TYPES['{msgtype}'] = {name}
 """
 
-FIELD_FORMATTER = """
-{indent}self.register_field({field}, {required})"""
-
-GROUP_FORMATTER = """
-{indent}class {group}Group(fix_message.FIXGroup):
-{indent}    def __init__(self):
-{indent}        super().__init__()
+LENGTH_TYPE_FORMATTER = """
+class Length_Type(int_Type): pass
 """
 
-GROUP_FORMATTER_TRAILER = """
-{indent}self.register_group({group}, {full_name}Group, {required})
+MVS_TYPE_FORMATTER = """
+class MultipleValueString_Type(str): pass
 """
 
-FIELD_CLASSES = { name.upper(): obj for name, obj in inspect.getmembers(fields) if inspect.isclass(obj)}        
-COMPONENTS = {}
+BOOLEAN_TYPE_FORMATTER ="""
+class Boolean_Type(str): pass
+"""
 
-CORE_FIELDS = dict(inspect.getmembers(fix_core_fields, inspect.isclass))
+TAG_NAME_MAP = {}
+FIELD_TYPE_MAP = {}
 
-def generate_fix_classes(file_name, begin_string):
+def camel_to_snake(name):
+  name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+  return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).upper()
+
+def generate_fix_classes(file_name):
     tree = ET.parse(file_name)
     root = tree.getroot()
-    major, minor, sp = get_fix_version(root)
-    with open("fix_messages_%s_%s_%s.py"%(major, minor, sp), 'w') as message_writer:
-        message_writer.write(FILE_HEADER.format(begin_string = begin_string))
-        build_components(root)
-        generate_fields(root, message_writer)
-        generate_header(root, message_writer)
-        generate_messages(root, message_writer)
-        generate_trailer(root, message_writer)
+    
+    
+    os.makedirs('message_lib', exist_ok=True)
+    
+    fix_root = root.findall('fix')
+    header_writer =  open(os.path.join('message_lib', '__init__.py'), 'w')
 
-def build_components(root):
-    for component in root.find('components'):
-        COMPONENTS[component.get('name')] = component
+    for fix in fix_root:
+        global TAG_NAME_MAP, FIELD_TYPE_MAP
+        TAG_NAME_MAP = {}
+        FIELD_TYPE_MAP = {}
+        fix_version = fix.get('version')
+        if fix_version == 'FIXT.1.1': continue 
+        
+        header_writer.write(f"from . import {fix_version.replace('.','_')}\n")
 
-"""<fix type='FIX' major='4' minor='4' servicepack='0'>"""
-def get_fix_version(root):
-    #fix = root.get('FIX')
-    major = root.get('major')
-    minor = root.get('minor')
-    sp = root.get('servicepack')
+        path = os.path.join('message_lib', fix_version.replace('.','_'))
+        os.makedirs(path, exist_ok=True)
 
-    return (major, minor, sp)
+        with open(os.path.join(path, '__init__.py'), 'w') as message_writer:
+            message_writer.write('from . import field_types\n')
+            message_writer.write('from . import fields\n')
+            message_writer.write('from . import fix_messages\n')
+            
+        with open(os.path.join(path, 'field_types.py'), 'w') as message_writer:
+            generate_fields_types(fix, fix_version, message_writer)
 
-def get_field_type(type_name):
-    return FIELD_CLASSES[type_name]
+        with open(os.path.join(path, 'fields.py'), 'w') as message_writer:
+            generate_fields(fix, fix_version, message_writer)
+            
+        with open(os.path.join(path, "fix_messages.py"), 'w') as message_writer:
+            message_writer.write(FILE_HEADER.format(fix_version = fix_version))
+            generate_components(fix, fix_version, message_writer)
+            generate_messages(fix, fix_version, message_writer)
 
-def generate_fields(root, writer):
+    header_writer.close()
+
+def generate_fields_types(root, fix_version, writer):
+    for child in root.find('datatypes'):
+        if child.get('added') > fix_version: continue
+        name = child.get('name')
+        type = child.get('baseType', name)
+        
+        FIELD_TYPE_MAP[name] = BASE_TYPE_MAP.get(type)
+
+        if type == name:
+            writer.write(
+                FIELD_BASE_TYPE_FORMATTER.format(name = name + '_Type', subclass = BASE_TYPE_MAP.get(type, type))
+            )
+        else:
+            writer.write(
+                FIELD_TYPE_FORMATTER.format(name = name+ '_Type', subclass = type+ '_Type')
+            )
+    
+    if 'Length' not in FIELD_TYPE_MAP:
+        writer.write(LENGTH_TYPE_FORMATTER)
+        
+    if 'MultipleValueString' not in FIELD_TYPE_MAP:
+        writer.write(MVS_TYPE_FORMATTER)
+        
+    if 'Boolean' not in FIELD_TYPE_MAP:
+        writer.write(BOOLEAN_TYPE_FORMATTER)
+
+
+def generate_fields(root, fix_version, writer):
+    writer.write(FIELD_HEADER)
     for child in root.find('fields'):
         name = child.get('name')
-        type = get_field_type(child.get('type')) 
-        number = child.get('number')
-        subclass = ""
-        if name in CORE_FIELDS:
-            subclass = f"fix_core_fields.{name}"
-        else:
-            subclass = f"fields.{type.__name__}"
-
-        writer.write(
-            FIELD_CLASS_FORMATTER.format(name = name, subclass = subclass, number = number)
-        )
-        """<value enum='1' description='NOT_HELD' />"""
-        for enum in child.findall('value'):
-            str_formatter = "'{value}'" if issubclass(type, str) or issubclass(type, bytes) else "{value}"
-            writer.write(ENUM_FORMATTER.format(description = enum.get('description'), value = str_formatter.format(value = enum.get('enum'))  ))
-
-def generate_recursive(root, writer, indent = ' '*8, parents = ""):
-    delay_group_write = []
-    for child in root:
-        if child.tag == 'field':
-            generate_field(child, writer, indent)
-        elif child.tag == 'group':
-            generate_group(child, writer, indent, parents)
-            delay_group_write += [child]
-        #elif child.tag == 'component':
-        #    generate_recursive(COMPONENTS[child.get('name')], writer, indent, parents)
-        elif child.tag == 'component':
-            delay_group_write += generate_recursive_component(COMPONENTS[child.get('name')], writer, indent, parents)      
-
-    for child in delay_group_write:
-        generate_group_delayed(child, writer, indent[:-4], parents)
-
-def generate_recursive_component(root, writer, indent = ' '*8, parents = ""):
-    delay_group_write = []
-    for child in root:
-        if child.tag == 'field':
-            generate_field(child, writer, indent)
-        elif child.tag == 'group':
-            generate_group(child, writer, indent, parents)
-            delay_group_write += [child]
-        elif child.tag == 'component':
-            delay_group_write += generate_recursive_component(COMPONENTS[child.get('name')], writer, indent, parents)      
-
-    return delay_group_write
-
-def generate_group(group_root, writer, indent = ' '*4, parents= ""):
-    name = group_root.get('name')
-    required = group_root.get('required')
-    #generate_field(group_root, writer, indent)
-    full_name = "%s.%s"%(parents, name)
-    writer.write(GROUP_FORMATTER_TRAILER.format(group = name, full_name = full_name, indent = indent, required = required == 'Y'))
-
-def generate_group_delayed(group_root, writer, indent = ' '*4, parents = ""):
-    name = group_root.get('name')
-    #required = group_root.get('required')
-    #generate_field(group_root, writer, indent)
-    writer.write(GROUP_FORMATTER.format(group = name, indent = indent))
-    generate_recursive(group_root, writer,indent + ' '*8, "%s.%sGroup"%(parents, name))
-
-def generate_field(field_root, writer, indent = ' '*4):
-    name = field_root.get('name')
-    required = field_root.get('required')
-    writer.write(FIELD_FORMATTER.format(field = name, indent = indent, required = required == 'Y'))
-
-"""<field name='BeginString' required='Y' />"""
-def generate_header(root, writer):
-    writer.write(HEADER_CLASS_FORMATTER)
-    generate_recursive(root.find('header'), writer, parents = "Header")
-
-def generate_trailer(root, writer):
-    writer.write(TRAILER_CLASS_FORMATTER)
-    generate_recursive(root.find('trailer'), writer, parents = "Trailer")
-
-def generate_messages(root, writer):
-    for child in root.find('messages'):
-        msgcat = child.get('msgcat')
-        writer.write(MESSAGE_CLASS_FORMATTER.format(name = child.get('name'), msgtype = child.get('msgtype'), msgcat = msgcat))
-        generate_recursive(child, writer, parents = child.get('name'))
-        writer.write(MESSAGE_CLASS_TRAILER.format(name = child.get('name'), msgtype = child.get('msgtype')))
-
+        type = child.get('type')
+        number = child.get('id')
         
+        if child.get('added') > fix_version: continue
+
+        TAG_NAME_MAP[number] = name
+
+        writer.write(FIELD_CLASS_FORMATTER.format(name = name, type = type, number = number))
+        
+        for enum in child.findall('enum'):
+            if enum.get('added') is not None and enum.get('added') > fix_version: continue
+            description = camel_to_snake( enum.get('symbolicName'))
+            str_formatter = ""
+            if FIELD_TYPE_MAP.get(child.get('type'), 'str') == 'str':
+                str_formatter = "'{value}'" 
+            else:
+                try:
+                    float(enum.get('value'))
+                    str_formatter = "{value}"
+                except: 
+                    continue
+                
+            writer.write(ENUM_FORMATTER.format(description = description, value = str_formatter.format(value = enum.get('value'))  ))
+        
+            
+def generate_components(root, fix_version, writer, indent = '    '):
+    for component in root.find('components'):
+        if component.get('added') > fix_version: continue
+        writer.write(COMPONENT_HEADER.format(component = component.get('name')))
+        generate_body(component, fix_version, writer, indent)
+        
+def generate_body(component, fix_version, writer, indent = '    '):
+    for child in component:
+        if child.get('added') is not None and child.get('added') > fix_version: continue
+        if child.tag == 'fieldRef':
+            writer.write(FIELD_FORMATTER.format(indent = indent, field = child.get('name'), required = 'True' if child.get('required') == '1' else 'False'))
+        elif child.tag == 'componentRef' and child.get('name') not in ['StandardHeader', 'StandardTrailer']:
+            writer.write(COMPONENT_FORMATTER.format(indent = indent, component = child.get('name'), instance = 'self'))
+        elif child.tag == 'repeatingGroup':
+            writer.write(GROUP_FORMATTER.format(indent = indent, group = TAG_NAME_MAP[child.get('id')]))
+            generate_body(child,fix_version, writer, indent + ' '*8)
+            writer.write(GROUP_FORMATTER_TRAILER.format(indent = indent, group_no_name = TAG_NAME_MAP[child.get('id')], group = TAG_NAME_MAP[child.get('id')], required = 'True' if child.get('required') == '1' else 'False'))
+
+    writer.write('\n')
+
+def generate_messages(root, fix_version, writer, indent = '    '):
+    for msg in root.find('messages'):
+        if msg.get('added') > fix_version: continue
+        writer.write(MESSAGE_CLASS_FORMATTER.format(name = msg.get('name'), msgtype = msg.get('msgType'), msgcat = 'admin' if msg.get('category') == 'Session' else 'app' ))
+        generate_body(msg, fix_version, writer, indent + ' '*4)
+        writer.write(MESSAGE_CLASS_TRAILER.format(name = msg.get('name'), msgtype = msg.get('msgType')))
+
+
 
 if __name__ == '__main__':
     file_name = sys.argv[1]
-    generate_fix_classes(file_name, 'FIX.4.4')
+    generate_fix_classes(file_name, *sys.argv[2:])

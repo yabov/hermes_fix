@@ -4,7 +4,7 @@ import asyncio
 import fix_errors
 import fix_engine
 import fix
-import fix_messages_4_2_0_base
+import message_lib.FIX_4_2.fix_messages as fix_messages_4_2_0_base
 import logging
 import queue
 

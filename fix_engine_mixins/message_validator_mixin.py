@@ -44,7 +44,7 @@ class MessageValidatorMixin(object):
 
 
     def on_first_message(self, msg):
-        if not isinstance(msg, self.message_lib.Logon):
+        if not isinstance(msg, self.message_lib.fix_messages.Logon):
             raise fix_errors.FIXInvalidFirstMessage("First message not a logon")
 
 
@@ -55,15 +55,15 @@ class MessageValidatorMixin(object):
         if msg.Header.TargetCompID != self.__SenderCompID:
             error= f"Invalid TargetCompID [{msg.Header.TargetCompID}] on message, expecting [{self.__SenderCompID}]"
             raise fix_errors.FIXBadCompIDError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.TargetCompID, 
-                error, self.message_lib.SessionRejectReason.ENUM_COMPID_PROBLEM, wait_interval=2, send_test_msg=False)
+                error, self.message_lib.fields.SessionRejectReason.ENUM_COMP_ID_PROBLEM, wait_interval=2, send_test_msg=False)
         if msg.Header.SenderCompID != self.__TargetCompID:
             error= f"Invalid SenderCompID [{msg.Header.SenderCompID}] on message, expecting [{self.__TargetCompID}]"
             raise fix_errors.FIXBadCompIDError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.SenderCompID, 
-                error, self.message_lib.SessionRejectReason.ENUM_COMPID_PROBLEM, wait_interval=2, send_test_msg=False)
+                error, self.message_lib.fields.SessionRejectReason.ENUM_COMP_ID_PROBLEM, wait_interval=2, send_test_msg=False)
 
-        if msg.Header.PossDupFlag == self.message_lib.PossDupFlag.ENUM_YES and msg.Header.OrigSendingTime is None:
+        if msg.Header.PossDupFlag == self.message_lib.fields.PossDupFlag.ENUM_POSSIBLE_DUPLICATE and msg.Header.OrigSendingTime is None:
             raise fix_errors.RequiredTagMissingError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.OrigSendingTime, 
-                "Required tag missing", self.message_lib.SessionRejectReason.ENUM_REQUIRED_TAG_MISSING)
+                "Required tag missing", self.message_lib.fields.SessionRejectReason.ENUM_REQUIRED_TAG_MISSING)
 
         self.validate_sendtime(msg)
 
@@ -71,7 +71,7 @@ class MessageValidatorMixin(object):
         send_time = datetime.datetime.strptime(msg.Header.SendingTime, self.time_format)
         if abs(datetime.datetime.utcnow() - send_time) > datetime.timedelta(minutes=2):
             raise fix_errors.FIXSendTimeAccuracyError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.SendingTime, 
-                 "SendingTime accuracy problem", self.message_lib.SessionRejectReason.ENUM_SENDINGTIME_ACCURACY_PROBLEM,
+                 "SendingTime accuracy problem", self.message_lib.fields.SessionRejectReason.ENUM_SENDING_TIME_ACCURACY_PROBLEM,
                  wait_interval=2, send_test_msg=False)
             
 
