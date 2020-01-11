@@ -1,4 +1,5 @@
 from . import field_types
+import fix_enum_type
 
 class Account (field_types.String_Type) :
     _tag = '1'
@@ -9,14 +10,14 @@ class AdvId (field_types.String_Type) :
 class AdvRefID (field_types.String_Type) :
     _tag = '3'
 
-class AdvSide (field_types.char_Type) :
+class AdvSide (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '4'
     ENUM_BUY = 'B'
     ENUM_SELL = 'S'
     ENUM_CROSS = 'X'
     ENUM_TRADE = 'T'
 
-class AdvTransType (field_types.String_Type) :
+class AdvTransType (field_types.String_Type, field_types.String_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '5'
     ENUM_NEW = 'N'
     ENUM_CANCEL = 'C'
@@ -43,7 +44,7 @@ class ClOrdID (field_types.String_Type) :
 class Commission (field_types.Amt_Type) :
     _tag = '12'
 
-class CommType (field_types.char_Type) :
+class CommType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '13'
     ENUM_POINTS_PER_BOND_OR_CONTRACT = '6'
     ENUM_PER_UNIT = '1'
@@ -64,7 +65,7 @@ class EndSeqNo (field_types.SeqNum_Type) :
 class ExecID (field_types.String_Type) :
     _tag = '17'
 
-class ExecInst (field_types.MultipleValueString_Type) :
+class ExecInst (field_types.MultipleValueString_Type, field_types.MultipleValueString_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '18'
     ENUM_TRY_TO_STOP = 'Y'
     ENUM_MID_PRICE_PEG = 'M'
@@ -104,13 +105,13 @@ class ExecInst (field_types.MultipleValueString_Type) :
 class ExecRefID (field_types.String_Type) :
     _tag = '19'
 
-class HandlInst (field_types.char_Type) :
+class HandlInst (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '21'
     ENUM_AUTOMATED_EXECUTION_NO_INTERVENTION = '1'
     ENUM_AUTOMATED_EXECUTION_INTERVENTION_OK = '2'
     ENUM_MANUAL_ORDER = '3'
 
-class SecurityIDSource (field_types.String_Type) :
+class SecurityIDSource (field_types.String_Type, field_types.String_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '22'
     ENUM_SICOVAM = 'E'
     ENUM_SEDOL = '2'
@@ -132,7 +133,7 @@ class SecurityIDSource (field_types.String_Type) :
 class IOIid (field_types.String_Type) :
     _tag = '23'
 
-class IOIQltyInd (field_types.char_Type) :
+class IOIQltyInd (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '25'
     ENUM_MEDIUM = 'M'
     ENUM_HIGH = 'H'
@@ -141,16 +142,19 @@ class IOIQltyInd (field_types.char_Type) :
 class IOIRefID (field_types.String_Type) :
     _tag = '26'
 
-class IOIQty (field_types.String_Type) :
+class IOIQty (field_types.String_Type, field_types.String_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '27'
+    ENUM_LARGE = 'L'
+    ENUM_MEDIUM = 'M'
+    ENUM_SMALL = 'S'
 
-class IOITransType (field_types.char_Type) :
+class IOITransType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '28'
     ENUM_CANCEL = 'C'
     ENUM_NEW = 'N'
     ENUM_REPLACE = 'R'
 
-class LastCapacity (field_types.char_Type) :
+class LastCapacity (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '29'
     ENUM_PRINCIPAL = '4'
     ENUM_CROSS_AS_PRINCIPAL = '3'
@@ -172,7 +176,7 @@ class LinesOfText (field_types.NumInGroup_Type) :
 class MsgSeqNum (field_types.SeqNum_Type) :
     _tag = '34'
 
-class MsgType (field_types.String_Type) :
+class MsgType (field_types.String_Type, field_types.String_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '35'
     ENUM_HEARTBEAT = '0'
     ENUM_TEST_REQUEST = '1'
@@ -252,10 +256,11 @@ class OrderID (field_types.String_Type) :
 class OrderQty (field_types.Qty_Type) :
     _tag = '38'
 
-class OrdStatus (field_types.char_Type) :
+class OrdStatus (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '39'
     ENUM_NEW = '0'
     ENUM_PARTIALLY_FILLED = '1'
+    ENUM_REPLACED = '5'
     ENUM_FILLED = '2'
     ENUM_PENDING_CANCEL = '6'
     ENUM_STOPPED = '7'
@@ -269,7 +274,7 @@ class OrdStatus (field_types.char_Type) :
     ENUM_DONE_FOR_DAY = '3'
     ENUM_CANCELED = '4'
 
-class OrdType (field_types.char_Type) :
+class OrdType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '40'
     ENUM_PREVIOUSLY_QUOTED = 'D'
     ENUM_LIMIT = '2'
@@ -301,7 +306,7 @@ class OrigClOrdID (field_types.String_Type) :
 class OrigTime (field_types.UTCTimestamp_Type) :
     _tag = '42'
 
-class PossDupFlag (field_types.Boolean_Type) :
+class PossDupFlag (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '43'
     ENUM_ORIGINAL_TRANSMISSION = 'N'
     ENUM_POSSIBLE_DUPLICATE = 'Y'
@@ -312,7 +317,7 @@ class Price (field_types.Price_Type) :
 class RefSeqNum (field_types.SeqNum_Type) :
     _tag = '45'
 
-class Rule80A (field_types.char_Type) :
+class Rule80A (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '47'
     ENUM_AGENT_FOR_OTHER_MEMBER = 'N'
     ENUM_SHORT_EXEMPT_TRANSACTION_A_TYPE = 'B'
@@ -353,7 +358,7 @@ class SendingTime (field_types.UTCTimestamp_Type) :
 class Quantity (field_types.Qty_Type) :
     _tag = '53'
 
-class Side (field_types.char_Type) :
+class Side (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '54'
     ENUM_SELL_SHORT_EXEMPT = '6'
     ENUM_AS_DEFINED = 'B'
@@ -380,7 +385,7 @@ class TargetSubID (field_types.String_Type) :
 class Text (field_types.String_Type) :
     _tag = '58'
 
-class TimeInForce (field_types.char_Type) :
+class TimeInForce (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '59'
     ENUM_AT_THE_CLOSE = '7'
     ENUM_DAY = '0'
@@ -394,7 +399,7 @@ class TimeInForce (field_types.char_Type) :
 class TransactTime (field_types.UTCTimestamp_Type) :
     _tag = '60'
 
-class Urgency (field_types.char_Type) :
+class Urgency (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '61'
     ENUM_FLASH = '1'
     ENUM_BACKGROUND = '2'
@@ -403,7 +408,7 @@ class Urgency (field_types.char_Type) :
 class ValidUntilTime (field_types.UTCTimestamp_Type) :
     _tag = '62'
 
-class SettlmntTyp (field_types.char_Type) :
+class SettlmntTyp (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '63'
     ENUM_T_PLUS4 = '5'
     ENUM_T1 = 'A'
@@ -438,7 +443,7 @@ class ListExecInst (field_types.String_Type) :
 class AllocID (field_types.String_Type) :
     _tag = '70'
 
-class AllocTransType (field_types.char_Type) :
+class AllocTransType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '71'
     ENUM_CALCULATED_WITHOUT_PRELIMINARY = '5'
     ENUM_CALCULATED = '4'
@@ -459,7 +464,7 @@ class AvgPrxPrecision (field_types.int_Type) :
 class TradeDate (field_types.LocalMktDate_Type) :
     _tag = '75'
 
-class PositionEffect (field_types.char_Type) :
+class PositionEffect (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '77'
     ENUM_FIFO = 'F'
     ENUM_ROLLED = 'R'
@@ -475,7 +480,7 @@ class AllocAccount (field_types.String_Type) :
 class AllocQty (field_types.Qty_Type) :
     _tag = '80'
 
-class ProcessCode (field_types.char_Type) :
+class ProcessCode (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '81'
     ENUM_PLAN_SPONSOR = '6'
     ENUM_REGULAR = '0'
@@ -494,14 +499,14 @@ class RptSeq (field_types.int_Type) :
 class CxlQty (field_types.Qty_Type) :
     _tag = '84'
 
-class AllocStatus (field_types.int_Type) :
+class AllocStatus (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '87'
     ENUM_BLOCK_LEVEL_REJECT = 1
     ENUM_ACCOUNT_LEVEL_REJECT = 2
     ENUM_RECEIVED = 3
     ENUM_ACCEPTED = 0
 
-class AllocRejCode (field_types.int_Type) :
+class AllocRejCode (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '88'
     ENUM_UNKNOWN_ACCOUNT = 0
     ENUM_UNKNOWN_LIST_ID = 6
@@ -524,7 +529,7 @@ class SecureData (field_types.data_Type) :
 class SignatureLength (field_types.Length_Type) :
     _tag = '93'
 
-class EmailType (field_types.char_Type) :
+class EmailType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '94'
     ENUM_NEW = '0'
     ENUM_REPLY = '1'
@@ -536,12 +541,12 @@ class RawDataLength (field_types.Length_Type) :
 class RawData (field_types.data_Type) :
     _tag = '96'
 
-class PossResend (field_types.Boolean_Type) :
+class PossResend (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '97'
     ENUM_ORIGINAL_TRANSMISSION = 'N'
     ENUM_POSSIBLE_RESEND = 'Y'
 
-class EncryptMethod (field_types.int_Type) :
+class EncryptMethod (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '98'
     ENUM_DES = 2
     ENUM_PEM = 6
@@ -557,7 +562,7 @@ class StopPx (field_types.Price_Type) :
 class ExDestination (field_types.Exchange_Type) :
     _tag = '100'
 
-class CxlRejReason (field_types.int_Type) :
+class CxlRejReason (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '102'
     ENUM_UNKNOWN_ORDER = 1
     ENUM_TOO_LATE_TO_CANCEL = 0
@@ -567,7 +572,7 @@ class CxlRejReason (field_types.int_Type) :
     ENUM_ORDER_ALREADY_IN_PENDING_STATUS = 3
     ENUM_BROKER_CREDIT = 2
 
-class OrdRejReason (field_types.int_Type) :
+class OrdRejReason (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '103'
     ENUM_EXCHANGE_CLOSED = 2
     ENUM_UNKNOWN_SYMBOL = 1
@@ -583,7 +588,7 @@ class OrdRejReason (field_types.int_Type) :
     ENUM_BROKER_CREDIT = 0
     ENUM_STALE_ORDER = 8
 
-class IOIQualifier (field_types.char_Type) :
+class IOIQualifier (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '104'
     ENUM_AT_THE_OPEN = 'O'
     ENUM_CROSSING_OPPORTUNITY = 'X'
@@ -622,12 +627,12 @@ class MaxFloor (field_types.Qty_Type) :
 class TestReqID (field_types.String_Type) :
     _tag = '112'
 
-class ReportToExch (field_types.Boolean_Type) :
+class ReportToExch (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '113'
     ENUM_RECEIVER_REPORTS = 'Y'
     ENUM_SENDER_REPORTS = 'N'
 
-class LocateReqd (field_types.Boolean_Type) :
+class LocateReqd (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '114'
     ENUM_YES = 'Y'
     ENUM_NO = 'N'
@@ -650,7 +655,7 @@ class SettlCurrAmt (field_types.Amt_Type) :
 class SettlCurrency (field_types.Currency_Type) :
     _tag = '120'
 
-class ForexReq (field_types.Boolean_Type) :
+class ForexReq (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '121'
     ENUM_EXECUTE_FOREX_AFTER_SECURITY_TRADE = 'Y'
     ENUM_DO_NOT_EXECUTE_FOREX_AFTER_SECURITY_TRADE = 'N'
@@ -658,7 +663,7 @@ class ForexReq (field_types.Boolean_Type) :
 class OrigSendingTime (field_types.UTCTimestamp_Type) :
     _tag = '122'
 
-class GapFillFlag (field_types.Boolean_Type) :
+class GapFillFlag (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '123'
     ENUM_GAP_FILL_MESSAGE = 'Y'
     ENUM_SEQUENCE_RESET = 'N'
@@ -669,7 +674,7 @@ class NoExecs (field_types.NumInGroup_Type) :
 class ExpireTime (field_types.UTCTimestamp_Type) :
     _tag = '126'
 
-class DKReason (field_types.char_Type) :
+class DKReason (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '127'
     ENUM_WRONG_SIDE = 'B'
     ENUM_QUANTITY_EXCEEDS_ORDER = 'C'
@@ -684,7 +689,7 @@ class DeliverToCompID (field_types.String_Type) :
 class DeliverToSubID (field_types.String_Type) :
     _tag = '129'
 
-class IOINaturalFlag (field_types.Boolean_Type) :
+class IOINaturalFlag (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '130'
     ENUM_NATURAL = 'Y'
     ENUM_NOT_NATURAL = 'N'
@@ -713,7 +718,7 @@ class MiscFeeAmt (field_types.Amt_Type) :
 class MiscFeeCurr (field_types.Currency_Type) :
     _tag = '138'
 
-class MiscFeeType (field_types.char_Type) :
+class MiscFeeType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '139'
     ENUM_LOCAL_COMMISSION = '3'
     ENUM_EXCHANGE_FEES = '4'
@@ -728,7 +733,7 @@ class MiscFeeType (field_types.char_Type) :
 class PrevClosePx (field_types.Price_Type) :
     _tag = '140'
 
-class ResetSeqNumFlag (field_types.Boolean_Type) :
+class ResetSeqNumFlag (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '141'
     ENUM_YES = 'Y'
     ENUM_NO = 'N'
@@ -757,7 +762,7 @@ class Headline (field_types.String_Type) :
 class URLLink (field_types.String_Type) :
     _tag = '149'
 
-class ExecType (field_types.char_Type) :
+class ExecType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '150'
     ENUM_PENDING_CANCEL = '6'
     ENUM_NEW = '0'
@@ -794,8 +799,10 @@ class AllocNetMoney (field_types.Amt_Type) :
 class SettlCurrFxRate (field_types.float_Type) :
     _tag = '155'
 
-class SettlCurrFxRateCalc (field_types.char_Type) :
+class SettlCurrFxRateCalc (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '156'
+    ENUM_DIVIDE = 'D'
+    ENUM_MULTIPLY = 'M'
 
 class NumDaysInterest (field_types.int_Type) :
     _tag = '157'
@@ -806,7 +813,7 @@ class AccruedInterestRate (field_types.Percentage_Type) :
 class AccruedInterestAmt (field_types.Amt_Type) :
     _tag = '159'
 
-class SettlInstMode (field_types.char_Type) :
+class SettlInstMode (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '160'
     ENUM_DEFAULT = '0'
     ENUM_SPECIFIC_ORDER_FOR_A_SINGLE_ACCOUNT = '4'
@@ -820,7 +827,7 @@ class AllocText (field_types.String_Type) :
 class SettlInstID (field_types.String_Type) :
     _tag = '162'
 
-class SettlInstTransType (field_types.char_Type) :
+class SettlInstTransType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '163'
     ENUM_NEW = 'N'
     ENUM_REPLACE = 'R'
@@ -829,13 +836,13 @@ class SettlInstTransType (field_types.char_Type) :
 class EmailThreadID (field_types.String_Type) :
     _tag = '164'
 
-class SettlInstSource (field_types.char_Type) :
+class SettlInstSource (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '165'
     ENUM_INSTITUTION = '2'
     ENUM_INVESTOR = '3'
     ENUM_BROKER_CREDIT = '1'
 
-class SecurityType (field_types.String_Type) :
+class SecurityType (field_types.String_Type, field_types.String_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '167'
     ENUM_COMMERCIAL_PAPER = 'CP'
     ENUM_VARIABLE_RATE_DEMAND_NOTE = 'VRDN'
@@ -923,7 +930,7 @@ class SecurityType (field_types.String_Type) :
 class EffectiveTime (field_types.UTCTimestamp_Type) :
     _tag = '168'
 
-class StandInstDbType (field_types.int_Type) :
+class StandInstDbType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '169'
     ENUM_OTHER = 0
     ENUM_DTCSID = 1
@@ -936,8 +943,10 @@ class StandInstDbName (field_types.String_Type) :
 class StandInstDbID (field_types.String_Type) :
     _tag = '171'
 
-class SettlDeliveryType (field_types.int_Type) :
+class SettlDeliveryType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '172'
+    ENUM_FREE = 1
+    ENUM_VERSUS = 0
 
 class SettlDepositoryCode (field_types.String_Type) :
     _tag = '173'
@@ -1011,7 +1020,7 @@ class LastForwardPoints (field_types.PriceOffset_Type) :
 class AllocLinkID (field_types.String_Type) :
     _tag = '196'
 
-class AllocLinkType (field_types.int_Type) :
+class AllocLinkType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '197'
     ENUM_FX_NETTING = 0
     ENUM_FX_SWAP = 1
@@ -1028,7 +1037,7 @@ class MaturityMonthYear (field_types.MonthYear_Type) :
 class StrikePrice (field_types.Price_Type) :
     _tag = '202'
 
-class CoveredOrUncovered (field_types.int_Type) :
+class CoveredOrUncovered (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '203'
     ENUM_UNCOVERED = 1
     ENUM_COVERED = 0
@@ -1039,12 +1048,12 @@ class OptAttribute (field_types.char_Type) :
 class SecurityExchange (field_types.Exchange_Type) :
     _tag = '207'
 
-class NotifyBrokerOfCredit (field_types.Boolean_Type) :
+class NotifyBrokerOfCredit (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '208'
     ENUM_DETAILS_SHOULD_NOT_BE_COMMUNICATED = 'N'
     ENUM_DETAILS_SHOULD_BE_COMMUNICATED = 'Y'
 
-class AllocHandlInst (field_types.int_Type) :
+class AllocHandlInst (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '209'
     ENUM_FORWARD_AND_MATCH = 3
     ENUM_FORWARD = 2
@@ -1068,7 +1077,7 @@ class SettlInstRefID (field_types.String_Type) :
 class NoRoutingIDs (field_types.NumInGroup_Type) :
     _tag = '215'
 
-class RoutingType (field_types.int_Type) :
+class RoutingType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '216'
     ENUM_TARGET_FIRM = 1
     ENUM_TARGET_LIST = 2
@@ -1081,7 +1090,7 @@ class RoutingID (field_types.String_Type) :
 class Spread (field_types.PriceOffset_Type) :
     _tag = '218'
 
-class Benchmark (field_types.char_Type) :
+class Benchmark (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '219'
     ENUM_OLD10 = '5'
     ENUM_CURVE = '1'
@@ -1096,7 +1105,7 @@ class Benchmark (field_types.char_Type) :
 class BenchmarkCurveCurrency (field_types.Currency_Type) :
     _tag = '220'
 
-class BenchmarkCurveName (field_types.String_Type) :
+class BenchmarkCurveName (field_types.String_Type, field_types.String_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '221'
     ENUM_SWAP = 'SWAP'
     ENUM_LIBID = 'LIBID'
@@ -1141,7 +1150,7 @@ class ContractMultiplier (field_types.float_Type) :
 class NoStipulations (field_types.NumInGroup_Type) :
     _tag = '232'
 
-class StipulationType (field_types.String_Type) :
+class StipulationType (field_types.String_Type, field_types.String_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '233'
     ENUM_ABSOLUTE_PREPAYMENT_SPEED = 'ABS'
     ENUM_WEIGHTED_AVERAGE_LOAN_AGE = 'WALA'
@@ -1172,7 +1181,7 @@ class StipulationType (field_types.String_Type) :
 class StipulationValue (field_types.String_Type) :
     _tag = '234'
 
-class YieldType (field_types.String_Type) :
+class YieldType (field_types.String_Type, field_types.String_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '235'
     ENUM_TRUE_YIELD = 'TRUE'
     ENUM_PREVIOUS_CLOSE_YIELD = 'PREVCLOSE'
@@ -1278,7 +1287,7 @@ class UnderlyingCreditRating (field_types.String_Type) :
 class LegCreditRating (field_types.String_Type) :
     _tag = '257'
 
-class TradedFlatSwitch (field_types.Boolean_Type) :
+class TradedFlatSwitch (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '258'
     ENUM_NOT_TRADED_FLAT = 'N'
     ENUM_TRADED_FLAT = 'Y'
@@ -1292,7 +1301,7 @@ class BasisFeaturePrice (field_types.Price_Type) :
 class MDReqID (field_types.String_Type) :
     _tag = '262'
 
-class SubscriptionRequestType (field_types.char_Type) :
+class SubscriptionRequestType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '263'
     ENUM_SNAPSHOT_AND_UPDATES = '1'
     ENUM_DISABLE_PREVIOUS_SNAPSHOT = '2'
@@ -1301,13 +1310,15 @@ class SubscriptionRequestType (field_types.char_Type) :
 class MarketDepth (field_types.int_Type) :
     _tag = '264'
 
-class MDUpdateType (field_types.int_Type) :
+class MDUpdateType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '265'
     ENUM_FULL_REFRESH = 0
     ENUM_INCREMENTAL_REFRESH = 1
 
-class AggregatedBook (field_types.Boolean_Type) :
+class AggregatedBook (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '266'
+    ENUM_BOOK_ENTRIES_TO_BE_AGGREGATED = 'Y'
+    ENUM_BOOK_ENTRIES_SHOULD_NOT_BE_AGGREGATED = 'N'
 
 class NoMDEntryTypes (field_types.NumInGroup_Type) :
     _tag = '267'
@@ -1315,7 +1326,7 @@ class NoMDEntryTypes (field_types.NumInGroup_Type) :
 class NoMDEntries (field_types.NumInGroup_Type) :
     _tag = '268'
 
-class MDEntryType (field_types.char_Type) :
+class MDEntryType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '269'
     ENUM_TRADING_SESSION_HIGH_PRICE = '7'
     ENUM_OFFER = '1'
@@ -1341,7 +1352,7 @@ class MDEntryDate (field_types.UTCDate_Type) :
 class MDEntryTime (field_types.UTCTimeOnly_Type) :
     _tag = '273'
 
-class TickDirection (field_types.char_Type) :
+class TickDirection (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '274'
     ENUM_PLUS_TICK = '0'
     ENUM_ZERO_PLUS_TICK = '1'
@@ -1351,7 +1362,7 @@ class TickDirection (field_types.char_Type) :
 class MDMkt (field_types.Exchange_Type) :
     _tag = '275'
 
-class QuoteCondition (field_types.MultipleValueString_Type) :
+class QuoteCondition (field_types.MultipleValueString_Type, field_types.MultipleValueString_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '276'
     ENUM_LOCKED = 'E'
     ENUM_NON_FIRM = 'I'
@@ -1363,7 +1374,7 @@ class QuoteCondition (field_types.MultipleValueString_Type) :
     ENUM_OPEN = 'A'
     ENUM_DEPTH = 'G'
 
-class TradeCondition (field_types.MultipleValueString_Type) :
+class TradeCondition (field_types.MultipleValueString_Type, field_types.MultipleValueString_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '277'
     ENUM_NEXT_DAY_TRADE = 'J'
     ENUM_OPENED = 'K'
@@ -1386,7 +1397,7 @@ class TradeCondition (field_types.MultipleValueString_Type) :
 class MDEntryID (field_types.String_Type) :
     _tag = '278'
 
-class MDUpdateAction (field_types.char_Type) :
+class MDUpdateAction (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '279'
     ENUM_NEW = '0'
     ENUM_CHANGE = '1'
@@ -1395,7 +1406,7 @@ class MDUpdateAction (field_types.char_Type) :
 class MDEntryRefID (field_types.String_Type) :
     _tag = '280'
 
-class MDReqRejReason (field_types.char_Type) :
+class MDReqRejReason (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '281'
     ENUM_UNSUPPORTED_AGGREGATED_BOOK = '7'
     ENUM_DUPLICATE_MD_REQ_ID = '1'
@@ -1420,12 +1431,12 @@ class LocationID (field_types.String_Type) :
 class DeskID (field_types.String_Type) :
     _tag = '284'
 
-class DeleteReason (field_types.char_Type) :
+class DeleteReason (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '285'
     ENUM_CANCELLATION = '0'
     ENUM_ERROR = '1'
 
-class OpenCloseSettleFlag (field_types.MultipleValueString_Type) :
+class OpenCloseSettleFlag (field_types.MultipleValueString_Type, field_types.MultipleValueString_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '286'
     ENUM_SESSION_OPEN = '1'
     ENUM_DELIVERY_SETTLEMENT_ENTRY = '2'
@@ -1445,12 +1456,12 @@ class MDEntrySeller (field_types.String_Type) :
 class MDEntryPositionNo (field_types.int_Type) :
     _tag = '290'
 
-class FinancialStatus (field_types.MultipleValueString_Type) :
+class FinancialStatus (field_types.MultipleValueString_Type, field_types.MultipleValueString_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '291'
     ENUM_BANKRUPT = '1'
     ENUM_PENDING_DELISTING = '2'
 
-class CorporateAction (field_types.MultipleValueString_Type) :
+class CorporateAction (field_types.MultipleValueString_Type, field_types.MultipleValueString_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '292'
     ENUM_EX_DISTRIBUTION = 'B'
     ENUM_EX_INTEREST = 'E'
@@ -1470,7 +1481,7 @@ class NoQuoteEntries (field_types.NumInGroup_Type) :
 class NoQuoteSets (field_types.NumInGroup_Type) :
     _tag = '296'
 
-class QuoteStatus (field_types.int_Type) :
+class QuoteStatus (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '297'
     ENUM_REMOVED_FROM_MARKET = 6
     ENUM_CANCEL_FOR_SYMBOL = 1
@@ -1484,7 +1495,7 @@ class QuoteStatus (field_types.int_Type) :
     ENUM_CANCELED_FOR_SECURITY_TYPE = 2
     ENUM_ACCEPTED = 0
 
-class QuoteCancelType (field_types.int_Type) :
+class QuoteCancelType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '298'
     ENUM_CANCEL_ALL_QUOTES = 4
     ENUM_CANCEL_FOR_SECURITY_TYPE = 2
@@ -1494,7 +1505,7 @@ class QuoteCancelType (field_types.int_Type) :
 class QuoteEntryID (field_types.String_Type) :
     _tag = '299'
 
-class QuoteRejectReason (field_types.int_Type) :
+class QuoteRejectReason (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '300'
     ENUM_NOT_AUTHORIZED_TO_QUOTE_SECURITY = 9
     ENUM_UNKNOWN_SYMBOL = 1
@@ -1506,7 +1517,7 @@ class QuoteRejectReason (field_types.int_Type) :
     ENUM_INVALID_BID = 7
     ENUM_INVALID_PRICE = 8
 
-class QuoteResponseLevel (field_types.int_Type) :
+class QuoteResponseLevel (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '301'
     ENUM_ACKNOWLEDGE_ONLY_NEGATIVE_OR_ERRONEOUS_QUOTES = 1
     ENUM_NO_ACKNOWLEDGEMENT = 0
@@ -1515,7 +1526,7 @@ class QuoteResponseLevel (field_types.int_Type) :
 class QuoteSetID (field_types.String_Type) :
     _tag = '302'
 
-class QuoteRequestType (field_types.int_Type) :
+class QuoteRequestType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '303'
     ENUM_AUTOMATIC = 2
     ENUM_MANUAL = 1
@@ -1562,7 +1573,7 @@ class UnderlyingOptAttribute (field_types.char_Type) :
 class SecurityReqID (field_types.String_Type) :
     _tag = '320'
 
-class SecurityRequestType (field_types.int_Type) :
+class SecurityRequestType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '321'
     ENUM_REQUEST_SECURITY_IDENTITY_AND_SPECIFICATIONS = 0
     ENUM_REQUEST_SECURITY_IDENTITY_FOR_SPECIFICATIONS = 1
@@ -1572,7 +1583,7 @@ class SecurityRequestType (field_types.int_Type) :
 class SecurityResponseID (field_types.String_Type) :
     _tag = '322'
 
-class SecurityResponseType (field_types.int_Type) :
+class SecurityResponseType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '323'
     ENUM_REJECT_SECURITY_PROPOSAL = 5
     ENUM_ACCEPT_AS_IS = 1
@@ -1584,12 +1595,12 @@ class SecurityResponseType (field_types.int_Type) :
 class SecurityStatusReqID (field_types.String_Type) :
     _tag = '324'
 
-class UnsolicitedIndicator (field_types.Boolean_Type) :
+class UnsolicitedIndicator (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '325'
     ENUM_MESSAGE_IS_BEING_SENT_UNSOLICITED = 'Y'
     ENUM_MESSAGE_IS_BEING_SENT_AS_A_RESULT_OF_A_PRIOR_REQUEST = 'N'
 
-class SecurityTradingStatus (field_types.int_Type) :
+class SecurityTradingStatus (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '326'
     ENUM_UNKNOWN_OR_INVALID = 20
     ENUM_NO_MARKET_ON_CLOSE_IMBALANCE = 13
@@ -1614,7 +1625,7 @@ class SecurityTradingStatus (field_types.int_Type) :
     ENUM_TRADING_HALT = 2
     ENUM_FAST_MARKET = 23
 
-class HaltReason (field_types.char_Type) :
+class HaltReason (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '327'
     ENUM_EQUIPMENT_CHANGEOVER = 'X'
     ENUM_ADDITIONAL_INFORMATION = 'M'
@@ -1623,12 +1634,12 @@ class HaltReason (field_types.char_Type) :
     ENUM_ORDER_IMBALANCE = 'I'
     ENUM_NEWS_DISSEMINATION = 'D'
 
-class InViewOfCommon (field_types.Boolean_Type) :
+class InViewOfCommon (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '328'
     ENUM_HALT_WAS_DUE_TO_COMMON_STOCK_BEING_HALTED = 'Y'
     ENUM_HALT_WAS_NOT_RELATED_TO_A_HALT_OF_THE_COMMON_STOCK = 'N'
 
-class DueToRelated (field_types.Boolean_Type) :
+class DueToRelated (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '329'
     ENUM_RELATED_TO_SECURITY_HALT = 'Y'
     ENUM_NOT_RELATED_TO_SECURITY_HALT = 'N'
@@ -1645,7 +1656,7 @@ class HighPx (field_types.Price_Type) :
 class LowPx (field_types.Price_Type) :
     _tag = '333'
 
-class Adjustment (field_types.int_Type) :
+class Adjustment (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '334'
     ENUM_CANCEL = 1
     ENUM_ERROR = 2
@@ -1660,19 +1671,19 @@ class TradingSessionID (field_types.String_Type) :
 class ContraTrader (field_types.String_Type) :
     _tag = '337'
 
-class TradSesMethod (field_types.int_Type) :
+class TradSesMethod (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '338'
     ENUM_TWO_PARTY = 3
     ENUM_ELECTRONIC = 1
     ENUM_OPEN_OUTCRY = 2
 
-class TradSesMode (field_types.int_Type) :
+class TradSesMode (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '339'
     ENUM_PRODUCTION = 3
     ENUM_TESTING = 1
     ENUM_SIMULATED = 2
 
-class TradSesStatus (field_types.int_Type) :
+class TradSesStatus (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '340'
     ENUM_PRE_CLOSE = 5
     ENUM_REQUEST_REJECTED = 6
@@ -1700,7 +1711,7 @@ class TradSesEndTime (field_types.UTCTimestamp_Type) :
 class NumberOfOrders (field_types.int_Type) :
     _tag = '346'
 
-class MessageEncoding (field_types.String_Type) :
+class MessageEncoding (field_types.String_Type, field_types.String_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '347'
     ENUM_UTF8 = 'UTF-8'
     ENUM_ISO2022_JP = 'ISO-2022-JP'
@@ -1782,7 +1793,7 @@ class RefTagID (field_types.int_Type) :
 class RefMsgType (field_types.String_Type) :
     _tag = '372'
 
-class SessionRejectReason (field_types.int_Type) :
+class SessionRejectReason (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '373'
     ENUM_XML_VALIDATION_ERROR = 12
     ENUM_NON = 17
@@ -1803,7 +1814,7 @@ class SessionRejectReason (field_types.int_Type) :
     ENUM_TAG_NOT_DEFINED_FOR_THIS_MESSAGE_TYPE = 2
     ENUM_REQUIRED_TAG_MISSING = 1
 
-class BidRequestTransType (field_types.char_Type) :
+class BidRequestTransType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '374'
     ENUM_NEW = 'N'
     ENUM_CANCEL = 'C'
@@ -1814,12 +1825,12 @@ class ContraBroker (field_types.String_Type) :
 class ComplianceID (field_types.String_Type) :
     _tag = '376'
 
-class SolicitedFlag (field_types.Boolean_Type) :
+class SolicitedFlag (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '377'
     ENUM_WAS_NOT_SOLICITED = 'N'
     ENUM_WAS_SOLICITED = 'Y'
 
-class ExecRestatementReason (field_types.int_Type) :
+class ExecRestatementReason (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '378'
     ENUM_CANCEL_ON_SYSTEM_FAILURE = 7
     ENUM_GT_CORPORATE_ACTION = 0
@@ -1834,7 +1845,7 @@ class ExecRestatementReason (field_types.int_Type) :
 class BusinessRejectRefID (field_types.String_Type) :
     _tag = '379'
 
-class BusinessRejectReason (field_types.int_Type) :
+class BusinessRejectReason (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '380'
     ENUM_UNSUPPORTED_MESSAGE_TYPE = 3
     ENUM_DELIVER_TO_FIRM_NOT_AVAILABLE_AT_THIS_TIME = 7
@@ -1857,7 +1868,7 @@ class MaxMessageSize (field_types.Length_Type) :
 class NoMsgTypes (field_types.NumInGroup_Type) :
     _tag = '384'
 
-class MsgDirection (field_types.char_Type) :
+class MsgDirection (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '385'
     ENUM_SEND = 'S'
     ENUM_RECEIVE = 'R'
@@ -1868,7 +1879,7 @@ class NoTradingSessions (field_types.NumInGroup_Type) :
 class TotalVolumeTraded (field_types.Qty_Type) :
     _tag = '387'
 
-class DiscretionInst (field_types.char_Type) :
+class DiscretionInst (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '388'
     ENUM_RELATED_TO_DISPLAYED_PRICE = '0'
     ENUM_RELATED_TO_MARKET_PRICE = '1'
@@ -1892,7 +1903,7 @@ class ListName (field_types.String_Type) :
 class TotalNumSecurities (field_types.int_Type) :
     _tag = '393'
 
-class BidType (field_types.int_Type) :
+class BidType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '394'
     ENUM_NON_DISCLOSED = 1
     ENUM_DISCLOSED = 2
@@ -1910,7 +1921,7 @@ class SideValue2 (field_types.Amt_Type) :
 class NoBidDescriptors (field_types.NumInGroup_Type) :
     _tag = '398'
 
-class BidDescriptorType (field_types.int_Type) :
+class BidDescriptorType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '399'
     ENUM_INDEX = 3
     ENUM_COUNTRY = 2
@@ -1919,7 +1930,7 @@ class BidDescriptorType (field_types.int_Type) :
 class BidDescriptor (field_types.String_Type) :
     _tag = '400'
 
-class SideValueInd (field_types.int_Type) :
+class SideValueInd (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '401'
     ENUM_SIDE_VALUE1 = 1
     ENUM_SIDE_VALUE2 = 2
@@ -1945,7 +1956,7 @@ class OutsideIndexPct (field_types.Percentage_Type) :
 class ValueOfFutures (field_types.Amt_Type) :
     _tag = '408'
 
-class LiquidityIndType (field_types.int_Type) :
+class LiquidityIndType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '409'
     ENUM_NORMAL_MARKET_SIZE = 3
     ENUM_OTHER = 4
@@ -1955,7 +1966,7 @@ class LiquidityIndType (field_types.int_Type) :
 class WtAverageLiquidity (field_types.Percentage_Type) :
     _tag = '410'
 
-class ExchangeForPhysical (field_types.Boolean_Type) :
+class ExchangeForPhysical (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '411'
     ENUM_FALSE = 'N'
     ENUM_TRUE = 'Y'
@@ -1966,7 +1977,7 @@ class OutMainCntryUIndex (field_types.Amt_Type) :
 class CrossPercent (field_types.Percentage_Type) :
     _tag = '413'
 
-class ProgRptReqs (field_types.int_Type) :
+class ProgRptReqs (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '414'
     ENUM_REAL_TIME_EXECUTION_REPORTS = 3
     ENUM_SELL_SIDE_SENDS = 2
@@ -1975,7 +1986,7 @@ class ProgRptReqs (field_types.int_Type) :
 class ProgPeriodInterval (field_types.int_Type) :
     _tag = '415'
 
-class IncTaxInd (field_types.int_Type) :
+class IncTaxInd (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '416'
     ENUM_GROSS = 2
     ENUM_NET = 1
@@ -1983,14 +1994,14 @@ class IncTaxInd (field_types.int_Type) :
 class NumBidders (field_types.int_Type) :
     _tag = '417'
 
-class TradeType (field_types.char_Type) :
+class TradeType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '418'
     ENUM_VWAP_GUARANTEE = 'G'
     ENUM_AGENCY = 'A'
     ENUM_GUARANTEED_CLOSE = 'J'
     ENUM_RISK_TRADE = 'R'
 
-class BasisPxType (field_types.char_Type) :
+class BasisPxType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '419'
     ENUM_VWAP_THROUGH_AN_AFTERNOON_SESSION = '8'
     ENUM_OPEN = 'D'
@@ -2015,7 +2026,7 @@ class Country (field_types.Country_Type) :
 class TotNoStrikes (field_types.int_Type) :
     _tag = '422'
 
-class PriceType (field_types.int_Type) :
+class PriceType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '423'
     ENUM_FIXED_AMOUNT = 3
     ENUM_PERCENTAGE = 1
@@ -2035,7 +2046,7 @@ class DayCumQty (field_types.Qty_Type) :
 class DayAvgPx (field_types.Price_Type) :
     _tag = '426'
 
-class GTBookingInst (field_types.int_Type) :
+class GTBookingInst (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '427'
     ENUM_BOOK_OUT_ALL_TRADES_ON_DAY_OF_EXECUTION = 0
     ENUM_ACCUMULATE_UNTIL_VERBALLLY_NOTIFIED_OTHERWISE = 2
@@ -2044,7 +2055,7 @@ class GTBookingInst (field_types.int_Type) :
 class NoStrikes (field_types.NumInGroup_Type) :
     _tag = '428'
 
-class ListStatusType (field_types.int_Type) :
+class ListStatusType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '429'
     ENUM_ALERT = 6
     ENUM_EXEC_STARTED = 4
@@ -2053,12 +2064,12 @@ class ListStatusType (field_types.int_Type) :
     ENUM_ACK = 1
     ENUM_ALL_DONE = 5
 
-class NetGrossInd (field_types.int_Type) :
+class NetGrossInd (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '430'
     ENUM_NET = 1
     ENUM_GROSS = 2
 
-class ListOrderStatus (field_types.int_Type) :
+class ListOrderStatus (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '431'
     ENUM_CANCELLING = 4
     ENUM_EXECUTING = 3
@@ -2071,7 +2082,7 @@ class ListOrderStatus (field_types.int_Type) :
 class ExpireDate (field_types.LocalMktDate_Type) :
     _tag = '432'
 
-class ListExecInstType (field_types.char_Type) :
+class ListExecInstType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '433'
     ENUM_BUY_DRIVEN_CASH_WITHDRAW = '5'
     ENUM_BUY_DRIVEN_CASH_TOP_UP = '4'
@@ -2079,7 +2090,7 @@ class ListExecInstType (field_types.char_Type) :
     ENUM_IMMEDIATE = '1'
     ENUM_SELL_DRIVEN = '3'
 
-class CxlRejResponseTo (field_types.char_Type) :
+class CxlRejResponseTo (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '434'
     ENUM_ORDER_CANCEL = '2'
     ENUM_ORDER_CANCEL_REQUEST = '1'
@@ -2099,7 +2110,7 @@ class ContraTradeTime (field_types.UTCTimestamp_Type) :
 class LiquidityNumSecurities (field_types.int_Type) :
     _tag = '441'
 
-class MultiLegReportingType (field_types.char_Type) :
+class MultiLegReportingType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '442'
     ENUM_SINGLE_SECURITY = '1'
     ENUM_INDIVIDUAL_LEG_OF_A_MULTI_LEG_SECURITY = '2'
@@ -2117,7 +2128,7 @@ class EncodedListStatusTextLen (field_types.Length_Type) :
 class EncodedListStatusText (field_types.data_Type) :
     _tag = '446'
 
-class PartyIDSource (field_types.char_Type) :
+class PartyIDSource (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '447'
     ENUM_CHINESE_INVESTOR_ID = '5'
     ENUM_US_EMPLOYER_OR_TAX_ID_NUMBER = '8'
@@ -2147,7 +2158,7 @@ class TotalVolumeTradedTime (field_types.UTCTimeOnly_Type) :
 class NetChgPrevDay (field_types.PriceOffset_Type) :
     _tag = '451'
 
-class PartyRole (field_types.int_Type) :
+class PartyRole (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '452'
     ENUM_CORRESPONDANT_CLEARING_FIRM = 15
     ENUM_CLIENT_ID = 3
@@ -2191,7 +2202,7 @@ class UnderlyingSecurityAltID (field_types.String_Type) :
 class UnderlyingSecurityAltIDSource (field_types.String_Type) :
     _tag = '459'
 
-class Product (field_types.int_Type) :
+class Product (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '460'
     ENUM_LOAN = 8
     ENUM_OTHER = 12
@@ -2215,12 +2226,12 @@ class UnderlyingProduct (field_types.int_Type) :
 class UnderlyingCFICode (field_types.String_Type) :
     _tag = '463'
 
-class TestMessageIndicator (field_types.Boolean_Type) :
+class TestMessageIndicator (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '464'
     ENUM_TRUE = 'Y'
     ENUM_FALES = 'N'
 
-class QuantityType (field_types.int_Type) :
+class QuantityType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '465'
     ENUM_CONTRACTS = 6
     ENUM_OTHER = 7
@@ -2237,7 +2248,7 @@ class BookingRefID (field_types.String_Type) :
 class IndividualAllocID (field_types.String_Type) :
     _tag = '467'
 
-class RoundingDirection (field_types.char_Type) :
+class RoundingDirection (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '468'
     ENUM_ROUND_TO_NEAREST = '0'
     ENUM_ROUND_DOWN = '1'
@@ -2276,14 +2287,14 @@ class CashDistribCurr (field_types.Currency_Type) :
 class CommCurrency (field_types.Currency_Type) :
     _tag = '479'
 
-class CancellationRights (field_types.char_Type) :
+class CancellationRights (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '480'
     ENUM_NO_WAIVER_AGREEMENT = 'M'
     ENUM_NO_EXECUTION_ONLY = 'N'
     ENUM_YES = 'Y'
     ENUM_NO_INSTITUTIONAL = 'O'
 
-class MoneyLaunderingStatus (field_types.char_Type) :
+class MoneyLaunderingStatus (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '481'
     ENUM_EXEMPT_AUTHORISED = '3'
     ENUM_EXEMPT_MONEY_TYPE = '2'
@@ -2297,7 +2308,7 @@ class MailingInst (field_types.String_Type) :
 class TransBkdTime (field_types.UTCTimestamp_Type) :
     _tag = '483'
 
-class ExecPriceType (field_types.char_Type) :
+class ExecPriceType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '484'
     ENUM_SINGLE_PRICE = 'S'
     ENUM_OFFER_PRICE_MINUS_ADJUSTMENT_AMOUNT = 'Q'
@@ -2314,7 +2325,7 @@ class ExecPriceAdjustment (field_types.float_Type) :
 class DateOfBirth (field_types.LocalMktDate_Type) :
     _tag = '486'
 
-class TradeReportTransType (field_types.char_Type) :
+class TradeReportTransType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '487'
     ENUM_NEW = 'N'
     ENUM_REPLACE = 'R'
@@ -2332,7 +2343,7 @@ class CardExpDate (field_types.LocalMktDate_Type) :
 class CardIssNo (field_types.String_Type) :
     _tag = '491'
 
-class PaymentMethod (field_types.int_Type) :
+class PaymentMethod (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '492'
     ENUM_BPAY = 14
     ENUM_ACH_CREDIT = 13
@@ -2356,7 +2367,7 @@ class RegistAcctType (field_types.String_Type) :
 class Designation (field_types.String_Type) :
     _tag = '494'
 
-class TaxAdvantageType (field_types.int_Type) :
+class TaxAdvantageType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '495'
     ENUM_PROFIT_SHARING_PLAN = 19
     ENUM_EMPLOYER_PRIOR_YEAR = 11
@@ -2392,7 +2403,7 @@ class TaxAdvantageType (field_types.int_Type) :
 class RegistRejReasonText (field_types.String_Type) :
     _tag = '496'
 
-class FundRenewWaiv (field_types.char_Type) :
+class FundRenewWaiv (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '497'
     ENUM_NO = 'N'
     ENUM_YES = 'Y'
@@ -2418,14 +2429,14 @@ class PaymentDate (field_types.LocalMktDate_Type) :
 class PaymentRemitterID (field_types.String_Type) :
     _tag = '505'
 
-class RegistStatus (field_types.char_Type) :
+class RegistStatus (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '506'
     ENUM_ACCEPTED = 'A'
     ENUM_REMINDER = 'N'
     ENUM_REJECTED = 'R'
     ENUM_HELD = 'H'
 
-class RegistRejReasonCode (field_types.int_Type) :
+class RegistRejReasonCode (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '507'
     ENUM_INVALID_DISTRIB_INSTNS = 13
     ENUM_INVALID_AGENT_CODE = 17
@@ -2464,7 +2475,7 @@ class DistribPercentage (field_types.Percentage_Type) :
 class RegistID (field_types.String_Type) :
     _tag = '513'
 
-class RegistTransType (field_types.char_Type) :
+class RegistTransType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '514'
     ENUM_CANCEL = '2'
     ENUM_NEW = '0'
@@ -2482,7 +2493,7 @@ class OwnershipType (field_types.char_Type) :
 class NoContAmts (field_types.NumInGroup_Type) :
     _tag = '518'
 
-class ContAmtType (field_types.int_Type) :
+class ContAmtType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '519'
     ENUM_NET_SETTLEMENT_AMOUNT = 15
     ENUM_COMMISSION_AMOUNT = 1
@@ -2506,7 +2517,7 @@ class ContAmtValue (field_types.float_Type) :
 class ContAmtCurr (field_types.Currency_Type) :
     _tag = '521'
 
-class OwnerType (field_types.int_Type) :
+class OwnerType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '522'
     ENUM_COMPANY_TRUSTEE = 5
     ENUM_NOMINEE = 13
@@ -2537,7 +2548,7 @@ class SecondaryClOrdID (field_types.String_Type) :
 class SecondaryExecID (field_types.String_Type) :
     _tag = '527'
 
-class OrderCapacity (field_types.char_Type) :
+class OrderCapacity (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '528'
     ENUM_RISKLESS_PRINCIPAL = 'R'
     ENUM_INDIVIDUAL = 'I'
@@ -2546,7 +2557,7 @@ class OrderCapacity (field_types.char_Type) :
     ENUM_AGENCY = 'A'
     ENUM_PROPRIETARY = 'G'
 
-class OrderRestrictions (field_types.MultipleValueString_Type) :
+class OrderRestrictions (field_types.MultipleValueString_Type, field_types.MultipleValueString_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '529'
     ENUM_FOREIGN_ENTITY = '7'
     ENUM_RISKLESS_ARBITRAGE = 'A'
@@ -2559,7 +2570,7 @@ class OrderRestrictions (field_types.MultipleValueString_Type) :
     ENUM_COMPETING_MARKET_MAKER = '4'
     ENUM_EXTERNAL_INTER_CONNECTED_MARKET_LINKAGE = '9'
 
-class MassCancelRequestType (field_types.char_Type) :
+class MassCancelRequestType (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '530'
     ENUM_CANCEL_ORDERS_FOR_A_SECURITY = '1'
     ENUM_CANCEL_ALL_ORDERS = '7'
@@ -2569,7 +2580,7 @@ class MassCancelRequestType (field_types.char_Type) :
     ENUM_CANCEL_ORDERS_FOR_AN_UNDERLYING_SECURITY = '2'
     ENUM_CANCEL_ORDERS_FOR_A_PRODUCT = '3'
 
-class MassCancelResponse (field_types.char_Type) :
+class MassCancelResponse (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '531'
     ENUM_CANCEL_ORDERS_FOR_A_TRADING_SESSION = '6'
     ENUM_CANCEL_REQUEST_REJECTED = '0'
@@ -2580,7 +2591,7 @@ class MassCancelResponse (field_types.char_Type) :
     ENUM_CANCEL_ORDERS_FOR_A_SECURITY = '1'
     ENUM_CANCEL_ORDERS_FOR_AN_UNDERLYING_SECURITY = '2'
 
-class MassCancelRejectReason (field_types.char_Type) :
+class MassCancelRejectReason (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '532'
     ENUM_INVALID_OR_UNKOWN_UNDERLYING_SECURITY = '2'
     ENUM_INVALID_OR_UNKNOWN_TRADING_SESSION = '6'
@@ -2602,7 +2613,7 @@ class AffectedOrderID (field_types.String_Type) :
 class AffectedSecondaryOrderID (field_types.String_Type) :
     _tag = '536'
 
-class QuoteType (field_types.int_Type) :
+class QuoteType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '537'
     ENUM_INDICATIVE = 0
     ENUM_TRADEABLE = 1
@@ -2626,7 +2637,7 @@ class UnderlyingMaturityDate (field_types.LocalMktDate_Type) :
 class InstrRegistry (field_types.String_Type) :
     _tag = '543'
 
-class CashMargin (field_types.char_Type) :
+class CashMargin (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '544'
     ENUM_MARGIN_OPEN = '2'
     ENUM_MARGIN_CLOSE = '3'
@@ -2635,13 +2646,13 @@ class CashMargin (field_types.char_Type) :
 class NestedPartySubID (field_types.String_Type) :
     _tag = '545'
 
-class Scope (field_types.MultipleValueString_Type) :
+class Scope (field_types.MultipleValueString_Type, field_types.MultipleValueString_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '546'
     ENUM_LOCAL_MARKET = '1'
     ENUM_NATIONAL = '2'
     ENUM_GLOBAL = '3'
 
-class MDImplicitDelete (field_types.Boolean_Type) :
+class MDImplicitDelete (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '547'
     ENUM_YES = 'Y'
     ENUM_NO = 'N'
@@ -2649,14 +2660,14 @@ class MDImplicitDelete (field_types.Boolean_Type) :
 class CrossID (field_types.String_Type) :
     _tag = '548'
 
-class CrossType (field_types.int_Type) :
+class CrossType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '549'
     ENUM_CROSS_AON = 1
     ENUM_CROSS_IOC = 2
     ENUM_CROSS_ONE_SIDE = 3
     ENUM_CROSS_SAME_PRICE = 4
 
-class CrossPrioritization (field_types.int_Type) :
+class CrossPrioritization (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '550'
     ENUM_SELL_SIDE_IS_PRIORITIZED = 2
     ENUM_NONE = 0
@@ -2665,7 +2676,7 @@ class CrossPrioritization (field_types.int_Type) :
 class OrigCrossID (field_types.String_Type) :
     _tag = '551'
 
-class NoSides (field_types.NumInGroup_Type) :
+class NoSides (field_types.NumInGroup_Type, field_types.NumInGroup_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '552'
     ENUM_ONE_SIDE = 1
     ENUM_BOTH_SIDES = 2
@@ -2688,7 +2699,7 @@ class TotalNumSecurityTypes (field_types.int_Type) :
 class NoSecurityTypes (field_types.NumInGroup_Type) :
     _tag = '558'
 
-class SecurityListRequestType (field_types.int_Type) :
+class SecurityListRequestType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '559'
     ENUM_SECURITY_TYPE_AND = 1
     ENUM_PRODUCT = 2
@@ -2696,7 +2707,7 @@ class SecurityListRequestType (field_types.int_Type) :
     ENUM_ALL_SECURITIES = 4
     ENUM_SYMBOL = 0
 
-class SecurityRequestResult (field_types.int_Type) :
+class SecurityRequestResult (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '560'
     ENUM_INSTRUMENT_DATA_TEMPORARILY_UNAVAILABLE = 4
     ENUM_VALID_REQUEST = 0
@@ -2723,14 +2734,14 @@ class LegCoveredOrUncovered (field_types.int_Type) :
 class LegPrice (field_types.Price_Type) :
     _tag = '566'
 
-class TradSesStatusRejReason (field_types.int_Type) :
+class TradSesStatusRejReason (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '567'
     ENUM_UNKNOWN_OR_INVALID_TRADING_SESSION_ID = 1
 
 class TradeRequestID (field_types.String_Type) :
     _tag = '568'
 
-class TradeRequestType (field_types.int_Type) :
+class TradeRequestType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '569'
     ENUM_ADVISORIES_THAT_MATCH_CRITERIA = 4
     ENUM_UNREPORTED_TRADES_THAT_MATCH_CRITERIA = 3
@@ -2738,7 +2749,7 @@ class TradeRequestType (field_types.int_Type) :
     ENUM_MATCHED_TRADES_MATCHING_CRITERIA = 1
     ENUM_ALL_TRADES = 0
 
-class PreviouslyReported (field_types.Boolean_Type) :
+class PreviouslyReported (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '570'
     ENUM_NOT_REPORTED_TO_COUNTERPARTY = 'N'
     ENUM_PERVIOUSLY_REPORTED_TO_COUNTERPARTY = 'Y'
@@ -2749,13 +2760,13 @@ class TradeReportID (field_types.String_Type) :
 class TradeReportRefID (field_types.String_Type) :
     _tag = '572'
 
-class MatchStatus (field_types.char_Type) :
+class MatchStatus (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '573'
     ENUM_COMPARED = '0'
     ENUM_UNCOMPARED = '1'
     ENUM_ADVISORY_OR_ALERT = '2'
 
-class MatchType (field_types.String_Type) :
+class MatchType (field_types.String_Type, field_types.String_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '574'
     ENUM_A5_EXACT_MATCH_SUMMARIZED_QUANTITY = 'S5'
     ENUM_EXACT_MATCH_MINUS_BADGES_TIMES = 'M1'
@@ -2782,7 +2793,7 @@ class OddLot (field_types.Boolean_Type) :
 class NoClearingInstructions (field_types.int_Type) :
     _tag = '576'
 
-class ClearingInstruction (field_types.int_Type) :
+class ClearingInstruction (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '577'
     ENUM_MANUAL_MODE = 8
     ENUM_MULTILATERAL_NETTING = 5
@@ -2805,7 +2816,7 @@ class TradeInputDevice (field_types.String_Type) :
 class NoDates (field_types.NumInGroup_Type) :
     _tag = '580'
 
-class AccountType (field_types.int_Type) :
+class AccountType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '581'
     ENUM_HOUSE_TRADER = 3
     ENUM_HOUSE_TRADER_CROSS_MARGINED = 7
@@ -2824,7 +2835,7 @@ class ClOrdLinkID (field_types.String_Type) :
 class MassStatusReqID (field_types.String_Type) :
     _tag = '584'
 
-class MassStatusReqType (field_types.int_Type) :
+class MassStatusReqType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '585'
     ENUM_STATUS_FOR_ORDERS_FOR_A_SECURITY = 1
     ENUM_STATUS_FOR_ORDERS_FOR_AN_UNDERLYING_SECURITY = 2
@@ -2844,18 +2855,18 @@ class LegSettlmntTyp (field_types.char_Type) :
 class LegFutSettDate (field_types.LocalMktDate_Type) :
     _tag = '588'
 
-class DayBookingInst (field_types.char_Type) :
+class DayBookingInst (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '589'
     ENUM_AUTO = '0'
     ENUM_SPEAK_WITH_ORDER_INITIATOR_BEFORE_BOOKING = '1'
 
-class BookingUnit (field_types.char_Type) :
+class BookingUnit (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '590'
     ENUM_AGGREGATE_PARTIAL_EXECUTIONS_ON_THIS_ORDER = '1'
     ENUM_AGGREGATE_EXECUTIONS_FOR_THIS_SYMBOL = '2'
     ENUM_EACH_PARTIAL_EXECUTION_IS_A_BOOKABLE_UNIT = '0'
 
-class PreallocMethod (field_types.char_Type) :
+class PreallocMethod (field_types.char_Type, field_types.char_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '591'
     ENUM_PRO_RATA = '0'
     ENUM_DO_NOT_PRO_RATA = '1'
@@ -2962,7 +2973,7 @@ class LegSide (field_types.char_Type) :
 class TradingSessionSubID (field_types.String_Type) :
     _tag = '625'
 
-class AllocType (field_types.int_Type) :
+class AllocType (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '626'
     ENUM_BUYSIDE_READY_TO_BOOK = 6
     ENUM_PRELIMINARY = 2
@@ -2995,7 +3006,7 @@ class MidYield (field_types.Percentage_Type) :
 class OfferYield (field_types.Percentage_Type) :
     _tag = '634'
 
-class ClearingFeeIndicator (field_types.String_Type) :
+class ClearingFeeIndicator (field_types.String_Type, field_types.String_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '635'
     ENUM_FIRMS106_H_AND106_J = 'H'
     ENUM_FIFTH_YEAR_DELEGATE = '5'
@@ -3012,7 +3023,7 @@ class ClearingFeeIndicator (field_types.String_Type) :
     ENUM_CBOE_MEMBER = 'B'
     ENUM_LESSEE106_F_EMPLOYEES = 'L'
 
-class WorkingIndicator (field_types.Boolean_Type) :
+class WorkingIndicator (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '636'
     ENUM_NOT_WORKING = 'N'
     ENUM_WORKING = 'Y'
@@ -3020,7 +3031,7 @@ class WorkingIndicator (field_types.Boolean_Type) :
 class LegLastPx (field_types.Price_Type) :
     _tag = '637'
 
-class PriorityIndicator (field_types.int_Type) :
+class PriorityIndicator (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '638'
     ENUM_PRIORITY_UNCHANGED = 0
     ENUM_LOST_PRIORITY_AS_RESULT_OF_ORDER_CHANGE = 1
@@ -3058,7 +3069,7 @@ class MinOfferSize (field_types.Qty_Type) :
 class QuoteStatusReqID (field_types.String_Type) :
     _tag = '649'
 
-class LegalConfirm (field_types.Boolean_Type) :
+class LegalConfirm (field_types.Boolean_Type, field_types.Boolean_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '650'
     ENUM_LEGAL_CONFIRM = 'Y'
     ENUM_DOES_NOT_CONSITUTE_A_LEGAL_CONFIRM = 'N'
@@ -3081,7 +3092,7 @@ class SettlCurrBidFxRate (field_types.float_Type) :
 class SettlCurrOfferFxRate (field_types.float_Type) :
     _tag = '657'
 
-class QuoteRequestRejectReason (field_types.int_Type) :
+class QuoteRequestRejectReason (field_types.int_Type, field_types.int_Type.mro()[-2], metaclass = fix_enum_type.EnumType) :
     _tag = '658'
     ENUM_UNKNOWN_SYMBOL = 1
     ENUM_EXCHANGE = 2

@@ -1,0 +1,15 @@
+Settings:
+
+Heartbeat:
+    HeartBeatInt : 30
+
+Validations:
+    AcceptUnknownFields : False
+    SendingTimeTolerance : 2
+    ValidateCompIDs : True
+    ValidateRequiredFields : True
+
+MessageParsing:
+    MessageReadTimeout : 2
+    IgnoreChecksum : False
+    IgnoreInvalidFieldValues : False

@@ -21,20 +21,22 @@ MESSAGE_BASE_LIBRARY[FIX_5_0SP2.fix_messages.BEGINSTRING] = FIX_5_0SP2
 
 DEFAULT_MESSAGE_READ_TIMEOUT = 2
 
-async def create_message_from_stream(reader, messages = None ):
+async def create_message_from_stream(reader, messages, settings):
+    read_timeout = settings.get("MessageReadTimeout", fallback = DEFAULT_MESSAGE_READ_TIMEOUT)
     buffer = io.BytesIO()
     try:
         byte = await reader.read(1) #read 1 byte to make sure strem has data on it        
-        return await  asyncio.wait_for(_parse_into_buffer(byte, reader, buffer, messages), timeout = DEFAULT_MESSAGE_READ_TIMEOUT)
+        return await  asyncio.wait_for(_parse_into_buffer(byte, reader, buffer, messages, settings),
+                     timeout = read_timeout)
     except (asyncio.streams.IncompleteReadError, ConnectionAbortedError):
         raise
-    except fix_errors.FIXInvalidMessageTypeError:
+    except (fix_errors.FIXInvalidMessageTypeError, fix_errors.FIXInvalidMessageFieldError):
         raise
     except Exception as e:
         logger.exception(f"Failed to create message from stream [{buffer.getvalue()}]")
         raise fix_errors.FIXGarbledMessageError(e)
 
-async def _parse_into_buffer(first_byte, reader, buffer, messages):
+async def _parse_into_buffer(first_byte, reader, buffer, messages, settings):
     """
     What constitutes a garbled message
     BeginString(8) is not the first tag in a message or is not of the format 8=FIX.n.m.
@@ -42,6 +44,10 @@ async def _parse_into_buffer(first_byte, reader, buffer, messages):
     MsgType(35) is not the third tag in a message.
     Checksum(10) is not the last tag or contains an incorrect value.
     """
+
+    ignore_checksum = settings.getboolean("IgnoreChecksum", fallback = False)
+    ignore_invalid_field_vals = settings.getboolean("IgnoreInvalidFieldValues", fallback = False)
+    
 
     buffer_size = 1
 
@@ -87,32 +93,43 @@ async def _parse_into_buffer(first_byte, reader, buffer, messages):
 
     calced_checksum = fix_message.calc_checksum(buffer)
     buffer.write(checkSum)
-    if len(checkSumValue) != 3 or checkSumValue.decode() != calced_checksum:
+    if not ignore_checksum and (len(checkSumValue) != 3 or checkSumValue.decode() != calced_checksum):
         raise fix_errors.FIXCheckSumError(f"Faield Checksum got {checkSumValue.decode()} but expected {calced_checksum}")
+
+    msg_class = messages.fix_messages.MESSAGE_TYPES.get(msgTypeValue)
+    if not msg_class:
+        error = fix_errors.FIXInvalidMessageTypeError(None, msgTypeValue, msgTypeTag, "Invalid MsgType", messages.fields.SessionRejectReason.ENUM_INVALID_MSG_TYPE)
+        raise error
 
     header = messages.fix_messages.Header()
     header.BeginString = beginStringValue
     header.BodyLength = bodyLengthValue
-    header.build_from_list(data_list, True)
 
-    msg_class = messages.fix_messages.MESSAGE_TYPES.get(msgTypeValue)
-    if not msg_class:
-        error = fix_errors.FIXInvalidMessageTypeError(header.MsgSeqNum, msgTypeValue, msgTypeTag, "Invalid MsgType", messages.fields.SessionRejectReason.ENUM_INVALID_MSG_TYPE)
-        raise error
-
-
+    try:
+        header.build_from_list(data_list, True, ignore_invalid_field_vals)
+    except fix_errors.FIXValueError as e:
+        raise fix_errors.FIXInvalidMessageFieldError(header.MsgSeqNum, msg_class._msgtype, e.tag, 
+                        "Value is incorrect (out of range) for this tag", messages.fields.SessionRejectReason.ENUM_VALUE_IS_INCORRECT)
 
     msg = msg_class()
     msg.Header = header
-    msg.build_from_list(data_list)
+    try:
+        missed_fields = msg.build_from_list(data_list, False, ignore_invalid_field_vals)
+    except fix_errors.FIXValueError as e:
+        raise fix_errors.FIXInvalidMessageFieldError(header.MsgSeqNum, msg_class._msgtype, e.tag, 
+                        "Value is incorrect (out of range) for this tag", messages.fields.SessionRejectReason.ENUM_VALUE_IS_INCORRECT)
 
     trailer = messages.fix_messages.Trailer()
     trailer.CheckSum = checkSumValue
-    trailer.build_from_list(data_list, True)
+    try:
+        missed_fields += trailer.build_from_list(data_list, True, ignore_invalid_field_vals)
+    except fix_errors.FIXValueError as e:
+        raise fix_errors.FIXInvalidMessageFieldError(header.MsgSeqNum, msg_class._msgtype, e.tag, 
+                        "Value is incorrect (out of range) for this tag", messages.fields.SessionRejectReason.ENUM_VALUE_IS_INCORRECT)
 
     msg.Trailer = trailer
 
-    return msg, buffer.getvalue()
+    return msg, buffer.getvalue(), missed_fields
 
 def create_message_from_binary(data, msg_class, messages):
     data_list = data.decode().split(SEP)
@@ -121,7 +138,7 @@ def create_message_from_binary(data, msg_class, messages):
     header.build_from_list(data_list, True)
 
     msg = messages.fix_messages.MESSAGE_TYPES[msg_class]()
-    msg.build_from_list(data_list)
+    msg.build_from_list(data_list, False)
 
     trailer = messages.fix_messages.Trailer()
     trailer.build_from_list(data_list, True)

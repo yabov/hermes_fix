@@ -23,6 +23,7 @@ class Trailer(fix_message.MessageBase):
         register_StandardTrailer_component(self)
 """
 FIELD_HEADER ="""from . import field_types
+import fix_enum_type
 """
 
 FIELD_BASE_TYPE_FORMATTER = """
@@ -35,10 +36,12 @@ FIELD_TYPE_FORMATTER = """
 class {name}({subclass}): pass
 """
 
+FIELD_TYPE_HEADER = """ """
+
 BASE_TYPE_MAP = {'String' : 'str', 'char' : 'str', 'Pattern' : 'str', 'data' : 'str', 'date' : 'str', 'time' : 'str'}
 
 FIELD_CLASS_FORMATTER = """
-class {name} (field_types.{type}_Type) :
+class {name} (field_types.{type}_Type{enum}) :
     _tag = '{number}'
 """
 
@@ -138,8 +141,8 @@ def generate_fix_classes(file_name):
     header_writer.close()
 
 def generate_fields_types(root, fix_version, writer):
+    writer.write(FIELD_TYPE_HEADER)
     for child in root.find('datatypes'):
-        if child.get('added') > fix_version: continue
         name = child.get('name')
         type = child.get('baseType', name)
         
@@ -171,14 +174,16 @@ def generate_fields(root, fix_version, writer):
         type = child.get('type')
         number = child.get('id')
         
-        if child.get('added') > fix_version: continue
 
         TAG_NAME_MAP[number] = name
 
-        writer.write(FIELD_CLASS_FORMATTER.format(name = name, type = type, number = number))
+        enums = child.findall('enum')
+        enum = ""
+        if len(enums) > 0: 
+            enum = ', field_types.' + type+'_Type.mro()[-2], metaclass = fix_enum_type.EnumType'
+        writer.write(FIELD_CLASS_FORMATTER.format(name = name, type = type, number = number, enum = enum))
         
         for enum in child.findall('enum'):
-            if enum.get('added') is not None and enum.get('added') > fix_version: continue
             description = camel_to_snake( enum.get('symbolicName'))
             str_formatter = ""
             if FIELD_TYPE_MAP.get(child.get('type'), 'str') == 'str':
@@ -195,13 +200,11 @@ def generate_fields(root, fix_version, writer):
             
 def generate_components(root, fix_version, writer, indent = '    '):
     for component in root.find('components'):
-        if component.get('added') > fix_version: continue
         writer.write(COMPONENT_HEADER.format(component = component.get('name')))
         generate_body(component, fix_version, writer, indent)
         
 def generate_body(component, fix_version, writer, indent = '    '):
     for child in component:
-        if child.get('added') is not None and child.get('added') > fix_version: continue
         if child.tag == 'fieldRef':
             writer.write(FIELD_FORMATTER.format(indent = indent, field = child.get('name'), required = 'True' if child.get('required') == '1' else 'False'))
         elif child.tag == 'componentRef' and child.get('name') not in ['StandardHeader', 'StandardTrailer']:
@@ -215,7 +218,6 @@ def generate_body(component, fix_version, writer, indent = '    '):
 
 def generate_messages(root, fix_version, writer, indent = '    '):
     for msg in root.find('messages'):
-        if msg.get('added') > fix_version: continue
         writer.write(MESSAGE_CLASS_FORMATTER.format(name = msg.get('name'), msgtype = msg.get('msgType'), msgcat = 'admin' if msg.get('category') == 'Session' else 'app' ))
         generate_body(msg, fix_version, writer, indent + ' '*4)
         writer.write(MESSAGE_CLASS_TRAILER.format(name = msg.get('name'), msgtype = msg.get('msgType')))

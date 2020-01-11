@@ -91,6 +91,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         order_msg.Trailer.CheckSum = '000'
 
@@ -131,6 +132,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
@@ -161,6 +163,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         order_msg.Trailer.CheckSum = '00000'
 

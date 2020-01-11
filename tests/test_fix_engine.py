@@ -90,6 +90,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
@@ -105,6 +106,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.engine.msg_seq_num_out = 10
@@ -130,6 +132,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.engine.msg_seq_num_out = 0
@@ -151,6 +154,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'+'\x01'+'BORKED'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
@@ -180,6 +184,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         order_msg.Header.OrigSendingTime = order_msg.TransactTime
@@ -211,6 +216,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         order_msg.Header.OrigSendingTime = (datetime.datetime.utcnow() + datetime.timedelta(hours=1)).strftime('%Y%m%d-%H:%M:%S.%f')
@@ -238,6 +244,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         order_msg.Header.PossDupFlag = 'Y'
@@ -258,6 +265,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
@@ -278,6 +286,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
@@ -304,6 +313,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
@@ -330,6 +340,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
@@ -353,12 +364,13 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=5), fix_errors.FIXGarbledMessageError)
-        for _ in range(10):
+        for _ in range(11):
             self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXGarbledMessageError)
 
         self.client_app.engine.logout()
@@ -387,6 +399,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         order_msg.Header.SendingTime = (datetime.datetime.utcnow() + datetime.timedelta(hours=1)).strftime('%Y%m%d-%H:%M:%S.%f')
@@ -404,12 +417,23 @@ class Test(unittest.TestCase):
     Increment inbound MsgSeqNum(34)
     Generate a "warning" condition in test output"""
     def test_bad_msg_type(self):
-        fix_messages_4_2_0_base.OrderSingle._msgtype = 'BAD'
         order_msg = fix_messages_4_2_0_base.OrderSingle()
+
+        fix_messages_4_2_0_base.OrderSingle._msgtype = 'BAD'
+
+        class String_Type(str):
+            def __bytes__(self):
+                return str(self).encode()
+        class MsgType(String_Type) :
+            _tag = '35'
+
+        order_msg.Header.register_field(MsgType, True)
+
         order_msg.ClOrdID = "test_message"
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(order_msg)
@@ -433,6 +457,7 @@ class Test(unittest.TestCase):
         order_msg.HandlInst = '1'
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
+        order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.server_app.engine.callback_register = fix_engine.CallbackRegistrar(self.server_app.engine.loop)

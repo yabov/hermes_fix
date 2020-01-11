@@ -5,6 +5,7 @@ import threading
 import concurrent
 from threading import Thread
 from fix_engine import FIXEngineInitiator, FIXEngineAcceptor
+import configparser
 
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ class SocketConnection:
         addr = writer.get_extra_info('peername')
         sockname = writer.get_extra_info('sockname')
         logger.info(f'Accepted New Connection on [{sockname}]<-->[{addr}]')
-        engine = FIXEngineAcceptor(self.application, self.storeFactory, self.session_settings, reader, writer)
+        engine = FIXEngineAcceptor(self.application, self.storeFactory, self.session_settings, reader, writer, self.session_settings['DEFAULT'])
         try:
             await engine.serve_client()
         except Exception as e:

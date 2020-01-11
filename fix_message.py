@@ -49,25 +49,33 @@ class MessageBase(object):
         self._content_name_map[group_num_field.__name__] = c
         self._content_name_map[group_type.__name__] = group_content
 
-    def build_from_list(self, field_list, stop_if_field_not_defined = False):
+    def build_from_list(self, field_list, stop_if_field_not_defined, ignore_invalid_field_vals = False):
         missed_fields = []
         while field_list:
             field = field_list[0]
             tag, value = field.split(EQU,1)
             content = self._content_tag_map.get(tag)
-            #TODO add nesting logic
             if not content:
                 if stop_if_field_not_defined: 
                     return missed_fields
                 else:
                     missed_fields.append(field_list.pop(0))
+
                     continue
             
             if content.value is not None:
                 #we already set this field which likely means we're in a repeating group and in the next group item
                 return missed_fields
-                
-            setattr(self, content.field_type.__name__, value)
+
+            try:
+                setattr(self, content.field_type.__name__, value)
+            except ValueError as e:
+                if ignore_invalid_field_vals:
+                    field_list.pop(0)
+                    continue
+                else:
+                    raise fix_errors.FIXValueError(str(e), tag)
+
             field_list.pop(0)
             if content.group_content: #value should be number of repeating groups
                 for i in range(content.value):
@@ -80,7 +88,7 @@ class MessageBase(object):
 
         #if missed_fields:
         #    logger.debug("Received additional unregistered tags %s in message [%s]", missed_fields, self._msgtype)
-        
+
         return missed_fields
 
 
@@ -139,6 +147,7 @@ class MessageBase(object):
         if 'initialized' not in self.__dict__ or  name in self.__dict__: 
             return super().__setattr__(name, value)
 
+        if value == "": return
         content = self._content_name_map.get(name)
         if content:
             if isinstance(value, content.field_type):

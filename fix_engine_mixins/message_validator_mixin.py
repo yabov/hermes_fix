@@ -4,12 +4,17 @@ import fix_engine
 import heapq
 import fix_errors
 import datetime
+import fix_message
 
 logger = logging.getLogger(__name__)
 
 class MessageValidatorMixin(object):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.accept_unknown_fields = True #set to true initially because first message drives the settings
+        self.send_time_tolerance = datetime.timedelta(minutes = 2)
+        self.validate_comp_ids = True
+        self.validate_req_fields = True
 
     def init_settings(self, *args, **kwargs):
         super().init_settings(*args, **kwargs)
@@ -17,28 +22,44 @@ class MessageValidatorMixin(object):
         self.__SenderCompID = self.settings['SenderCompID']
         self.__BeginString = self.settings['BeginString']
 
+        self.accept_unknown_fields = self.settings.getboolean('AcceptUnknownFields', fallback =False)
+        self.send_time_tolerance = datetime.timedelta(minutes = self.settings.get('SendingTimeTolerance', fallback =2)) 
+        self.validate_comp_ids = self.settings.getboolean('ValidateCompIDs', fallback =True)
+        self.validate_req_fields = self.settings.getboolean('ValidateRequiredFields', fallback =True)
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
         self.register_admin_callback(None, self.on_first_message, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST , one_time = True)
-        self.register_admin_callback(None, self.on_validate_message, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST + fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.AFTER)
+        if self.validate_comp_ids:
+            self.register_admin_callback(None, self.on_validate_message, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST + fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.AFTER)
+        if self.send_time_tolerance > datetime.timedelta(minutes=0):
+            self.register_admin_callback(None, self.on_validate_sendtime, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST + fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.AFTER)
+        if self.validate_req_fields:
+            self.register_admin_callback(None, self.on_validate_req_fields, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST + fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.AFTER)
         
+
+
     async def parse_message(self, *args, **kwargs):
         try:
-            return await super().parse_message(*args, **kwargs)
+            msg, buffer, missed_fields =  await super().parse_message(*args, **kwargs)
+            if not self.accept_unknown_fields and len(missed_fields) > 0:
+                ref_tag, _ = missed_fields[0].split(fix_message.EQU,1)
+                raise fix_errors.FIXInvalidMessageFieldError(msg.Header.MsgSeqNum, msg._msgtype, ref_tag, "Invalid tag number", self.message_lib.fields.SessionRejectReason.ENUM_INVALID_TAG_NUMBER)
+            return msg, buffer, missed_fields
         except (asyncio.streams.IncompleteReadError, ConnectionError) as e:
             logger.debug(f"Connection closed {e}")
             self.close_connection()
-            return None
-        except fix_errors.FIXInvalidMessageTypeError as e:
+            return None, None, None
+        except fix_errors.FIXRejectError as e:
+            logger.error(e)
             self.application.on_error(e)
             curr_seq = self.store.get_current_in_seq()
             self.store.set_current_in_seq(curr_seq + 1)
             self.send_reject(curr_seq, e.RefMsgType, e.RefTagID, e.Text, e.SessionRejectReason)
-            return None
+            return None, None, None
         except fix_errors.FIXDropMessageError as e:
             self.application.on_error(e)
-            return None
+            return None, None, None
         except Exception as e:
             raise
 
@@ -65,13 +86,21 @@ class MessageValidatorMixin(object):
             raise fix_errors.RequiredTagMissingError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.OrigSendingTime, 
                 "Required tag missing", self.message_lib.fields.SessionRejectReason.ENUM_REQUIRED_TAG_MISSING)
 
-        self.validate_sendtime(msg)
-
-    def validate_sendtime(self, msg):        
+    def on_validate_sendtime(self, msg):        
         send_time = datetime.datetime.strptime(msg.Header.SendingTime, self.time_format)
-        if abs(datetime.datetime.utcnow() - send_time) > datetime.timedelta(minutes=2):
+        if abs(datetime.datetime.utcnow() - send_time) > self.send_time_tolerance:
             raise fix_errors.FIXSendTimeAccuracyError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.SendingTime, 
                  "SendingTime accuracy problem", self.message_lib.fields.SessionRejectReason.ENUM_SENDING_TIME_ACCURACY_PROBLEM,
                  wait_interval=2, send_test_msg=False)
             
+    def on_validate_req_fields(self, msg):
+        for content in msg._content_name_map.values():
+            if content.is_group: continue #access group through GroupNo field
+            if content.required and content.value is None:
+                raise fix_errors.FIXInvalidMessageFieldError(msg.Header.MsgSeqNum, msg._msgtype, content.field_type._tag,  "Required tag missing", 
+                        self.message_lib.fields.SessionRejectReason.ENUM_REQUIRED_TAG_MISSING)
+            if content.group_content and content.value and not self.validate_req_fields(content.group_content): 
+                raise fix_errors.FIXInvalidMessageFieldError(msg.Header.MsgSeqNum, msg._msgtype, content.field_type._tag,  "Required tag missing", 
+                    self.message_lib.fields.SessionRejectReason.ENUM_REQUIRED_TAG_MISSING)
+        return None
 

@@ -94,7 +94,8 @@ class SequenceCheckerMixin():
         for msg_num, msg_type_str, resend_msg in self.store.get_messages(msg.BeginSeqNo, msg.EndSeqNo):
             try:
                 header, msg, _ = fix_message_library.create_message_from_binary(resend_msg, msg_type_str, self.message_lib)
-            except:
+            except Exception:
+                logger.exception("Failed to replay message")
                 self.send_gap_fill(last_sent_msg_num, msg_num+1)
                 last_sent_msg_num = msg_num
                 continue

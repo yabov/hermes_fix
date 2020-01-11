@@ -100,7 +100,7 @@ class CallbackWrapper:
 
 
 class FIXEngineBase():
-    def __init__(self, application, store_factory, session_settings, reader, writer, settings = None, max_workers = None):
+    def __init__(self, application, store_factory, session_settings, reader, writer, settings, max_workers = None):
         self.application = application
         self.store_factory = store_factory
         self.session_settings = session_settings
@@ -234,10 +234,10 @@ class FIXEngineBase():
         raise fix_errors.FIXSessionNotFound("Session not found")
 
     async def parse_message(self):
-        msg, buffer = await fix_message_library.create_message_from_stream(self.reader, self.message_lib)
+        msg, buffer, missed_fields = await fix_message_library.create_message_from_stream(self.reader, self.message_lib, self.settings)
         logger.info(f'Incoming msg [{buffer.translate(B_TABLE)}]')
 
-        return msg
+        return msg, buffer, missed_fields 
 
     async def serve_client(self):
         await self.loop_run() #first loop for logon message
@@ -246,7 +246,7 @@ class FIXEngineBase():
         logger.debug("Ending Server Loop")
 
     async def loop_run(self):
-        msg = await self.parse_message()
+        msg, _, _ = await self.parse_message()
         try:
             if msg is not None: 
                 self.msg_queue.put(msg)
@@ -284,6 +284,7 @@ class FIXEngineBase():
                 return False
             except fix_errors.FIXRejectError as e:
                 self.application.on_error(e)
+                logger.error(e)
                 self.store.set_current_in_seq(msg.Header.MsgSeqNum)
                 self.send_reject(msg.Header.MsgSeqNum, e.RefMsgType, e.RefTagID, e.Text, e.SessionRejectReason)
                 return False            
