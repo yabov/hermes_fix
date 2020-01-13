@@ -1,3 +1,5 @@
+import fix_errors
+
 class EnumType(type):       
     def __new__(metacls, cls, bases, classdict):
         cls =  super().__new__(metacls, cls, bases, classdict)
@@ -14,5 +16,6 @@ class EnumType(type):
     def __call__(cls, value):
         value = cls.base_type(value)
         if value not in cls._member_map_:
-            raise ValueError("%r is not a valid %s" % (value, cls.__qualname__))
-        return cls.__new__(cls, value)
+            raise fix_errors.FIXEnumValueError("%r is not a valid %s" % (value, cls.__qualname__))
+            #raise ValueError("%r is not a valid %s" % (value, cls.__qualname__))
+        return cls.__new__(cls, value) #pylint: disable=no-value-for-parameter

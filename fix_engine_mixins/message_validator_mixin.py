@@ -43,6 +43,7 @@ class MessageValidatorMixin(object):
         try:
             msg, buffer, missed_fields =  await super().parse_message(*args, **kwargs)
             if not self.accept_unknown_fields and len(missed_fields) > 0:
+                print ('####', missed_fields)
                 ref_tag, _ = missed_fields[0].split(fix_message.EQU,1)
                 raise fix_errors.FIXInvalidMessageFieldError(msg.Header.MsgSeqNum, msg._msgtype, ref_tag, "Invalid tag number", self.message_lib.fields.SessionRejectReason.ENUM_INVALID_TAG_NUMBER)
             return msg, buffer, missed_fields
@@ -94,13 +95,9 @@ class MessageValidatorMixin(object):
                  wait_interval=2, send_test_msg=False)
             
     def on_validate_req_fields(self, msg):
-        for content in msg._content_name_map.values():
-            if content.is_group: continue #access group through GroupNo field
-            if content.required and content.value is None:
-                raise fix_errors.FIXInvalidMessageFieldError(msg.Header.MsgSeqNum, msg._msgtype, content.field_type._tag,  "Required tag missing", 
-                        self.message_lib.fields.SessionRejectReason.ENUM_REQUIRED_TAG_MISSING)
-            if content.group_content and content.value and not self.validate_req_fields(content.group_content): 
-                raise fix_errors.FIXInvalidMessageFieldError(msg.Header.MsgSeqNum, msg._msgtype, content.field_type._tag,  "Required tag missing", 
+        tag = msg.get_first_unset_required_field()
+        if tag is not None:
+            raise fix_errors.FIXInvalidMessageFieldError(msg.Header.MsgSeqNum, msg._msgtype, tag,  "Required tag missing", 
                     self.message_lib.fields.SessionRejectReason.ENUM_REQUIRED_TAG_MISSING)
         return None
 

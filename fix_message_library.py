@@ -30,7 +30,7 @@ async def create_message_from_stream(reader, messages, settings):
                      timeout = read_timeout)
     except (asyncio.streams.IncompleteReadError, ConnectionAbortedError):
         raise
-    except (fix_errors.FIXInvalidMessageTypeError, fix_errors.FIXInvalidMessageFieldError):
+    except (fix_errors.FIXInvalidMessageTypeError, fix_errors.FIXInvalidMessageFieldError, fix_errors.FIXRejectError):
         raise
     except Exception as e:
         logger.exception(f"Failed to create message from stream [{buffer.getvalue()}]")
@@ -105,28 +105,15 @@ async def _parse_into_buffer(first_byte, reader, buffer, messages, settings):
     header.BeginString = beginStringValue
     header.BodyLength = bodyLengthValue
 
-    try:
-        header.build_from_list(data_list, True, ignore_invalid_field_vals)
-    except fix_errors.FIXValueError as e:
-        raise fix_errors.FIXInvalidMessageFieldError(header.MsgSeqNum, msg_class._msgtype, e.tag, 
-                        "Value is incorrect (out of range) for this tag", messages.fields.SessionRejectReason.ENUM_VALUE_IS_INCORRECT)
+    missed_fields = _build_from_list(header, data_list, True, messages, msg_class, ignore_invalid_field_vals)
 
     msg = msg_class()
     msg.Header = header
-    try:
-        missed_fields = msg.build_from_list(data_list, False, ignore_invalid_field_vals)
-    except fix_errors.FIXValueError as e:
-        raise fix_errors.FIXInvalidMessageFieldError(header.MsgSeqNum, msg_class._msgtype, e.tag, 
-                        "Value is incorrect (out of range) for this tag", messages.fields.SessionRejectReason.ENUM_VALUE_IS_INCORRECT)
-
+    missed_fields += _build_from_list(msg, data_list, False, messages, msg_class, ignore_invalid_field_vals)
+  
     trailer = messages.fix_messages.Trailer()
     trailer.CheckSum = checkSumValue
-    try:
-        missed_fields += trailer.build_from_list(data_list, True, ignore_invalid_field_vals)
-    except fix_errors.FIXValueError as e:
-        raise fix_errors.FIXInvalidMessageFieldError(header.MsgSeqNum, msg_class._msgtype, e.tag, 
-                        "Value is incorrect (out of range) for this tag", messages.fields.SessionRejectReason.ENUM_VALUE_IS_INCORRECT)
-
+    missed_fields += _build_from_list(trailer, data_list, True, messages,msg_class, ignore_invalid_field_vals)
     msg.Trailer = trailer
 
     return msg, buffer.getvalue(), missed_fields
@@ -135,17 +122,31 @@ def create_message_from_binary(data, msg_class, messages):
     data_list = data.decode().split(SEP)
     data_list.pop(-1) #removes last empty item
     header = messages.fix_messages.Header()
-    header.build_from_list(data_list, True)
+    _build_from_list(header, data_list, True, messages, msg_class)
 
     msg = messages.fix_messages.MESSAGE_TYPES[msg_class]()
-    msg.build_from_list(data_list, False)
+    _build_from_list(msg, data_list, False, messages, msg_class)
 
     trailer = messages.fix_messages.Trailer()
-    trailer.build_from_list(data_list, True)
-
-    #msg.Header = header
-    #msg.Trailer = trailer
-
+    _build_from_list(trailer, data_list, True, messages, msg_class)
 
     return header, msg, trailer
 
+def _build_from_list(obj, data_list, stop_if_field_not_defined, messages, msg_class, ignore_invalid_field_vals = False):
+    try:
+        missed_fields = obj.build_from_list(data_list, stop_if_field_not_defined, ignore_invalid_field_vals)
+        return missed_fields
+    except fix_errors.FIXEnumValueError as e:
+        raise fix_errors.FIXInvalidMessageFieldError(None, msg_class._msgtype, e.tag, 
+                        "Value is incorrect (out of range) for this tag", messages.fields.SessionRejectReason.ENUM_VALUE_IS_INCORRECT)
+    except fix_errors.FIXTagEmptyError as e:
+        raise fix_errors.FIXInvalidMessageFieldError(None, msg_class._msgtype, e.tag, 
+                        "Tag specified without a value", messages.fields.SessionRejectReason.ENUM_TAG_SPECIFIED_WITHOUT_A_VALUE)
+    except fix_errors.FIXValueError as e:
+        raise fix_errors.FIXInvalidMessageFieldError(None, msg_class._msgtype, e.tag, 
+                        "Incorrect data format for value", messages.fields.SessionRejectReason.ENUM_INCORRECT_DATA_FORMAT_FOR_VALUE)
+    except fix_errors.FIXRepeatingFieldError as e:
+        e.RefMsgType = msg_class._msgtype
+        if messages.fix_messages.BEGINSTRING >= 'FIX.4.3':
+            e.SessionRejectReason = messages.fields.SessionRejectReason.ENUM_TAG_APPEARS_MORE_THAN_ONCE 
+        raise e

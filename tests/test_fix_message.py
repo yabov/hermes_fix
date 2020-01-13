@@ -93,6 +93,37 @@ class Test(unittest.TestCase):
         raw_msg.write((f'10={checksum}\x01').encode())
         return raw_msg.getbuffer()
 
+    """Message with repeating group"""
+    def test_group_msg(self):
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
+        order_msg.ClOrdID = "test_message"
+        order_msg.HandlInst = '1'
+        order_msg.Symbol = 'AAPL'
+        order_msg.Side = '1'
+        order_msg.OrdType = '1'
+        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.NoAllocs = 2
+        ord_allocs1 = fix_messages_4_2_0_base.NoAllocsGroup()
+        ord_allocs1.AllocAccount = 'Abc'
+        ord_allocs1.AllocShares = 123
+        ord_allocs2 = fix_messages_4_2_0_base.NoAllocsGroup()
+        ord_allocs2.AllocAccount = 'Def'
+        ord_allocs2.AllocShares = 456
+        order_msg.NoAllocsGroup = [ord_allocs1, ord_allocs2]
+
+
+        self.client_app.send_message(order_msg)
+
+        msg = SERVER_QUEUE.get(timeout=2)
+        self.assertIsInstance(msg, fix_messages_4_2_0_base.OrderSingle)
+        self.assertEqual(msg.NoAllocs, 2)
+        self.assertEqual(msg.NoAllocsGroup[0].AllocAccount, 'Abc')
+        self.assertEqual(msg.NoAllocsGroup[0].AllocShares, 123)
+        self.assertEqual(msg.NoAllocsGroup[1].AllocAccount, 'Def')
+        self.assertEqual(msg.NoAllocsGroup[1].AllocShares, 456)
+
+        self.do_logout(self.client_app)
+
     """Receive field identifier (tag number) not defined in specification.
     Send Reject<3> (session-level) message referencing invalid tag number (≥ FIX 4.2: SessionRejectReason(373) = 0 - "Invalid tag number")
     Increment inbound MsgSeqNum(34)
@@ -146,8 +177,6 @@ class Test(unittest.TestCase):
         self.do_logout(self.client_app)
 
     """ Receive message with field identifier (tag number) specified but no value (e.g. "55=<SOH>" vs. "55=IBM<SOH>").	
-
-    TODO Needs option for below:
     Send Reject<3> (session-level) message referencing tag not defined for this message type (≥ FIX 4.2: SessionRejectReason(373) = 4 - "Tag specified without a value")
     Increment inbound MsgSeqNum(34)
     Generate an "error" condition in test output"""
@@ -160,9 +189,9 @@ class Test(unittest.TestCase):
         self.client_app.engine.msg_seq_num_out +=1
 
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageFieldError)
 
-        #self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
 
         self.do_logout(self.client_app)
 
@@ -186,6 +215,73 @@ class Test(unittest.TestCase):
 
         self.do_logout(self.client_app)
 
+    """Receive message with a value in an incorrect data format (syntax) for a particular field identifier (tag number).	
+    Send Reject<3> (session-level) message referencing tag not defined for this message type (≥ FIX 4.2: SessionRejectReason(373) = 6 - "Incorrect data format for value")
+    Increment inbound MsgSeqNum(34)
+    Generate an "error" condition in test output"""
+    def test_value_incorrect(self):
+
+        time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|38=a|40=1|21=1|55=AAPL|54=1|60={time}|'.replace('|','\x01').encode()
+
+        self.client_app.engine.writer.write(self.build_raw_msg(body))
+        self.client_app.engine.msg_seq_num_out +=1
+
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageFieldError)
+
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+
+        self.do_logout(self.client_app)
+
+    """Receive a message in which a field identifier (tag number) which is not part of a repeating group is specified more than once	
+    Send Reject<3> (session-level) message referencing duplicate field identifier (tag number) (≥ FIX 4.3: SessionRejectReason(373) = 13 "Tag appears more than once")
+    Increment inbound MsgSeqNum(34)
+    Generate an "error" condition in test output"""
+    def test_dupe_field_val(self):
+
+        time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|38=10|40=1|21=1|55=AAPL|11=test_message|54=1|60={time}|'.replace('|','\x01').encode()
+
+        self.client_app.engine.writer.write(self.build_raw_msg(body))
+        self.client_app.engine.msg_seq_num_out +=1
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXRepeatingFieldError)
+
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+
+        self.do_logout(self.client_app)
+
+    """ Receive a message with repeating groups in which the "count" field value for a repeating group is incorrect	
+    Send Reject<3> (session-level) message referencing the incorrect "count" field identifier (tag number) (≥ FIX 4.3: SessionRejectReason(373) = 16 - "Incorrect NumInGroup count for repeating group")
+    Increment inbound MsgSeqNum(34)
+    Generate an "error" condition in test output"""
+    def test_bad_repeating_count(self):
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
+        order_msg.ClOrdID = "test_message"
+        order_msg.HandlInst = '1'
+        order_msg.Symbol = 'AAPL'
+        order_msg.Side = '1'
+        order_msg.OrdType = '1'
+        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.NoAllocs = 3
+        ord_allocs1 = fix_messages_4_2_0_base.NoAllocsGroup()
+        ord_allocs1.AllocAccount = 'Abc'
+        ord_allocs1.AllocShares = 123
+        ord_allocs2 = fix_messages_4_2_0_base.NoAllocsGroup()
+        ord_allocs2.AllocAccount = 'Def'
+        ord_allocs2.AllocShares = 456
+        order_msg.NoAllocsGroup = [ord_allocs1, ord_allocs2]
+
+        self.client_app.send_message(order_msg)
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXIncorrectNumInGroup)
+
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+
+        self.do_logout(self.client_app)
+
+
     def tearDown(self):
         self.server.stop_all()
         try:
@@ -194,8 +290,6 @@ class Test(unittest.TestCase):
         finally:
             while not SERVER_QUEUE.empty(): SERVER_QUEUE.get()
             while not CLIENT_QUEUE.empty(): CLIENT_QUEUE.get()
-        
-
 
 
 

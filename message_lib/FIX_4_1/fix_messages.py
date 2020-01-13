@@ -16,6 +16,84 @@ class Trailer(fix_message.MessageBase):
     def __init__(self):
         super().__init__()
         register_StandardTrailer_component(self)
+##############Begin Repeating Groups###############
+class NoIOIQualifiersGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.IOIQualifier, False)
+
+class NoRelatedSymGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.RelatdSym, False)
+        self.register_field(fields.SymbolSfx, False)
+        self.register_field(fields.SecurityID, False)
+        self.register_field(fields.IDSource, False)
+        self.register_field(fields.SecurityType, False)
+        self.register_field(fields.MaturityMonthYear, False)
+        self.register_field(fields.MaturityDay, False)
+        self.register_field(fields.PutOrCall, False)
+        self.register_field(fields.StrikePrice, False)
+        self.register_field(fields.OptAttribute, False)
+        self.register_field(fields.SecurityExchange, False)
+        self.register_field(fields.Issuer, False)
+        self.register_field(fields.SecurityDesc, False)
+
+class LinesOfTextGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.Text, True)
+
+class NoOrdersGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.ClOrdID, False)
+        self.register_field(fields.OrderID, False)
+        self.register_field(fields.SecondaryOrderID, False)
+        self.register_field(fields.ListID, False)
+        self.register_field(fields.WaveNo, False)
+
+class NoExecsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.LastShares, False)
+        self.register_field(fields.ExecID, False)
+        self.register_field(fields.LastPx, False)
+        self.register_field(fields.LastCapacity, False)
+
+class NoAllocsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.AllocAccount, False)
+        self.register_field(fields.AllocShares, True)
+        self.register_field(fields.ProcessCode, False)
+        self.register_field(fields.BrokerOfCredit, False)
+        self.register_field(fields.NotifyBrokerOfCredit, False)
+        self.register_field(fields.AllocHandlInst, False)
+        self.register_field(fields.AllocText, False)
+        self.register_field(fields.ExecBroker, False)
+        self.register_field(fields.ClientID, False)
+        self.register_field(fields.Commission, False)
+        self.register_field(fields.CommType, False)
+        self.register_field(fields.AllocAvgPx, False)
+        self.register_field(fields.AllocNetMoney, False)
+        self.register_field(fields.SettlCurrAmt, False)
+        self.register_field(fields.SettlCurrency, False)
+        self.register_field(fields.SettlCurrFxRate, False)
+        self.register_field(fields.SettlCurrFxRateCalc, False)
+        self.register_field(fields.AccruedInterestAmt, False)
+        self.register_field(fields.SettlInstMode, False)
+        self.register_group(fields.NoMiscFees, NoMiscFeesGroup, False)
+
+class NoMiscFeesGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.MiscFeeAmt, False)
+        self.register_field(fields.MiscFeeCurr, False)
+        self.register_field(fields.MiscFeeType, False)
+
+##############End Repeating Groups###############
+##############Begin Componenets###############
 def register_StandardHeader_component(self):
     self.register_field(fields.BeginString, True)
     self.register_field(fields.BodyLength, True)
@@ -45,6 +123,7 @@ def register_StandardTrailer_component(self):
     self.register_field(fields.Signature, False)
     self.register_field(fields.CheckSum, True)
 
+##############End Componenets###############
 
 class Heartbeat(fix_message.MessageBase):
     _msgtype = '0'
@@ -152,11 +231,6 @@ class IOI(fix_message.MessageBase):
         self.register_field(fields.IOIQltyInd, False)
         self.register_field(fields.IOIOthSvc, False)
         self.register_field(fields.IOINaturalFlag, False)
-        class NoIOIQualifiersGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.IOIQualifier, False)
-
         self.register_group(fields.NoIOIQualifiers, NoIOIQualifiersGroup, False)
         self.register_field(fields.Text, False)
         self.register_field(fields.TransactTime, False)
@@ -318,29 +392,7 @@ class News(fix_message.MessageBase):
         self.register_field(fields.OrigTime, False)
         self.register_field(fields.Urgency, False)
         self.register_field(fields.Headline, True)
-        class NoRelatedSymGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.RelatdSym, False)
-                self.register_field(fields.SymbolSfx, False)
-                self.register_field(fields.SecurityID, False)
-                self.register_field(fields.IDSource, False)
-                self.register_field(fields.SecurityType, False)
-                self.register_field(fields.MaturityMonthYear, False)
-                self.register_field(fields.MaturityDay, False)
-                self.register_field(fields.PutOrCall, False)
-                self.register_field(fields.StrikePrice, False)
-                self.register_field(fields.OptAttribute, False)
-                self.register_field(fields.SecurityExchange, False)
-                self.register_field(fields.Issuer, False)
-                self.register_field(fields.SecurityDesc, False)
-
         self.register_group(fields.NoRelatedSym, NoRelatedSymGroup, False)
-        class LinesOfTextGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.Text, True)
-
         self.register_group(fields.LinesOfText, LinesOfTextGroup, True)
         self.register_field(fields.URLLink, False)
         self.register_field(fields.RawDataLength, False)
@@ -360,31 +412,9 @@ class Email(fix_message.MessageBase):
         self.register_field(fields.EmailType, True)
         self.register_field(fields.OrigTime, False)
         self.register_field(fields.Subject, True)
-        class NoRelatedSymGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.RelatdSym, False)
-                self.register_field(fields.SymbolSfx, False)
-                self.register_field(fields.SecurityID, False)
-                self.register_field(fields.IDSource, False)
-                self.register_field(fields.SecurityType, False)
-                self.register_field(fields.MaturityMonthYear, False)
-                self.register_field(fields.MaturityDay, False)
-                self.register_field(fields.PutOrCall, False)
-                self.register_field(fields.StrikePrice, False)
-                self.register_field(fields.OptAttribute, False)
-                self.register_field(fields.SecurityExchange, False)
-                self.register_field(fields.Issuer, False)
-                self.register_field(fields.SecurityDesc, False)
-
         self.register_group(fields.NoRelatedSym, NoRelatedSymGroup, False)
         self.register_field(fields.OrderID, False)
         self.register_field(fields.ClOrdID, False)
-        class LinesOfTextGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.Text, True)
-
         self.register_group(fields.LinesOfText, LinesOfTextGroup, True)
         self.register_field(fields.RawDataLength, False)
         self.register_field(fields.RawData, False)
@@ -654,24 +684,7 @@ class Allocation(fix_message.MessageBase):
         self.register_field(fields.RefAllocID, False)
         self.register_field(fields.AllocLinkID, False)
         self.register_field(fields.AllocLinkType, False)
-        class NoOrdersGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.ClOrdID, False)
-                self.register_field(fields.OrderID, False)
-                self.register_field(fields.SecondaryOrderID, False)
-                self.register_field(fields.ListID, False)
-                self.register_field(fields.WaveNo, False)
-
         self.register_group(fields.NoOrders, NoOrdersGroup, False)
-        class NoExecsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.LastShares, False)
-                self.register_field(fields.ExecID, False)
-                self.register_field(fields.LastPx, False)
-                self.register_field(fields.LastCapacity, False)
-
         self.register_group(fields.NoExecs, NoExecsGroup, False)
         self.register_field(fields.Side, True)
         self.register_field(fields.Symbol, True)
@@ -701,37 +714,6 @@ class Allocation(fix_message.MessageBase):
         self.register_field(fields.Text, False)
         self.register_field(fields.NumDaysInterest, False)
         self.register_field(fields.AccruedInterestRate, False)
-        class NoAllocsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.AllocAccount, False)
-                self.register_field(fields.AllocShares, True)
-                self.register_field(fields.ProcessCode, False)
-                self.register_field(fields.BrokerOfCredit, False)
-                self.register_field(fields.NotifyBrokerOfCredit, False)
-                self.register_field(fields.AllocHandlInst, False)
-                self.register_field(fields.AllocText, False)
-                self.register_field(fields.ExecBroker, False)
-                self.register_field(fields.ClientID, False)
-                self.register_field(fields.Commission, False)
-                self.register_field(fields.CommType, False)
-                self.register_field(fields.AllocAvgPx, False)
-                self.register_field(fields.AllocNetMoney, False)
-                self.register_field(fields.SettlCurrAmt, False)
-                self.register_field(fields.SettlCurrency, False)
-                self.register_field(fields.SettlCurrFxRate, False)
-                self.register_field(fields.SettlCurrFxRateCalc, False)
-                self.register_field(fields.AccruedInterestAmt, False)
-                self.register_field(fields.SettlInstMode, False)
-                class NoMiscFeesGroup(fix_message.FIXGroup):
-                    def __init__(self):
-                        super().__init__()
-                        self.register_field(fields.MiscFeeAmt, False)
-                        self.register_field(fields.MiscFeeCurr, False)
-                        self.register_field(fields.MiscFeeType, False)
-
-                self.register_group(fields.NoMiscFees, NoMiscFeesGroup, False)
-
         self.register_group(fields.NoAllocs, NoAllocsGroup, False)
 
 
@@ -790,15 +772,6 @@ class ListStatus(fix_message.MessageBase):
         self.register_field(fields.WaveNo, False)
         self.register_field(fields.NoRpts, True)
         self.register_field(fields.RptSeq, True)
-        class NoOrdersGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.ClOrdID, True)
-                self.register_field(fields.CumQty, True)
-                self.register_field(fields.LeavesQty, True)
-                self.register_field(fields.CxlQty, True)
-                self.register_field(fields.AvgPx, True)
-
         self.register_group(fields.NoOrders, NoOrdersGroup, True)
 
 

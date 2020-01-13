@@ -58,8 +58,8 @@ FIELD_FORMATTER = """{indent}self.register_field(fields.{field}, {required})
 """
 
 GROUP_FORMATTER = """{indent}class {group}Group(fix_message.FIXGroup):
-{indent}    def __init__(self):
-{indent}        super().__init__()
+{indent}    def __init__(self, value = None):
+{indent}        super().__init__(value)
 """
 
 GROUP_FORMATTER_TRAILER = """{indent}self.register_group(fields.{group_no_name}, {group}Group, {required})
@@ -135,6 +135,7 @@ def generate_fix_classes(file_name):
             
         with open(os.path.join(path, "fix_messages.py"), 'w') as message_writer:
             message_writer.write(FILE_HEADER.format(fix_version = fix_version))
+            generate_repeating_groups(fix, fix_version, {}, message_writer)
             generate_components(fix, fix_version, message_writer)
             generate_messages(fix, fix_version, message_writer)
 
@@ -196,13 +197,33 @@ def generate_fields(root, fix_version, writer):
                     continue
                 
             writer.write(ENUM_FORMATTER.format(description = description, value = str_formatter.format(value = enum.get('value'))  ))
+
+def find_rec(node, element, level = 0):
+    for item in node.iter():
+        for group in item.findall(element):
+            yield group
+    find_rec(item, element, level+1)
+
+
+def generate_repeating_groups(fix, fix_version, repeating_groups_map, writer ):
+    writer.write('##############Begin Repeating Groups###############\n')
+    indent = ''
+    for child in find_rec(fix, 'repeatingGroup'):
+        if child.get('id') in repeating_groups_map: continue
+        repeating_groups_map[child.get('id')] = 1
+        writer.write(GROUP_FORMATTER.format(indent = indent, group = TAG_NAME_MAP[child.get('id')]))
+        generate_body(child,fix_version, writer, indent + ' '*8)
+    writer.write('##############End Repeating Groups###############\n')
+    
+
         
-            
 def generate_components(root, fix_version, writer, indent = '    '):
+    writer.write('##############Begin Componenets###############\n')
     for component in root.find('components'):
         writer.write(COMPONENT_HEADER.format(component = component.get('name')))
         generate_body(component, fix_version, writer, indent)
-        
+    writer.write('##############End Componenets###############\n')
+
 def generate_body(component, fix_version, writer, indent = '    '):
     for child in component:
         if child.tag == 'fieldRef':
@@ -210,8 +231,8 @@ def generate_body(component, fix_version, writer, indent = '    '):
         elif child.tag == 'componentRef' and child.get('name') not in ['StandardHeader', 'StandardTrailer']:
             writer.write(COMPONENT_FORMATTER.format(indent = indent, component = child.get('name'), instance = 'self'))
         elif child.tag == 'repeatingGroup':
-            writer.write(GROUP_FORMATTER.format(indent = indent, group = TAG_NAME_MAP[child.get('id')]))
-            generate_body(child,fix_version, writer, indent + ' '*8)
+            #writer.write(GROUP_FORMATTER.format(indent = indent, group = TAG_NAME_MAP[child.get('id')]))
+            #generate_body(child,fix_version, writer, indent + ' '*8)
             writer.write(GROUP_FORMATTER_TRAILER.format(indent = indent, group_no_name = TAG_NAME_MAP[child.get('id')], group = TAG_NAME_MAP[child.get('id')], required = 'True' if child.get('required') == '1' else 'False'))
 
     writer.write('\n')

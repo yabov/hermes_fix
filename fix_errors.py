@@ -1,7 +1,16 @@
 class FIXEngineError(Exception): pass
 class FIXEngineWarning(Exception) : pass
 
-class FIXValueError(Exception): 
+class FIXValueError(FIXEngineError): 
+    def __init__(self, Text, tag = None):
+        super().__init__(Text)
+        self.tag = tag
+
+class FIXEnumValueError(FIXEngineError): 
+    def __init__(self, Text, tag = None):
+        super().__init__(Text)
+        self.tag = tag
+class FIXTagEmptyError(FIXEngineError) : 
     def __init__(self, Text, tag):
         super().__init__(Text)
         self.tag = tag
@@ -63,3 +72,7 @@ class FIXSessionLogoutTimeoutWarning(FIXEngineWarning) : pass
 class FIXInvalidMessageTypeError(FIXRejectError) : pass
 class FIXInvalidMessageFieldError(FIXRejectError) : pass
 class FIXUnsupportedMessageTypeError(FIXRejectError) : pass
+class FIXIncorrectNumInGroup(FIXRejectError) : pass 
+
+class FIXRepeatingFieldError(FIXRejectError) : pass 
+

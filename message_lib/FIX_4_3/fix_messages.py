@@ -16,6 +16,396 @@ class Trailer(fix_message.MessageBase):
     def __init__(self):
         super().__init__()
         register_StandardTrailer_component(self)
+##############Begin Repeating Groups###############
+class NoSecurityAltIDGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.SecurityAltID, False)
+        self.register_field(fields.SecurityAltIDSource, False)
+
+class NoLegSecurityAltIDGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.LegSecurityAltID, False)
+        self.register_field(fields.LegSecurityAltIDSource, False)
+
+class NoNestedPartyIDsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.NestedPartyID, False)
+        self.register_field(fields.NestedPartyIDSource, False)
+        self.register_field(fields.NestedPartyRole, False)
+        self.register_field(fields.NestedPartySubID, False)
+
+class NoPartyIDsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.PartyID, False)
+        self.register_field(fields.PartyIDSource, False)
+        self.register_field(fields.PartyRole, False)
+        self.register_field(fields.PartySubID, False)
+
+class NoStipulationsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.StipulationType, False)
+        self.register_field(fields.StipulationValue, False)
+
+class NoUnderlyingSecurityAltIDGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.UnderlyingSecurityAltID, False)
+        self.register_field(fields.UnderlyingSecurityAltIDSource, False)
+
+class NoHopsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.HopCompID, False)
+        self.register_field(fields.HopSendingTime, False)
+        self.register_field(fields.HopRefID, False)
+
+class NoIOIQualifiersGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.IOIQualifier, False)
+
+class NoRoutingIDsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.RoutingType, False)
+        self.register_field(fields.RoutingID, False)
+
+class NoContraBrokersGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.ContraBroker, False)
+        self.register_field(fields.ContraTrader, False)
+        self.register_field(fields.ContraTradeQty, False)
+        self.register_field(fields.ContraTradeTime, False)
+        self.register_field(fields.ContraLegRefID, False)
+
+class NoContAmtsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.ContAmtType, False)
+        self.register_field(fields.ContAmtValue, False)
+        self.register_field(fields.ContAmtCurr, False)
+
+class NoLegsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        register_InstrumentLeg_component(self)
+        self.register_field(fields.LegPositionEffect, False)
+        self.register_field(fields.LegCoveredOrUncovered, False)
+        register_NestedParties_component(self)
+        self.register_field(fields.LegRefID, False)
+        self.register_field(fields.LegPrice, False)
+        self.register_field(fields.LegSettlmntTyp, False)
+        self.register_field(fields.LegFutSettDate, False)
+        self.register_field(fields.LegLastPx, False)
+
+class NoMsgTypesGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.RefMsgType, False)
+        self.register_field(fields.MsgDirection, False)
+
+class NoRelatedSymGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        register_Instrument_component(self)
+
+class LinesOfTextGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.Text, True)
+        self.register_field(fields.EncodedTextLen, False)
+        self.register_field(fields.EncodedText, False)
+
+class NoAllocsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.AllocAccount, False)
+        self.register_field(fields.IndividualAllocID, False)
+        register_NestedParties_component(self)
+        self.register_field(fields.AllocQty, False)
+
+class NoTradingSessionsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.TradingSessionID, False)
+        self.register_field(fields.TradingSessionSubID, False)
+
+class NoOrdersGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.ClOrdID, True)
+        self.register_field(fields.SecondaryClOrdID, False)
+        self.register_field(fields.ListSeqNo, True)
+        self.register_field(fields.ClOrdLinkID, False)
+        self.register_field(fields.SettlInstMode, False)
+        register_Parties_component(self)
+        self.register_field(fields.TradeOriginationDate, False)
+        self.register_field(fields.Account, False)
+        self.register_field(fields.AccountType, False)
+        self.register_field(fields.DayBookingInst, False)
+        self.register_field(fields.BookingUnit, False)
+        self.register_field(fields.PreallocMethod, False)
+        self.register_group(fields.NoAllocs, NoAllocsGroup, False)
+        self.register_field(fields.SettlmntTyp, False)
+        self.register_field(fields.FutSettDate, False)
+        self.register_field(fields.CashMargin, False)
+        self.register_field(fields.ClearingFeeIndicator, False)
+        self.register_field(fields.HandlInst, False)
+        self.register_field(fields.ExecInst, False)
+        self.register_field(fields.MinQty, False)
+        self.register_field(fields.MaxFloor, False)
+        self.register_field(fields.ExDestination, False)
+        self.register_group(fields.NoTradingSessions, NoTradingSessionsGroup, False)
+        self.register_field(fields.ProcessCode, False)
+        register_Instrument_component(self)
+        self.register_field(fields.PrevClosePx, False)
+        self.register_field(fields.Side, True)
+        self.register_field(fields.SideValueInd, False)
+        self.register_field(fields.LocateReqd, False)
+        self.register_field(fields.TransactTime, False)
+        register_Stipulations_component(self)
+        self.register_field(fields.QuantityType, False)
+        register_OrderQtyData_component(self)
+        self.register_field(fields.OrdType, False)
+        self.register_field(fields.PriceType, False)
+        self.register_field(fields.Price, False)
+        self.register_field(fields.StopPx, False)
+        register_SpreadOrBenchmarkCurveData_component(self)
+        register_YieldData_component(self)
+        self.register_field(fields.Currency, False)
+        self.register_field(fields.ComplianceID, False)
+        self.register_field(fields.SolicitedFlag, False)
+        self.register_field(fields.IOIid, False)
+        self.register_field(fields.QuoteID, False)
+        self.register_field(fields.TimeInForce, False)
+        self.register_field(fields.EffectiveTime, False)
+        self.register_field(fields.ExpireDate, False)
+        self.register_field(fields.ExpireTime, False)
+        self.register_field(fields.GTBookingInst, False)
+        register_CommissionData_component(self)
+        self.register_field(fields.OrderCapacity, False)
+        self.register_field(fields.OrderRestrictions, False)
+        self.register_field(fields.CustOrderCapacity, False)
+        self.register_field(fields.Rule80A, False)
+        self.register_field(fields.ForexReq, False)
+        self.register_field(fields.SettlCurrency, False)
+        self.register_field(fields.Text, False)
+        self.register_field(fields.EncodedTextLen, False)
+        self.register_field(fields.EncodedText, False)
+        self.register_field(fields.FutSettDate2, False)
+        self.register_field(fields.OrderQty2, False)
+        self.register_field(fields.Price2, False)
+        self.register_field(fields.PositionEffect, False)
+        self.register_field(fields.CoveredOrUncovered, False)
+        self.register_field(fields.MaxShow, False)
+        self.register_field(fields.PegDifference, False)
+        self.register_field(fields.DiscretionInst, False)
+        self.register_field(fields.DiscretionOffset, False)
+        self.register_field(fields.Designation, False)
+        self.register_field(fields.AccruedInterestRate, False)
+        self.register_field(fields.AccruedInterestAmt, False)
+        self.register_field(fields.NetMoney, False)
+
+class NoExecsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.LastQty, False)
+        self.register_field(fields.ExecID, False)
+        self.register_field(fields.SecondaryExecID, False)
+        self.register_field(fields.LastPx, False)
+        self.register_field(fields.LastCapacity, False)
+
+class NoMiscFeesGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.MiscFeeAmt, False)
+        self.register_field(fields.MiscFeeCurr, False)
+        self.register_field(fields.MiscFeeType, False)
+
+class NoMDEntryTypesGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.MDEntryType, True)
+
+class NoMDEntriesGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.MDEntryType, True)
+        self.register_field(fields.MDEntryPx, False)
+        self.register_field(fields.Currency, False)
+        self.register_field(fields.MDEntrySize, False)
+        self.register_field(fields.MDEntryDate, False)
+        self.register_field(fields.MDEntryTime, False)
+        self.register_field(fields.TickDirection, False)
+        self.register_field(fields.MDMkt, False)
+        self.register_field(fields.TradingSessionID, False)
+        self.register_field(fields.TradingSessionSubID, False)
+        self.register_field(fields.QuoteCondition, False)
+        self.register_field(fields.TradeCondition, False)
+        self.register_field(fields.MDEntryOriginator, False)
+        self.register_field(fields.LocationID, False)
+        self.register_field(fields.DeskID, False)
+        self.register_field(fields.OpenCloseSettleFlag, False)
+        self.register_field(fields.TimeInForce, False)
+        self.register_field(fields.ExpireDate, False)
+        self.register_field(fields.ExpireTime, False)
+        self.register_field(fields.MinQty, False)
+        self.register_field(fields.ExecInst, False)
+        self.register_field(fields.SellerDays, False)
+        self.register_field(fields.OrderID, False)
+        self.register_field(fields.QuoteEntryID, False)
+        self.register_field(fields.MDEntryBuyer, False)
+        self.register_field(fields.MDEntrySeller, False)
+        self.register_field(fields.NumberOfOrders, False)
+        self.register_field(fields.MDEntryPositionNo, False)
+        self.register_field(fields.Scope, False)
+        self.register_field(fields.Text, False)
+        self.register_field(fields.EncodedTextLen, False)
+        self.register_field(fields.EncodedText, False)
+
+class NoQuoteEntriesGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        register_Instrument_component(self)
+
+class NoQuoteSetsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.QuoteSetID, False)
+        register_UnderlyingInstrument_component(self)
+        self.register_field(fields.TotQuoteEntries, False)
+        self.register_group(fields.NoQuoteEntries, NoQuoteEntriesGroup, False)
+
+class NoBidDescriptorsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.BidDescriptorType, False)
+        self.register_field(fields.BidDescriptor, False)
+        self.register_field(fields.SideValueInd, False)
+        self.register_field(fields.LiquidityValue, False)
+        self.register_field(fields.LiquidityNumSecurities, False)
+        self.register_field(fields.LiquidityPctLow, False)
+        self.register_field(fields.LiquidityPctHigh, False)
+        self.register_field(fields.EFPTrackingError, False)
+        self.register_field(fields.FairValue, False)
+        self.register_field(fields.OutsideIndexPct, False)
+        self.register_field(fields.ValueOfFutures, False)
+
+class NoBidComponentsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.ListID, False)
+        self.register_field(fields.Side, False)
+        self.register_field(fields.TradingSessionID, False)
+        self.register_field(fields.TradingSessionSubID, False)
+        self.register_field(fields.NetGrossInd, False)
+        self.register_field(fields.SettlmntTyp, False)
+        self.register_field(fields.FutSettDate, False)
+        self.register_field(fields.Account, False)
+
+class NoStrikesGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        register_Instrument_component(self)
+        self.register_field(fields.PrevClosePx, False)
+        self.register_field(fields.ClOrdID, False)
+        self.register_field(fields.SecondaryClOrdID, False)
+        self.register_field(fields.Side, False)
+        self.register_field(fields.Price, True)
+        self.register_field(fields.Currency, False)
+        self.register_field(fields.Text, False)
+        self.register_field(fields.EncodedTextLen, False)
+        self.register_field(fields.EncodedText, False)
+
+class NoRegistDtlsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.RegistDetls, False)
+        self.register_field(fields.RegistEmail, False)
+        self.register_field(fields.MailingDtls, False)
+        self.register_field(fields.MailingInst, False)
+        register_NestedParties_component(self)
+        self.register_field(fields.OwnerType, False)
+        self.register_field(fields.DateOfBirth, False)
+        self.register_field(fields.InvestorCountryOfResidence, False)
+
+class NoDistribInstsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.DistribPaymentMethod, False)
+        self.register_field(fields.DistribPercentage, False)
+        self.register_field(fields.CashDistribCurr, False)
+        self.register_field(fields.CashDistribAgentName, False)
+        self.register_field(fields.CashDistribAgentCode, False)
+        self.register_field(fields.CashDistribAgentAcctNumber, False)
+        self.register_field(fields.CashDistribPayRef, False)
+
+class NoAffectedOrdersGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.OrigClOrdID, False)
+        self.register_field(fields.AffectedOrderID, False)
+        self.register_field(fields.AffectedSecondaryOrderID, False)
+
+class NoSidesGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.Side, True)
+        self.register_field(fields.ClOrdID, True)
+        self.register_field(fields.SecondaryClOrdID, False)
+        self.register_field(fields.ClOrdLinkID, False)
+        register_Parties_component(self)
+        self.register_field(fields.TradeOriginationDate, False)
+        self.register_field(fields.Account, False)
+        self.register_field(fields.AccountType, False)
+        self.register_field(fields.DayBookingInst, False)
+        self.register_field(fields.BookingUnit, False)
+        self.register_field(fields.PreallocMethod, False)
+        self.register_group(fields.NoAllocs, NoAllocsGroup, False)
+        self.register_field(fields.QuantityType, False)
+        register_OrderQtyData_component(self)
+        register_CommissionData_component(self)
+        self.register_field(fields.OrderCapacity, False)
+        self.register_field(fields.OrderRestrictions, False)
+        self.register_field(fields.CustOrderCapacity, False)
+        self.register_field(fields.ForexReq, False)
+        self.register_field(fields.SettlCurrency, False)
+        self.register_field(fields.Text, False)
+        self.register_field(fields.EncodedTextLen, False)
+        self.register_field(fields.EncodedText, False)
+        self.register_field(fields.PositionEffect, False)
+        self.register_field(fields.CoveredOrUncovered, False)
+        self.register_field(fields.CashMargin, False)
+        self.register_field(fields.ClearingFeeIndicator, False)
+        self.register_field(fields.SolicitedFlag, False)
+        self.register_field(fields.SideComplianceID, False)
+
+class NoSecurityTypesGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.SecurityType, False)
+        self.register_field(fields.Product, False)
+        self.register_field(fields.CFICode, False)
+
+class NoDatesGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.TradeDate, False)
+        self.register_field(fields.TransactTime, False)
+
+class NoClearingInstructionsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.ClearingInstruction, False)
+
+##############End Repeating Groups###############
+##############Begin Componenets###############
 def register_CommissionData_component(self):
     self.register_field(fields.Commission, False)
     self.register_field(fields.CommType, False)
@@ -27,12 +417,6 @@ def register_Instrument_component(self):
     self.register_field(fields.SymbolSfx, False)
     self.register_field(fields.SecurityID, False)
     self.register_field(fields.SecurityIDSource, False)
-    class NoSecurityAltIDGroup(fix_message.FIXGroup):
-        def __init__(self):
-            super().__init__()
-            self.register_field(fields.SecurityAltID, False)
-            self.register_field(fields.SecurityAltIDSource, False)
-
     self.register_group(fields.NoSecurityAltID, NoSecurityAltIDGroup, False)
     self.register_field(fields.Product, False)
     self.register_field(fields.CFICode, False)
@@ -68,12 +452,6 @@ def register_InstrumentLeg_component(self):
     self.register_field(fields.LegSymbolSfx, False)
     self.register_field(fields.LegSecurityID, False)
     self.register_field(fields.LegSecurityIDSource, False)
-    class NoLegSecurityAltIDGroup(fix_message.FIXGroup):
-        def __init__(self):
-            super().__init__()
-            self.register_field(fields.LegSecurityAltID, False)
-            self.register_field(fields.LegSecurityAltIDSource, False)
-
     self.register_group(fields.NoLegSecurityAltID, NoLegSecurityAltIDGroup, False)
     self.register_field(fields.LegProduct, False)
     self.register_field(fields.LegCFICode, False)
@@ -107,14 +485,6 @@ def register_InstrumentLeg_component(self):
     self.register_field(fields.LegSide, False)
 
 def register_NestedParties_component(self):
-    class NoNestedPartyIDsGroup(fix_message.FIXGroup):
-        def __init__(self):
-            super().__init__()
-            self.register_field(fields.NestedPartyID, False)
-            self.register_field(fields.NestedPartyIDSource, False)
-            self.register_field(fields.NestedPartyRole, False)
-            self.register_field(fields.NestedPartySubID, False)
-
     self.register_group(fields.NoNestedPartyIDs, NoNestedPartyIDsGroup, False)
 
 def register_OrderQtyData_component(self):
@@ -125,14 +495,6 @@ def register_OrderQtyData_component(self):
     self.register_field(fields.RoundingModulus, False)
 
 def register_Parties_component(self):
-    class NoPartyIDsGroup(fix_message.FIXGroup):
-        def __init__(self):
-            super().__init__()
-            self.register_field(fields.PartyID, False)
-            self.register_field(fields.PartyIDSource, False)
-            self.register_field(fields.PartyRole, False)
-            self.register_field(fields.PartySubID, False)
-
     self.register_group(fields.NoPartyIDs, NoPartyIDsGroup, False)
 
 def register_SpreadOrBenchmarkCurveData_component(self):
@@ -142,12 +504,6 @@ def register_SpreadOrBenchmarkCurveData_component(self):
     self.register_field(fields.BenchmarkCurvePoint, False)
 
 def register_Stipulations_component(self):
-    class NoStipulationsGroup(fix_message.FIXGroup):
-        def __init__(self):
-            super().__init__()
-            self.register_field(fields.StipulationType, False)
-            self.register_field(fields.StipulationValue, False)
-
     self.register_group(fields.NoStipulations, NoStipulationsGroup, False)
 
 def register_UnderlyingInstrument_component(self):
@@ -155,12 +511,6 @@ def register_UnderlyingInstrument_component(self):
     self.register_field(fields.UnderlyingSymbolSfx, False)
     self.register_field(fields.UnderlyingSecurityID, False)
     self.register_field(fields.UnderlyingSecurityIDSource, False)
-    class NoUnderlyingSecurityAltIDGroup(fix_message.FIXGroup):
-        def __init__(self):
-            super().__init__()
-            self.register_field(fields.UnderlyingSecurityAltID, False)
-            self.register_field(fields.UnderlyingSecurityAltIDSource, False)
-
     self.register_group(fields.NoUnderlyingSecurityAltID, NoUnderlyingSecurityAltIDGroup, False)
     self.register_field(fields.UnderlyingProduct, False)
     self.register_field(fields.UnderlyingCFICode, False)
@@ -224,13 +574,6 @@ def register_StandardHeader_component(self):
     self.register_field(fields.MessageEncoding, False)
     self.register_field(fields.LastMsgSeqNumProcessed, False)
     self.register_field(fields.OnBehalfOfSendingTime, False)
-    class NoHopsGroup(fix_message.FIXGroup):
-        def __init__(self):
-            super().__init__()
-            self.register_field(fields.HopCompID, False)
-            self.register_field(fields.HopSendingTime, False)
-            self.register_field(fields.HopRefID, False)
-
     self.register_group(fields.NoHops, NoHopsGroup, False)
 
 def register_StandardTrailer_component(self):
@@ -238,6 +581,7 @@ def register_StandardTrailer_component(self):
     self.register_field(fields.Signature, False)
     self.register_field(fields.CheckSum, True)
 
+##############End Componenets###############
 
 class Heartbeat(fix_message.MessageBase):
     _msgtype = '0'
@@ -341,23 +685,12 @@ class IOI(fix_message.MessageBase):
         self.register_field(fields.ValidUntilTime, False)
         self.register_field(fields.IOIQltyInd, False)
         self.register_field(fields.IOINaturalFlag, False)
-        class NoIOIQualifiersGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.IOIQualifier, False)
-
         self.register_group(fields.NoIOIQualifiers, NoIOIQualifiersGroup, False)
         self.register_field(fields.Text, False)
         self.register_field(fields.EncodedTextLen, False)
         self.register_field(fields.EncodedText, False)
         self.register_field(fields.TransactTime, False)
         self.register_field(fields.URLLink, False)
-        class NoRoutingIDsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.RoutingType, False)
-                self.register_field(fields.RoutingID, False)
-
         self.register_group(fields.NoRoutingIDs, NoRoutingIDsGroup, False)
         register_SpreadOrBenchmarkCurveData_component(self)
         self.register_field(fields.Benchmark, False)
@@ -409,15 +742,6 @@ class ExecutionReport(fix_message.MessageBase):
         self.register_field(fields.ClOrdLinkID, False)
         register_Parties_component(self)
         self.register_field(fields.TradeOriginationDate, False)
-        class NoContraBrokersGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.ContraBroker, False)
-                self.register_field(fields.ContraTrader, False)
-                self.register_field(fields.ContraTradeQty, False)
-                self.register_field(fields.ContraTradeTime, False)
-                self.register_field(fields.ContraLegRefID, False)
-
         self.register_group(fields.NoContraBrokers, NoContraBrokersGroup, False)
         self.register_field(fields.ListID, False)
         self.register_field(fields.CrossID, False)
@@ -523,27 +847,7 @@ class ExecutionReport(fix_message.MessageBase):
         self.register_field(fields.ExecPriceAdjustment, False)
         self.register_field(fields.PriorityIndicator, False)
         self.register_field(fields.PriceImprovement, False)
-        class NoContAmtsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.ContAmtType, False)
-                self.register_field(fields.ContAmtValue, False)
-                self.register_field(fields.ContAmtCurr, False)
-
         self.register_group(fields.NoContAmts, NoContAmtsGroup, False)
-        class NoLegsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_InstrumentLeg_component(self)
-                self.register_field(fields.LegPositionEffect, False)
-                self.register_field(fields.LegCoveredOrUncovered, False)
-                register_NestedParties_component(self)
-                self.register_field(fields.LegRefID, False)
-                self.register_field(fields.LegPrice, False)
-                self.register_field(fields.LegSettlmntTyp, False)
-                self.register_field(fields.LegFutSettDate, False)
-                self.register_field(fields.LegLastPx, False)
-
         self.register_group(fields.NoLegs, NoLegsGroup, False)
 
 
@@ -592,12 +896,6 @@ class Logon(fix_message.MessageBase):
         self.register_field(fields.RawData, False)
         self.register_field(fields.ResetSeqNumFlag, False)
         self.register_field(fields.MaxMessageSize, False)
-        class NoMsgTypesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.RefMsgType, False)
-                self.register_field(fields.MsgDirection, False)
-
         self.register_group(fields.NoMsgTypes, NoMsgTypesGroup, False)
         self.register_field(fields.TestMessageIndicator, False)
         self.register_field(fields.Username, False)
@@ -618,26 +916,8 @@ class News(fix_message.MessageBase):
         self.register_field(fields.Headline, True)
         self.register_field(fields.EncodedHeadlineLen, False)
         self.register_field(fields.EncodedHeadline, False)
-        class NoRoutingIDsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.RoutingType, False)
-                self.register_field(fields.RoutingID, False)
-
         self.register_group(fields.NoRoutingIDs, NoRoutingIDsGroup, False)
-        class NoRelatedSymGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_Instrument_component(self)
-
         self.register_group(fields.NoRelatedSym, NoRelatedSymGroup, False)
-        class LinesOfTextGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.Text, True)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-
         self.register_group(fields.LinesOfText, LinesOfTextGroup, True)
         self.register_field(fields.URLLink, False)
         self.register_field(fields.RawDataLength, False)
@@ -659,28 +939,10 @@ class Email(fix_message.MessageBase):
         self.register_field(fields.Subject, True)
         self.register_field(fields.EncodedSubjectLen, False)
         self.register_field(fields.EncodedSubject, False)
-        class NoRoutingIDsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.RoutingType, False)
-                self.register_field(fields.RoutingID, False)
-
         self.register_group(fields.NoRoutingIDs, NoRoutingIDsGroup, False)
-        class NoRelatedSymGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_Instrument_component(self)
-
         self.register_group(fields.NoRelatedSym, NoRelatedSymGroup, False)
         self.register_field(fields.OrderID, False)
         self.register_field(fields.ClOrdID, False)
-        class LinesOfTextGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.Text, True)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-
         self.register_group(fields.LinesOfText, LinesOfTextGroup, True)
         self.register_field(fields.RawDataLength, False)
         self.register_field(fields.RawData, False)
@@ -705,14 +967,6 @@ class NewOrderSingle(fix_message.MessageBase):
         self.register_field(fields.DayBookingInst, False)
         self.register_field(fields.BookingUnit, False)
         self.register_field(fields.PreallocMethod, False)
-        class NoAllocsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.AllocAccount, False)
-                self.register_field(fields.IndividualAllocID, False)
-                register_NestedParties_component(self)
-                self.register_field(fields.AllocQty, False)
-
         self.register_group(fields.NoAllocs, NoAllocsGroup, False)
         self.register_field(fields.SettlmntTyp, False)
         self.register_field(fields.FutSettDate, False)
@@ -723,12 +977,6 @@ class NewOrderSingle(fix_message.MessageBase):
         self.register_field(fields.MinQty, False)
         self.register_field(fields.MaxFloor, False)
         self.register_field(fields.ExDestination, False)
-        class NoTradingSessionsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-
         self.register_group(fields.NoTradingSessions, NoTradingSessionsGroup, False)
         self.register_field(fields.ProcessCode, False)
         register_Instrument_component(self)
@@ -806,96 +1054,6 @@ class NewOrderList(fix_message.MessageBase):
         self.register_field(fields.EncodedListExecInstLen, False)
         self.register_field(fields.EncodedListExecInst, False)
         self.register_field(fields.TotNoOrders, True)
-        class NoOrdersGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.ClOrdID, True)
-                self.register_field(fields.SecondaryClOrdID, False)
-                self.register_field(fields.ListSeqNo, True)
-                self.register_field(fields.ClOrdLinkID, False)
-                self.register_field(fields.SettlInstMode, False)
-                register_Parties_component(self)
-                self.register_field(fields.TradeOriginationDate, False)
-                self.register_field(fields.Account, False)
-                self.register_field(fields.AccountType, False)
-                self.register_field(fields.DayBookingInst, False)
-                self.register_field(fields.BookingUnit, False)
-                self.register_field(fields.PreallocMethod, False)
-                class NoAllocsGroup(fix_message.FIXGroup):
-                    def __init__(self):
-                        super().__init__()
-                        self.register_field(fields.AllocAccount, False)
-                        self.register_field(fields.IndividualAllocID, False)
-                        register_NestedParties_component(self)
-                        self.register_field(fields.AllocQty, False)
-
-                self.register_group(fields.NoAllocs, NoAllocsGroup, False)
-                self.register_field(fields.SettlmntTyp, False)
-                self.register_field(fields.FutSettDate, False)
-                self.register_field(fields.CashMargin, False)
-                self.register_field(fields.ClearingFeeIndicator, False)
-                self.register_field(fields.HandlInst, False)
-                self.register_field(fields.ExecInst, False)
-                self.register_field(fields.MinQty, False)
-                self.register_field(fields.MaxFloor, False)
-                self.register_field(fields.ExDestination, False)
-                class NoTradingSessionsGroup(fix_message.FIXGroup):
-                    def __init__(self):
-                        super().__init__()
-                        self.register_field(fields.TradingSessionID, False)
-                        self.register_field(fields.TradingSessionSubID, False)
-
-                self.register_group(fields.NoTradingSessions, NoTradingSessionsGroup, False)
-                self.register_field(fields.ProcessCode, False)
-                register_Instrument_component(self)
-                self.register_field(fields.PrevClosePx, False)
-                self.register_field(fields.Side, True)
-                self.register_field(fields.SideValueInd, False)
-                self.register_field(fields.LocateReqd, False)
-                self.register_field(fields.TransactTime, False)
-                register_Stipulations_component(self)
-                self.register_field(fields.QuantityType, False)
-                register_OrderQtyData_component(self)
-                self.register_field(fields.OrdType, False)
-                self.register_field(fields.PriceType, False)
-                self.register_field(fields.Price, False)
-                self.register_field(fields.StopPx, False)
-                register_SpreadOrBenchmarkCurveData_component(self)
-                register_YieldData_component(self)
-                self.register_field(fields.Currency, False)
-                self.register_field(fields.ComplianceID, False)
-                self.register_field(fields.SolicitedFlag, False)
-                self.register_field(fields.IOIid, False)
-                self.register_field(fields.QuoteID, False)
-                self.register_field(fields.TimeInForce, False)
-                self.register_field(fields.EffectiveTime, False)
-                self.register_field(fields.ExpireDate, False)
-                self.register_field(fields.ExpireTime, False)
-                self.register_field(fields.GTBookingInst, False)
-                register_CommissionData_component(self)
-                self.register_field(fields.OrderCapacity, False)
-                self.register_field(fields.OrderRestrictions, False)
-                self.register_field(fields.CustOrderCapacity, False)
-                self.register_field(fields.Rule80A, False)
-                self.register_field(fields.ForexReq, False)
-                self.register_field(fields.SettlCurrency, False)
-                self.register_field(fields.Text, False)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-                self.register_field(fields.FutSettDate2, False)
-                self.register_field(fields.OrderQty2, False)
-                self.register_field(fields.Price2, False)
-                self.register_field(fields.PositionEffect, False)
-                self.register_field(fields.CoveredOrUncovered, False)
-                self.register_field(fields.MaxShow, False)
-                self.register_field(fields.PegDifference, False)
-                self.register_field(fields.DiscretionInst, False)
-                self.register_field(fields.DiscretionOffset, False)
-                self.register_field(fields.Designation, False)
-                self.register_field(fields.AccruedInterestRate, False)
-                self.register_field(fields.AccruedInterestAmt, False)
-                self.register_field(fields.NetMoney, False)
-
         self.register_group(fields.NoOrders, NoOrdersGroup, True)
 
 
@@ -951,14 +1109,6 @@ class OrderCancelReplaceRequest(fix_message.MessageBase):
         self.register_field(fields.DayBookingInst, False)
         self.register_field(fields.BookingUnit, False)
         self.register_field(fields.PreallocMethod, False)
-        class NoAllocsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.AllocAccount, False)
-                self.register_field(fields.IndividualAllocID, False)
-                register_NestedParties_component(self)
-                self.register_field(fields.AllocQty, False)
-
         self.register_group(fields.NoAllocs, NoAllocsGroup, False)
         self.register_field(fields.SettlmntTyp, False)
         self.register_field(fields.FutSettDate, False)
@@ -969,12 +1119,6 @@ class OrderCancelReplaceRequest(fix_message.MessageBase):
         self.register_field(fields.MinQty, False)
         self.register_field(fields.MaxFloor, False)
         self.register_field(fields.ExDestination, False)
-        class NoTradingSessionsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-
         self.register_group(fields.NoTradingSessions, NoTradingSessionsGroup, False)
         register_Instrument_component(self)
         self.register_field(fields.Side, True)
@@ -1059,25 +1203,7 @@ class Allocation(fix_message.MessageBase):
         self.register_field(fields.AllocLinkID, False)
         self.register_field(fields.AllocLinkType, False)
         self.register_field(fields.BookingRefID, False)
-        class NoOrdersGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.ClOrdID, False)
-                self.register_field(fields.OrderID, False)
-                self.register_field(fields.SecondaryOrderID, False)
-                self.register_field(fields.SecondaryClOrdID, False)
-                self.register_field(fields.ListID, False)
-
         self.register_group(fields.NoOrders, NoOrdersGroup, False)
-        class NoExecsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.LastQty, False)
-                self.register_field(fields.ExecID, False)
-                self.register_field(fields.SecondaryExecID, False)
-                self.register_field(fields.LastPx, False)
-                self.register_field(fields.LastCapacity, False)
-
         self.register_group(fields.NoExecs, NoExecsGroup, False)
         self.register_field(fields.Side, True)
         register_Instrument_component(self)
@@ -1107,38 +1233,6 @@ class Allocation(fix_message.MessageBase):
         self.register_field(fields.AccruedInterestRate, False)
         self.register_field(fields.TotalAccruedInterestAmt, False)
         self.register_field(fields.LegalConfirm, False)
-        class NoAllocsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.AllocAccount, False)
-                self.register_field(fields.AllocPrice, False)
-                self.register_field(fields.AllocQty, False)
-                self.register_field(fields.IndividualAllocID, False)
-                self.register_field(fields.ProcessCode, False)
-                register_NestedParties_component(self)
-                self.register_field(fields.NotifyBrokerOfCredit, False)
-                self.register_field(fields.AllocHandlInst, False)
-                self.register_field(fields.AllocText, False)
-                self.register_field(fields.EncodedAllocTextLen, False)
-                self.register_field(fields.EncodedAllocText, False)
-                register_CommissionData_component(self)
-                self.register_field(fields.AllocAvgPx, False)
-                self.register_field(fields.AllocNetMoney, False)
-                self.register_field(fields.SettlCurrAmt, False)
-                self.register_field(fields.SettlCurrency, False)
-                self.register_field(fields.SettlCurrFxRate, False)
-                self.register_field(fields.SettlCurrFxRateCalc, False)
-                self.register_field(fields.AccruedInterestAmt, False)
-                self.register_field(fields.SettlInstMode, False)
-                class NoMiscFeesGroup(fix_message.FIXGroup):
-                    def __init__(self):
-                        super().__init__()
-                        self.register_field(fields.MiscFeeAmt, False)
-                        self.register_field(fields.MiscFeeCurr, False)
-                        self.register_field(fields.MiscFeeType, False)
-
-                self.register_group(fields.NoMiscFees, NoMiscFeesGroup, False)
-
         self.register_group(fields.NoAllocs, NoAllocsGroup, False)
 
 
@@ -1211,22 +1305,6 @@ class ListStatus(fix_message.MessageBase):
         self.register_field(fields.EncodedListStatusText, False)
         self.register_field(fields.TransactTime, False)
         self.register_field(fields.TotNoOrders, True)
-        class NoOrdersGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.ClOrdID, True)
-                self.register_field(fields.SecondaryClOrdID, False)
-                self.register_field(fields.CumQty, True)
-                self.register_field(fields.OrdStatus, True)
-                self.register_field(fields.WorkingIndicator, False)
-                self.register_field(fields.LeavesQty, True)
-                self.register_field(fields.CxlQty, True)
-                self.register_field(fields.AvgPx, True)
-                self.register_field(fields.OrdRejReason, False)
-                self.register_field(fields.Text, False)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-
         self.register_group(fields.NoOrders, NoOrdersGroup, True)
 
 
@@ -1284,35 +1362,6 @@ class QuoteRequest(fix_message.MessageBase):
         super().__init__()
         self.register_field(fields.QuoteReqID, True)
         self.register_field(fields.RFQReqID, False)
-        class NoRelatedSymGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_Instrument_component(self)
-                self.register_field(fields.PrevClosePx, False)
-                self.register_field(fields.QuoteRequestType, False)
-                self.register_field(fields.QuoteType, False)
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-                self.register_field(fields.TradeOriginationDate, False)
-                register_Stipulations_component(self)
-                self.register_field(fields.Side, False)
-                self.register_field(fields.QuantityType, False)
-                self.register_field(fields.OrderQty, False)
-                self.register_field(fields.CashOrderQty, False)
-                self.register_field(fields.SettlmntTyp, False)
-                self.register_field(fields.FutSettDate, False)
-                self.register_field(fields.OrdType, False)
-                self.register_field(fields.FutSettDate2, False)
-                self.register_field(fields.OrderQty2, False)
-                self.register_field(fields.ExpireTime, False)
-                self.register_field(fields.TransactTime, False)
-                self.register_field(fields.Currency, False)
-                register_SpreadOrBenchmarkCurveData_component(self)
-                self.register_field(fields.PriceType, False)
-                self.register_field(fields.Price, False)
-                self.register_field(fields.Price2, False)
-                register_YieldData_component(self)
-
         self.register_group(fields.NoRelatedSym, NoRelatedSymGroup, True)
         self.register_field(fields.Text, False)
         self.register_field(fields.EncodedTextLen, False)
@@ -1450,24 +1499,8 @@ class MarketDataRequest(fix_message.MessageBase):
         self.register_field(fields.OpenCloseSettleFlag, False)
         self.register_field(fields.Scope, False)
         self.register_field(fields.MDImplicitDelete, False)
-        class NoMDEntryTypesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.MDEntryType, True)
-
         self.register_group(fields.NoMDEntryTypes, NoMDEntryTypesGroup, True)
-        class NoRelatedSymGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_Instrument_component(self)
-
         self.register_group(fields.NoRelatedSym, NoRelatedSymGroup, True)
-        class NoTradingSessionsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-
         self.register_group(fields.NoTradingSessions, NoTradingSessionsGroup, False)
 
 
@@ -1488,42 +1521,6 @@ class MarketDataSnapshotFullRefresh(fix_message.MessageBase):
         self.register_field(fields.TotalVolumeTradedDate, False)
         self.register_field(fields.TotalVolumeTradedTime, False)
         self.register_field(fields.NetChgPrevDay, False)
-        class NoMDEntriesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.MDEntryType, True)
-                self.register_field(fields.MDEntryPx, False)
-                self.register_field(fields.Currency, False)
-                self.register_field(fields.MDEntrySize, False)
-                self.register_field(fields.MDEntryDate, False)
-                self.register_field(fields.MDEntryTime, False)
-                self.register_field(fields.TickDirection, False)
-                self.register_field(fields.MDMkt, False)
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-                self.register_field(fields.QuoteCondition, False)
-                self.register_field(fields.TradeCondition, False)
-                self.register_field(fields.MDEntryOriginator, False)
-                self.register_field(fields.LocationID, False)
-                self.register_field(fields.DeskID, False)
-                self.register_field(fields.OpenCloseSettleFlag, False)
-                self.register_field(fields.TimeInForce, False)
-                self.register_field(fields.ExpireDate, False)
-                self.register_field(fields.ExpireTime, False)
-                self.register_field(fields.MinQty, False)
-                self.register_field(fields.ExecInst, False)
-                self.register_field(fields.SellerDays, False)
-                self.register_field(fields.OrderID, False)
-                self.register_field(fields.QuoteEntryID, False)
-                self.register_field(fields.MDEntryBuyer, False)
-                self.register_field(fields.MDEntrySeller, False)
-                self.register_field(fields.NumberOfOrders, False)
-                self.register_field(fields.MDEntryPositionNo, False)
-                self.register_field(fields.Scope, False)
-                self.register_field(fields.Text, False)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-
         self.register_group(fields.NoMDEntries, NoMDEntriesGroup, True)
 
 
@@ -1537,53 +1534,6 @@ class MarketDataIncrementalRefresh(fix_message.MessageBase):
         self.Trailer = Trailer()
         super().__init__()
         self.register_field(fields.MDReqID, False)
-        class NoMDEntriesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.MDUpdateAction, True)
-                self.register_field(fields.DeleteReason, False)
-                self.register_field(fields.MDEntryType, False)
-                self.register_field(fields.MDEntryID, False)
-                self.register_field(fields.MDEntryRefID, False)
-                register_Instrument_component(self)
-                self.register_field(fields.FinancialStatus, False)
-                self.register_field(fields.CorporateAction, False)
-                self.register_field(fields.MDEntryPx, False)
-                self.register_field(fields.Currency, False)
-                self.register_field(fields.MDEntrySize, False)
-                self.register_field(fields.MDEntryDate, False)
-                self.register_field(fields.MDEntryTime, False)
-                self.register_field(fields.TickDirection, False)
-                self.register_field(fields.MDMkt, False)
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-                self.register_field(fields.QuoteCondition, False)
-                self.register_field(fields.TradeCondition, False)
-                self.register_field(fields.MDEntryOriginator, False)
-                self.register_field(fields.LocationID, False)
-                self.register_field(fields.DeskID, False)
-                self.register_field(fields.OpenCloseSettleFlag, False)
-                self.register_field(fields.TimeInForce, False)
-                self.register_field(fields.ExpireDate, False)
-                self.register_field(fields.ExpireTime, False)
-                self.register_field(fields.MinQty, False)
-                self.register_field(fields.ExecInst, False)
-                self.register_field(fields.SellerDays, False)
-                self.register_field(fields.OrderID, False)
-                self.register_field(fields.QuoteEntryID, False)
-                self.register_field(fields.MDEntryBuyer, False)
-                self.register_field(fields.MDEntrySeller, False)
-                self.register_field(fields.NumberOfOrders, False)
-                self.register_field(fields.MDEntryPositionNo, False)
-                self.register_field(fields.Scope, False)
-                self.register_field(fields.TotalVolumeTraded, False)
-                self.register_field(fields.TotalVolumeTradedDate, False)
-                self.register_field(fields.TotalVolumeTradedTime, False)
-                self.register_field(fields.NetChgPrevDay, False)
-                self.register_field(fields.Text, False)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-
         self.register_group(fields.NoMDEntries, NoMDEntriesGroup, True)
 
 
@@ -1621,11 +1571,6 @@ class QuoteCancel(fix_message.MessageBase):
         self.register_field(fields.AccountType, False)
         self.register_field(fields.TradingSessionID, False)
         self.register_field(fields.TradingSessionSubID, False)
-        class NoQuoteEntriesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_Instrument_component(self)
-
         self.register_group(fields.NoQuoteEntries, NoQuoteEntriesGroup, False)
 
 
@@ -1668,44 +1613,6 @@ class MassQuoteAcknowledgement(fix_message.MessageBase):
         self.register_field(fields.Account, False)
         self.register_field(fields.AccountType, False)
         self.register_field(fields.Text, False)
-        class NoQuoteSetsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.QuoteSetID, False)
-                register_UnderlyingInstrument_component(self)
-                self.register_field(fields.TotQuoteEntries, False)
-                class NoQuoteEntriesGroup(fix_message.FIXGroup):
-                    def __init__(self):
-                        super().__init__()
-                        self.register_field(fields.QuoteEntryID, False)
-                        register_Instrument_component(self)
-                        self.register_field(fields.BidPx, False)
-                        self.register_field(fields.OfferPx, False)
-                        self.register_field(fields.BidSize, False)
-                        self.register_field(fields.OfferSize, False)
-                        self.register_field(fields.ValidUntilTime, False)
-                        self.register_field(fields.BidSpotRate, False)
-                        self.register_field(fields.OfferSpotRate, False)
-                        self.register_field(fields.BidForwardPoints, False)
-                        self.register_field(fields.OfferForwardPoints, False)
-                        self.register_field(fields.MidPx, False)
-                        self.register_field(fields.BidYield, False)
-                        self.register_field(fields.MidYield, False)
-                        self.register_field(fields.OfferYield, False)
-                        self.register_field(fields.TransactTime, False)
-                        self.register_field(fields.TradingSessionID, False)
-                        self.register_field(fields.TradingSessionSubID, False)
-                        self.register_field(fields.FutSettDate, False)
-                        self.register_field(fields.OrdType, False)
-                        self.register_field(fields.FutSettDate2, False)
-                        self.register_field(fields.OrderQty2, False)
-                        self.register_field(fields.BidForwardPoints2, False)
-                        self.register_field(fields.OfferForwardPoints2, False)
-                        self.register_field(fields.Currency, False)
-                        self.register_field(fields.QuoteEntryRejectReason, False)
-
-                self.register_group(fields.NoQuoteEntries, NoQuoteEntriesGroup, False)
-
         self.register_group(fields.NoQuoteSets, NoQuoteSetsGroup, False)
 
 
@@ -1727,12 +1634,6 @@ class SecurityDefinitionRequest(fix_message.MessageBase):
         self.register_field(fields.EncodedText, False)
         self.register_field(fields.TradingSessionID, False)
         self.register_field(fields.TradingSessionSubID, False)
-        class NoLegsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_InstrumentLeg_component(self)
-                self.register_field(fields.LegCurrency, False)
-
         self.register_group(fields.NoLegs, NoLegsGroup, False)
         self.register_field(fields.SubscriptionRequestType, False)
 
@@ -1756,12 +1657,6 @@ class SecurityDefinition(fix_message.MessageBase):
         self.register_field(fields.Text, False)
         self.register_field(fields.EncodedTextLen, False)
         self.register_field(fields.EncodedText, False)
-        class NoLegsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_InstrumentLeg_component(self)
-                self.register_field(fields.LegCurrency, False)
-
         self.register_group(fields.NoLegs, NoLegsGroup, False)
         self.register_field(fields.RoundLot, False)
         self.register_field(fields.MinTradeVol, False)
@@ -1880,44 +1775,6 @@ class MassQuote(fix_message.MessageBase):
         self.register_field(fields.AccountType, False)
         self.register_field(fields.DefBidSize, False)
         self.register_field(fields.DefOfferSize, False)
-        class NoQuoteSetsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.QuoteSetID, True)
-                register_UnderlyingInstrument_component(self)
-                self.register_field(fields.QuoteSetValidUntilTime, False)
-                self.register_field(fields.TotQuoteEntries, True)
-                class NoQuoteEntriesGroup(fix_message.FIXGroup):
-                    def __init__(self):
-                        super().__init__()
-                        self.register_field(fields.QuoteEntryID, True)
-                        register_Instrument_component(self)
-                        self.register_field(fields.BidPx, False)
-                        self.register_field(fields.OfferPx, False)
-                        self.register_field(fields.BidSize, False)
-                        self.register_field(fields.OfferSize, False)
-                        self.register_field(fields.ValidUntilTime, False)
-                        self.register_field(fields.BidSpotRate, False)
-                        self.register_field(fields.OfferSpotRate, False)
-                        self.register_field(fields.BidForwardPoints, False)
-                        self.register_field(fields.OfferForwardPoints, False)
-                        self.register_field(fields.MidPx, False)
-                        self.register_field(fields.BidYield, False)
-                        self.register_field(fields.MidYield, False)
-                        self.register_field(fields.OfferYield, False)
-                        self.register_field(fields.TransactTime, False)
-                        self.register_field(fields.TradingSessionID, False)
-                        self.register_field(fields.TradingSessionSubID, False)
-                        self.register_field(fields.FutSettDate, False)
-                        self.register_field(fields.OrdType, False)
-                        self.register_field(fields.FutSettDate2, False)
-                        self.register_field(fields.OrderQty2, False)
-                        self.register_field(fields.BidForwardPoints2, False)
-                        self.register_field(fields.OfferForwardPoints2, False)
-                        self.register_field(fields.Currency, False)
-
-                self.register_group(fields.NoQuoteEntries, NoQuoteEntriesGroup, True)
-
         self.register_group(fields.NoQuoteSets, NoQuoteSetsGroup, True)
 
 
@@ -1958,34 +1815,7 @@ class BidRequest(fix_message.MessageBase):
         self.register_field(fields.Currency, False)
         self.register_field(fields.SideValue1, False)
         self.register_field(fields.SideValue2, False)
-        class NoBidDescriptorsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.BidDescriptorType, False)
-                self.register_field(fields.BidDescriptor, False)
-                self.register_field(fields.SideValueInd, False)
-                self.register_field(fields.LiquidityValue, False)
-                self.register_field(fields.LiquidityNumSecurities, False)
-                self.register_field(fields.LiquidityPctLow, False)
-                self.register_field(fields.LiquidityPctHigh, False)
-                self.register_field(fields.EFPTrackingError, False)
-                self.register_field(fields.FairValue, False)
-                self.register_field(fields.OutsideIndexPct, False)
-                self.register_field(fields.ValueOfFutures, False)
-
         self.register_group(fields.NoBidDescriptors, NoBidDescriptorsGroup, False)
-        class NoBidComponentsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.ListID, False)
-                self.register_field(fields.Side, False)
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-                self.register_field(fields.NetGrossInd, False)
-                self.register_field(fields.SettlmntTyp, False)
-                self.register_field(fields.FutSettDate, False)
-                self.register_field(fields.Account, False)
-
         self.register_group(fields.NoBidComponents, NoBidComponentsGroup, False)
         self.register_field(fields.LiquidityIndType, False)
         self.register_field(fields.WtAverageLiquidity, False)
@@ -2017,25 +1847,6 @@ class BidResponse(fix_message.MessageBase):
         super().__init__()
         self.register_field(fields.BidID, False)
         self.register_field(fields.ClientBidID, False)
-        class NoBidComponentsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_CommissionData_component(self)
-                self.register_field(fields.ListID, False)
-                self.register_field(fields.Country, False)
-                self.register_field(fields.Side, False)
-                self.register_field(fields.Price, False)
-                self.register_field(fields.PriceType, False)
-                self.register_field(fields.FairValue, False)
-                self.register_field(fields.NetGrossInd, False)
-                self.register_field(fields.SettlmntTyp, False)
-                self.register_field(fields.FutSettDate, False)
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-                self.register_field(fields.Text, False)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-
         self.register_group(fields.NoBidComponents, NoBidComponentsGroup, True)
 
 
@@ -2050,20 +1861,6 @@ class ListStrikePrice(fix_message.MessageBase):
         super().__init__()
         self.register_field(fields.ListID, True)
         self.register_field(fields.TotNoStrikes, True)
-        class NoStrikesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_Instrument_component(self)
-                self.register_field(fields.PrevClosePx, False)
-                self.register_field(fields.ClOrdID, False)
-                self.register_field(fields.SecondaryClOrdID, False)
-                self.register_field(fields.Side, False)
-                self.register_field(fields.Price, True)
-                self.register_field(fields.Currency, False)
-                self.register_field(fields.Text, False)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-
         self.register_group(fields.NoStrikes, NoStrikesGroup, True)
 
 
@@ -2096,30 +1893,7 @@ class RegistrationInstructions(fix_message.MessageBase):
         self.register_field(fields.RegistAcctType, False)
         self.register_field(fields.TaxAdvantageType, False)
         self.register_field(fields.OwnershipType, False)
-        class NoRegistDtlsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.RegistDetls, False)
-                self.register_field(fields.RegistEmail, False)
-                self.register_field(fields.MailingDtls, False)
-                self.register_field(fields.MailingInst, False)
-                register_NestedParties_component(self)
-                self.register_field(fields.OwnerType, False)
-                self.register_field(fields.DateOfBirth, False)
-                self.register_field(fields.InvestorCountryOfResidence, False)
-
         self.register_group(fields.NoRegistDtls, NoRegistDtlsGroup, False)
-        class NoDistribInstsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.DistribPaymentMethod, False)
-                self.register_field(fields.DistribPercentage, False)
-                self.register_field(fields.CashDistribCurr, False)
-                self.register_field(fields.CashDistribAgentName, False)
-                self.register_field(fields.CashDistribAgentCode, False)
-                self.register_field(fields.CashDistribAgentAcctNumber, False)
-                self.register_field(fields.CashDistribPayRef, False)
-
         self.register_group(fields.NoDistribInsts, NoDistribInstsGroup, False)
         self.register_field(fields.OwnershipType, False)
 
@@ -2184,13 +1958,6 @@ class OrderMassCancelReport(fix_message.MessageBase):
         self.register_field(fields.MassCancelResponse, True)
         self.register_field(fields.MassCancelRejectReason, False)
         self.register_field(fields.TotalAffectedOrders, False)
-        class NoAffectedOrdersGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.OrigClOrdID, False)
-                self.register_field(fields.AffectedOrderID, False)
-                self.register_field(fields.AffectedSecondaryOrderID, False)
-
         self.register_group(fields.NoAffectedOrders, NoAffectedOrdersGroup, False)
         self.register_field(fields.TradingSessionID, False)
         self.register_field(fields.TradingSessionSubID, False)
@@ -2215,47 +1982,6 @@ class NewOrderCross(fix_message.MessageBase):
         self.register_field(fields.CrossID, True)
         self.register_field(fields.CrossType, True)
         self.register_field(fields.CrossPrioritization, True)
-        class NoSidesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.Side, True)
-                self.register_field(fields.ClOrdID, True)
-                self.register_field(fields.SecondaryClOrdID, False)
-                self.register_field(fields.ClOrdLinkID, False)
-                register_Parties_component(self)
-                self.register_field(fields.TradeOriginationDate, False)
-                self.register_field(fields.Account, False)
-                self.register_field(fields.AccountType, False)
-                self.register_field(fields.DayBookingInst, False)
-                self.register_field(fields.BookingUnit, False)
-                self.register_field(fields.PreallocMethod, False)
-                class NoAllocsGroup(fix_message.FIXGroup):
-                    def __init__(self):
-                        super().__init__()
-                        self.register_field(fields.AllocAccount, False)
-                        self.register_field(fields.IndividualAllocID, False)
-                        register_NestedParties_component(self)
-                        self.register_field(fields.AllocQty, False)
-
-                self.register_group(fields.NoAllocs, NoAllocsGroup, False)
-                self.register_field(fields.QuantityType, False)
-                register_OrderQtyData_component(self)
-                register_CommissionData_component(self)
-                self.register_field(fields.OrderCapacity, False)
-                self.register_field(fields.OrderRestrictions, False)
-                self.register_field(fields.CustOrderCapacity, False)
-                self.register_field(fields.ForexReq, False)
-                self.register_field(fields.SettlCurrency, False)
-                self.register_field(fields.Text, False)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-                self.register_field(fields.PositionEffect, False)
-                self.register_field(fields.CoveredOrUncovered, False)
-                self.register_field(fields.CashMargin, False)
-                self.register_field(fields.ClearingFeeIndicator, False)
-                self.register_field(fields.SolicitedFlag, False)
-                self.register_field(fields.SideComplianceID, False)
-
         self.register_group(fields.NoSides, NoSidesGroup, True)
         register_Instrument_component(self)
         self.register_field(fields.SettlmntTyp, False)
@@ -2265,12 +1991,6 @@ class NewOrderCross(fix_message.MessageBase):
         self.register_field(fields.MinQty, False)
         self.register_field(fields.MaxFloor, False)
         self.register_field(fields.ExDestination, False)
-        class NoTradingSessionsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-
         self.register_group(fields.NoTradingSessions, NoTradingSessionsGroup, False)
         self.register_field(fields.ProcessCode, False)
         self.register_field(fields.PrevClosePx, False)
@@ -2319,49 +2039,6 @@ class CrossOrderCancelReplaceRequest(fix_message.MessageBase):
         self.register_field(fields.OrigCrossID, True)
         self.register_field(fields.CrossType, True)
         self.register_field(fields.CrossPrioritization, True)
-        class NoSidesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.Side, True)
-                self.register_field(fields.OrigClOrdID, True)
-                self.register_field(fields.ClOrdID, True)
-                self.register_field(fields.SecondaryClOrdID, False)
-                self.register_field(fields.ClOrdLinkID, False)
-                self.register_field(fields.OrigOrdModTime, False)
-                register_Parties_component(self)
-                self.register_field(fields.TradeOriginationDate, False)
-                self.register_field(fields.Account, False)
-                self.register_field(fields.AccountType, False)
-                self.register_field(fields.DayBookingInst, False)
-                self.register_field(fields.BookingUnit, False)
-                self.register_field(fields.PreallocMethod, False)
-                class NoAllocsGroup(fix_message.FIXGroup):
-                    def __init__(self):
-                        super().__init__()
-                        self.register_field(fields.AllocAccount, False)
-                        self.register_field(fields.IndividualAllocID, False)
-                        register_NestedParties_component(self)
-                        self.register_field(fields.AllocQty, False)
-
-                self.register_group(fields.NoAllocs, NoAllocsGroup, False)
-                self.register_field(fields.QuantityType, False)
-                register_OrderQtyData_component(self)
-                register_CommissionData_component(self)
-                self.register_field(fields.OrderCapacity, False)
-                self.register_field(fields.OrderRestrictions, False)
-                self.register_field(fields.CustOrderCapacity, False)
-                self.register_field(fields.ForexReq, False)
-                self.register_field(fields.SettlCurrency, False)
-                self.register_field(fields.Text, False)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-                self.register_field(fields.PositionEffect, False)
-                self.register_field(fields.CoveredOrUncovered, False)
-                self.register_field(fields.CashMargin, False)
-                self.register_field(fields.ClearingFeeIndicator, False)
-                self.register_field(fields.SolicitedFlag, False)
-                self.register_field(fields.SideComplianceID, False)
-
         self.register_group(fields.NoSides, NoSidesGroup, True)
         register_Instrument_component(self)
         self.register_field(fields.SettlmntTyp, False)
@@ -2371,12 +2048,6 @@ class CrossOrderCancelReplaceRequest(fix_message.MessageBase):
         self.register_field(fields.MinQty, False)
         self.register_field(fields.MaxFloor, False)
         self.register_field(fields.ExDestination, False)
-        class NoTradingSessionsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-
         self.register_group(fields.NoTradingSessions, NoTradingSessionsGroup, False)
         self.register_field(fields.ProcessCode, False)
         self.register_field(fields.PrevClosePx, False)
@@ -2425,23 +2096,6 @@ class CrossOrderCancelRequest(fix_message.MessageBase):
         self.register_field(fields.OrigCrossID, True)
         self.register_field(fields.CrossType, True)
         self.register_field(fields.CrossPrioritization, True)
-        class NoSidesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.Side, True)
-                self.register_field(fields.OrigClOrdID, True)
-                self.register_field(fields.ClOrdID, True)
-                self.register_field(fields.SecondaryClOrdID, False)
-                self.register_field(fields.ClOrdLinkID, False)
-                self.register_field(fields.OrigOrdModTime, False)
-                register_Parties_component(self)
-                self.register_field(fields.TradeOriginationDate, False)
-                register_OrderQtyData_component(self)
-                self.register_field(fields.ComplianceID, False)
-                self.register_field(fields.Text, False)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-
         self.register_group(fields.NoSides, NoSidesGroup, True)
         register_Instrument_component(self)
         self.register_field(fields.TransactTime, True)
@@ -2477,13 +2131,6 @@ class SecurityTypes(fix_message.MessageBase):
         self.register_field(fields.SecurityResponseID, True)
         self.register_field(fields.SecurityResponseType, True)
         self.register_field(fields.TotalNumSecurityTypes, False)
-        class NoSecurityTypesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.SecurityType, False)
-                self.register_field(fields.Product, False)
-                self.register_field(fields.CFICode, False)
-
         self.register_group(fields.NoSecurityTypes, NoSecurityTypesGroup, False)
         self.register_field(fields.Text, False)
         self.register_field(fields.EncodedTextLen, False)
@@ -2527,26 +2174,6 @@ class SecurityList(fix_message.MessageBase):
         self.register_field(fields.SecurityResponseID, True)
         self.register_field(fields.SecurityRequestResult, True)
         self.register_field(fields.TotalNumSecurities, False)
-        class NoRelatedSymGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_Instrument_component(self)
-                self.register_field(fields.Currency, False)
-                class NoLegsGroup(fix_message.FIXGroup):
-                    def __init__(self):
-                        super().__init__()
-                        register_InstrumentLeg_component(self)
-                        self.register_field(fields.LegCurrency, False)
-
-                self.register_group(fields.NoLegs, NoLegsGroup, False)
-                self.register_field(fields.RoundLot, False)
-                self.register_field(fields.MinTradeVol, False)
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-                self.register_field(fields.Text, False)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-
         self.register_group(fields.NoRelatedSym, NoRelatedSymGroup, False)
 
 
@@ -2585,24 +2212,6 @@ class DerivativeSecurityList(fix_message.MessageBase):
         self.register_field(fields.SecurityRequestResult, True)
         register_UnderlyingInstrument_component(self)
         self.register_field(fields.TotalNumSecurities, False)
-        class NoRelatedSymGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_Instrument_component(self)
-                self.register_field(fields.Currency, False)
-                class NoLegsGroup(fix_message.FIXGroup):
-                    def __init__(self):
-                        super().__init__()
-                        register_InstrumentLeg_component(self)
-                        self.register_field(fields.LegCurrency, False)
-
-                self.register_group(fields.NoLegs, NoLegsGroup, False)
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-                self.register_field(fields.Text, False)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-
         self.register_group(fields.NoRelatedSym, NoRelatedSymGroup, False)
 
 
@@ -2624,13 +2233,6 @@ class NewOrderMultileg(fix_message.MessageBase):
         self.register_field(fields.DayBookingInst, False)
         self.register_field(fields.BookingUnit, False)
         self.register_field(fields.PreallocMethod, False)
-        class NoAllocsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.AllocAccount, False)
-                self.register_field(fields.IndividualAllocID, False)
-                self.register_field(fields.AllocQty, False)
-
         self.register_group(fields.NoAllocs, NoAllocsGroup, False)
         self.register_field(fields.SettlmntTyp, False)
         self.register_field(fields.FutSettDate, False)
@@ -2641,29 +2243,11 @@ class NewOrderMultileg(fix_message.MessageBase):
         self.register_field(fields.MinQty, False)
         self.register_field(fields.MaxFloor, False)
         self.register_field(fields.ExDestination, False)
-        class NoTradingSessionsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-
         self.register_group(fields.NoTradingSessions, NoTradingSessionsGroup, False)
         self.register_field(fields.ProcessCode, False)
         self.register_field(fields.Side, True)
         register_Instrument_component(self)
         self.register_field(fields.PrevClosePx, False)
-        class NoLegsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_InstrumentLeg_component(self)
-                self.register_field(fields.LegPositionEffect, False)
-                self.register_field(fields.LegCoveredOrUncovered, False)
-                register_NestedParties_component(self)
-                self.register_field(fields.LegRefID, False)
-                self.register_field(fields.LegPrice, False)
-                self.register_field(fields.LegSettlmntTyp, False)
-                self.register_field(fields.LegFutSettDate, False)
-
         self.register_group(fields.NoLegs, NoLegsGroup, True)
         self.register_field(fields.LocateReqd, False)
         self.register_field(fields.TransactTime, True)
@@ -2727,13 +2311,6 @@ class MultilegOrderCancelReplaceRequest(fix_message.MessageBase):
         self.register_field(fields.DayBookingInst, False)
         self.register_field(fields.BookingUnit, False)
         self.register_field(fields.PreallocMethod, False)
-        class NoAllocsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.AllocAccount, False)
-                self.register_field(fields.IndividualAllocID, False)
-                self.register_field(fields.AllocQty, False)
-
         self.register_group(fields.NoAllocs, NoAllocsGroup, False)
         self.register_field(fields.SettlmntTyp, False)
         self.register_field(fields.FutSettDate, False)
@@ -2744,29 +2321,11 @@ class MultilegOrderCancelReplaceRequest(fix_message.MessageBase):
         self.register_field(fields.MinQty, False)
         self.register_field(fields.MaxFloor, False)
         self.register_field(fields.ExDestination, False)
-        class NoTradingSessionsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-
         self.register_group(fields.NoTradingSessions, NoTradingSessionsGroup, False)
         self.register_field(fields.ProcessCode, False)
         self.register_field(fields.Side, True)
         register_Instrument_component(self)
         self.register_field(fields.PrevClosePx, False)
-        class NoLegsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_InstrumentLeg_component(self)
-                self.register_field(fields.LegPositionEffect, False)
-                self.register_field(fields.LegCoveredOrUncovered, False)
-                register_NestedParties_component(self)
-                self.register_field(fields.LegRefID, False)
-                self.register_field(fields.LegPrice, False)
-                self.register_field(fields.LegSettlmntTyp, False)
-                self.register_field(fields.LegFutSettDate, False)
-
         self.register_group(fields.NoLegs, NoLegsGroup, True)
         self.register_field(fields.LocateReqd, False)
         self.register_field(fields.TransactTime, True)
@@ -2827,12 +2386,6 @@ class TradeCaptureReportRequest(fix_message.MessageBase):
         self.register_field(fields.MatchStatus, False)
         register_Parties_component(self)
         register_Instrument_component(self)
-        class NoDatesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.TradeDate, False)
-                self.register_field(fields.TransactTime, False)
-
         self.register_group(fields.NoDates, NoDatesGroup, False)
         self.register_field(fields.Side, False)
         self.register_field(fields.Text, False)
@@ -2873,71 +2426,6 @@ class TradeCaptureReport(fix_message.MessageBase):
         self.register_field(fields.FutSettDate, False)
         self.register_field(fields.MatchStatus, False)
         self.register_field(fields.MatchType, False)
-        class NoSidesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.Side, True)
-                self.register_field(fields.OrderID, True)
-                self.register_field(fields.SecondaryOrderID, False)
-                self.register_field(fields.ClOrdID, False)
-                register_Parties_component(self)
-                self.register_field(fields.Account, False)
-                self.register_field(fields.AccountType, False)
-                self.register_field(fields.ProcessCode, False)
-                self.register_field(fields.OddLot, False)
-                class NoClearingInstructionsGroup(fix_message.FIXGroup):
-                    def __init__(self):
-                        super().__init__()
-                        self.register_field(fields.ClearingInstruction, False)
-
-                self.register_group(fields.NoClearingInstructions, NoClearingInstructionsGroup, False)
-                self.register_field(fields.ClearingFeeIndicator, False)
-                self.register_field(fields.TradeInputSource, False)
-                self.register_field(fields.TradeInputDevice, False)
-                self.register_field(fields.Currency, False)
-                self.register_field(fields.ComplianceID, False)
-                self.register_field(fields.SolicitedFlag, False)
-                self.register_field(fields.OrderCapacity, False)
-                self.register_field(fields.OrderRestrictions, False)
-                self.register_field(fields.CustOrderCapacity, False)
-                self.register_field(fields.TransBkdTime, False)
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-                register_CommissionData_component(self)
-                self.register_field(fields.GrossTradeAmt, False)
-                self.register_field(fields.NumDaysInterest, False)
-                self.register_field(fields.ExDate, False)
-                self.register_field(fields.AccruedInterestRate, False)
-                self.register_field(fields.AccruedInterestAmt, False)
-                self.register_field(fields.Concession, False)
-                self.register_field(fields.TotalTakedown, False)
-                self.register_field(fields.NetMoney, False)
-                self.register_field(fields.SettlCurrAmt, False)
-                self.register_field(fields.SettlCurrency, False)
-                self.register_field(fields.SettlCurrFxRate, False)
-                self.register_field(fields.SettlCurrFxRateCalc, False)
-                self.register_field(fields.PositionEffect, False)
-                self.register_field(fields.Text, False)
-                self.register_field(fields.EncodedTextLen, False)
-                self.register_field(fields.EncodedText, False)
-                self.register_field(fields.MultiLegReportingType, False)
-                class NoContAmtsGroup(fix_message.FIXGroup):
-                    def __init__(self):
-                        super().__init__()
-                        self.register_field(fields.ContAmtType, False)
-                        self.register_field(fields.ContAmtValue, False)
-                        self.register_field(fields.ContAmtCurr, False)
-
-                self.register_group(fields.NoContAmts, NoContAmtsGroup, False)
-                class NoMiscFeesGroup(fix_message.FIXGroup):
-                    def __init__(self):
-                        super().__init__()
-                        self.register_field(fields.MiscFeeAmt, False)
-                        self.register_field(fields.MiscFeeCurr, False)
-                        self.register_field(fields.MiscFeeType, False)
-
-                self.register_group(fields.NoMiscFees, NoMiscFeesGroup, False)
-
         self.register_group(fields.NoSides, NoSidesGroup, True)
 
 
@@ -2973,35 +2461,6 @@ class QuoteRequestReject(fix_message.MessageBase):
         self.register_field(fields.QuoteReqID, True)
         self.register_field(fields.RFQReqID, False)
         self.register_field(fields.QuoteRequestRejectReason, True)
-        class NoRelatedSymGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_Instrument_component(self)
-                self.register_field(fields.PrevClosePx, False)
-                self.register_field(fields.QuoteRequestType, False)
-                self.register_field(fields.QuoteType, False)
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-                self.register_field(fields.TradeOriginationDate, False)
-                register_Stipulations_component(self)
-                self.register_field(fields.Side, False)
-                self.register_field(fields.QuantityType, False)
-                self.register_field(fields.OrderQty, False)
-                self.register_field(fields.CashOrderQty, False)
-                self.register_field(fields.SettlmntTyp, False)
-                self.register_field(fields.FutSettDate, False)
-                self.register_field(fields.OrdType, False)
-                self.register_field(fields.FutSettDate2, False)
-                self.register_field(fields.OrderQty2, False)
-                self.register_field(fields.ExpireTime, False)
-                self.register_field(fields.TransactTime, False)
-                self.register_field(fields.Currency, False)
-                register_SpreadOrBenchmarkCurveData_component(self)
-                self.register_field(fields.PriceType, False)
-                self.register_field(fields.Price, False)
-                self.register_field(fields.Price2, False)
-                register_YieldData_component(self)
-
         self.register_group(fields.NoRelatedSym, NoRelatedSymGroup, True)
         self.register_field(fields.Text, False)
         self.register_field(fields.EncodedTextLen, False)
@@ -3018,16 +2477,6 @@ class RFQRequest(fix_message.MessageBase):
         self.Trailer = Trailer()
         super().__init__()
         self.register_field(fields.RFQReqID, True)
-        class NoRelatedSymGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                register_Instrument_component(self)
-                self.register_field(fields.PrevClosePx, False)
-                self.register_field(fields.QuoteRequestType, False)
-                self.register_field(fields.QuoteType, False)
-                self.register_field(fields.TradingSessionID, False)
-                self.register_field(fields.TradingSessionSubID, False)
-
         self.register_group(fields.NoRelatedSym, NoRelatedSymGroup, True)
         self.register_field(fields.SubscriptionRequestType, False)
 

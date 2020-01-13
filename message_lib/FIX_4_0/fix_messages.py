@@ -16,6 +16,46 @@ class Trailer(fix_message.MessageBase):
     def __init__(self):
         super().__init__()
         register_StandardTrailer_component(self)
+##############Begin Repeating Groups###############
+class NoMiscFeesGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.MiscFeeAmt, False)
+        self.register_field(fields.MiscFeeCurr, False)
+        self.register_field(fields.MiscFeeType, False)
+
+class NoOrdersGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.ClOrdID, True)
+        self.register_field(fields.OrderID, False)
+        self.register_field(fields.ListID, False)
+        self.register_field(fields.WaveNo, False)
+
+class NoExecsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.ExecID, False)
+        self.register_field(fields.LastShares, False)
+        self.register_field(fields.LastPx, False)
+        self.register_field(fields.LastMkt, False)
+
+class NoAllocsGroup(fix_message.FIXGroup):
+    def __init__(self, value = None):
+        super().__init__(value)
+        self.register_field(fields.AllocAccount, True)
+        self.register_field(fields.AllocShares, True)
+        self.register_field(fields.ProcessCode, False)
+        self.register_field(fields.ExecBroker, False)
+        self.register_field(fields.ClientID, False)
+        self.register_field(fields.Commission, False)
+        self.register_field(fields.CommType, False)
+        self.register_field(fields.NoDlvyInst, False)
+        self.register_field(fields.BrokerOfCredit, False)
+        self.register_field(fields.DlvyInst, False)
+
+##############End Repeating Groups###############
+##############Begin Componenets###############
 def register_StandardHeader_component(self):
     self.register_field(fields.BeginString, True)
     self.register_field(fields.BodyLength, True)
@@ -41,6 +81,7 @@ def register_StandardTrailer_component(self):
     self.register_field(fields.Signature, False)
     self.register_field(fields.CheckSum, True)
 
+##############End Componenets###############
 
 class Heartbeat(fix_message.MessageBase):
     _msgtype = '0'
@@ -220,13 +261,6 @@ class ExecutionReport(fix_message.MessageBase):
         self.register_field(fields.ReportToExch, False)
         self.register_field(fields.Commission, False)
         self.register_field(fields.CommType, False)
-        class NoMiscFeesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.MiscFeeAmt, False)
-                self.register_field(fields.MiscFeeCurr, False)
-                self.register_field(fields.MiscFeeType, False)
-
         self.register_group(fields.NoMiscFees, NoMiscFeesGroup, False)
         self.register_field(fields.NetMoney, False)
         self.register_field(fields.SettlCurrAmt, False)
@@ -506,23 +540,7 @@ class Allocation(fix_message.MessageBase):
         self.register_field(fields.AllocID, True)
         self.register_field(fields.AllocTransType, True)
         self.register_field(fields.RefAllocID, False)
-        class NoOrdersGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.ClOrdID, True)
-                self.register_field(fields.OrderID, False)
-                self.register_field(fields.ListID, False)
-                self.register_field(fields.WaveNo, False)
-
         self.register_group(fields.NoOrders, NoOrdersGroup, True)
-        class NoExecsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.ExecID, False)
-                self.register_field(fields.LastShares, False)
-                self.register_field(fields.LastPx, False)
-                self.register_field(fields.LastMkt, False)
-
         self.register_group(fields.NoExecs, NoExecsGroup, False)
         self.register_field(fields.Side, True)
         self.register_field(fields.Symbol, True)
@@ -540,32 +558,11 @@ class Allocation(fix_message.MessageBase):
         self.register_field(fields.SettlmntTyp, False)
         self.register_field(fields.FutSettDate, False)
         self.register_field(fields.NetMoney, False)
-        class NoMiscFeesGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.MiscFeeAmt, False)
-                self.register_field(fields.MiscFeeCurr, False)
-                self.register_field(fields.MiscFeeType, False)
-
         self.register_group(fields.NoMiscFees, NoMiscFeesGroup, False)
         self.register_field(fields.SettlCurrAmt, False)
         self.register_field(fields.SettlCurrency, False)
         self.register_field(fields.OpenClose, False)
         self.register_field(fields.Text, False)
-        class NoAllocsGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.AllocAccount, True)
-                self.register_field(fields.AllocShares, True)
-                self.register_field(fields.ProcessCode, False)
-                self.register_field(fields.ExecBroker, False)
-                self.register_field(fields.ClientID, False)
-                self.register_field(fields.Commission, False)
-                self.register_field(fields.CommType, False)
-                self.register_field(fields.NoDlvyInst, False)
-                self.register_field(fields.BrokerOfCredit, False)
-                self.register_field(fields.DlvyInst, False)
-
         self.register_group(fields.NoAllocs, NoAllocsGroup, True)
 
 
@@ -624,14 +621,6 @@ class ListStatus(fix_message.MessageBase):
         self.register_field(fields.WaveNo, False)
         self.register_field(fields.NoRpts, True)
         self.register_field(fields.RptSeq, True)
-        class NoOrdersGroup(fix_message.FIXGroup):
-            def __init__(self):
-                super().__init__()
-                self.register_field(fields.ClOrdID, True)
-                self.register_field(fields.CumQty, True)
-                self.register_field(fields.CxlQty, True)
-                self.register_field(fields.AvgPx, True)
-
         self.register_group(fields.NoOrders, NoOrdersGroup, True)
 
 

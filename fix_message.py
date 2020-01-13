@@ -2,6 +2,7 @@ import logging
 from collections import OrderedDict
 import io
 import fix_errors
+from collections.abc import MutableSequence
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +44,13 @@ class MessageBase(object):
         self._content_name_map[field_type.__name__] = c
 
     def register_group(self, group_num_field, group_type, required):
-        group_content = Content(group_type, None, required, value = [], is_group=True)
+        group_content = Content(group_type, None, required, value = group_type(), is_group=True)
         c = Content(group_num_field, group_content, required)
         self._content_tag_map[group_num_field._tag] = c
         self._content_name_map[group_num_field.__name__] = c
         self._content_name_map[group_type.__name__] = group_content
 
-    def build_from_list(self, field_list, stop_if_field_not_defined, ignore_invalid_field_vals = False):
+    def build_from_list(self, field_list, stop_if_field_not_defined, ignore_invalid_field_vals = False, in_group = False):
         missed_fields = []
         while field_list:
             field = field_list[0]
@@ -65,16 +66,32 @@ class MessageBase(object):
             
             if content.value is not None:
                 #we already set this field which likely means we're in a repeating group and in the next group item
-                return missed_fields
+                if in_group:
+                    return missed_fields
+                else:
+                    raise fix_errors.FIXRepeatingFieldError(None, None, tag, "Tag appears more than once", None)
 
             try:
                 setattr(self, content.field_type.__name__, value)
+            except fix_errors.FIXEnumValueError as e:
+                if ignore_invalid_field_vals:
+                    field_list.pop(0)
+                    continue
+                else:
+                    e.tag = tag
+                    raise e
+            except fix_errors.FIXTagEmptyError as e:
+                if ignore_invalid_field_vals:
+                    field_list.pop(0)
+                    continue
+                else:
+                    raise
             except ValueError as e:
                 if ignore_invalid_field_vals:
                     field_list.pop(0)
                     continue
                 else:
-                    raise fix_errors.FIXValueError(str(e), tag)
+                    raise fix_errors.FIXValueError(e, tag)
 
             field_list.pop(0)
             if content.group_content: #value should be number of repeating groups
@@ -82,12 +99,11 @@ class MessageBase(object):
                     group_item = content.group_content.field_type()
                     #if this is the last group item we should retun to processing the main message.
                     #if this is not the last group item we should discard fields until we get back to one that we know.
-                    missed_fields.append(group_item.build_from_list(field_list, i == value -1))
+                    missed_fields += group_item.build_from_list(field_list, i == content.value -1, ignore_invalid_field_vals, in_group = True)
 
-                    content.value.append(group_item)
-
-        #if missed_fields:
-        #    logger.debug("Received additional unregistered tags %s in message [%s]", missed_fields, self._msgtype)
+                    if len(field_list) == 0: #we discarded all the fields because we're expecting more items in group
+                        raise fix_errors.FIXIncorrectNumInGroup(None, None, tag, "Incorrect NumInGroup count for repeating group", None)
+                    content.group_content.value.append(group_item)
 
         return missed_fields
 
@@ -129,13 +145,13 @@ class MessageBase(object):
     def serialize_msg(self, buffer):
         buffer_len = 0
         for tag, content in self._content_tag_map.items():
-            if content.field_type.__name__ in ['BeginString', 'BodyLength', 'CheckSum']   : continue #ignore BeginString
+            if content.field_type.__name__ in ('BeginString', 'BodyLength', 'CheckSum')  : continue #ignore BeginString
             if content.value is None: continue              
             buffer_len += buffer.write(tag.encode())
             buffer_len += buffer.write(b_EQU)
             buffer_len += buffer.write(bytes(content.value))
             buffer_len += buffer.write(b_SEP)
-            if content.is_group:
+            if content.group_content:
                 for value in content.group_content.value:
                     buffer_len += value.serialize_msg(buffer)
         return buffer_len
@@ -147,8 +163,9 @@ class MessageBase(object):
         if 'initialized' not in self.__dict__ or  name in self.__dict__: 
             return super().__setattr__(name, value)
 
-        if value == "": return
         content = self._content_name_map.get(name)
+        if value == "": 
+            raise fix_errors.FIXTagEmptyError("Value is empty", content.field_type._tag)
         if content:
             if isinstance(value, content.field_type):
                 content.value = value
@@ -157,6 +174,39 @@ class MessageBase(object):
         else:
             raise fix_errors.FieldNotFoundError(f"Field {name} does not exist in message")
 
+    def get_first_unset_required_field(self):
+        for content in self._content_name_map.values():
+            if content.is_group: continue #access group through GroupNo field
+            if content.required and content.value is None:
+                return content.field_type._tag
+            if content.group_content and content.value:
+                for group in content.group_content.value:
+                    tag = group.get_first_unset_required_field()
+                    if tag is not None:
+                        return tag
+        return None
 
+class FIXGroup(MessageBase, MutableSequence):
+    def __init__(self, value):
+        self._items = []
+        if value:
+            for item in value:
+                if not isinstance(item, type(self)):
+                    raise ValueError(f"Invalid type {type(item)} expecting instance of {type(self)}")
+            self._items = value 
+        super().__init__()
 
-class FIXGroup(MessageBase): pass
+    def __len__ (self):
+        return len(self._items)
+        
+    def __getitem__(self, index):
+        return self._items[index]
+    
+    def __setitem__(self, index, value):
+        self._items[index] = value
+
+    def __delitem__(self, index):
+        del self._items[index]
+
+    def insert(self, index, value):
+        self._items.insert(index, value)
