@@ -12,4 +12,4 @@ Validations:
 MessageParsing:
     MessageReadTimeout : 2
     IgnoreChecksum : False
-    IgnoreInvalidFieldValues : False # tag=<SOH> and 
+    IgnoreInvalidFieldValues : False # tag=<SOH> and wrong type 

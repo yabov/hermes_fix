@@ -15,25 +15,24 @@ logging.basicConfig(level=logging.DEBUG, format= '%(levelname)s-%(asctime)s-%(th
 
 SERVER_QUEUE = queue.Queue()
 CLIENT_QUEUE = queue.Queue()
-
 class FIXTestAppServer(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
+    def on_queue_msg(self, session_name, msg):
         SERVER_QUEUE.put(msg)
 
-    def on_error(self, error):
+    def on_error(self, session_name, error):
         SERVER_QUEUE.put(error)
 
 class FIXTestAppClient(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
-        CLIENT_QUEUE.put(msg)    
+    def on_queue_msg(self, session_name, msg):
+        CLIENT_QUEUE.put(msg)   
 
-    def on_error(self, error):
+    def on_error(self, session_name, error):
         CLIENT_QUEUE.put(error)    
 
 
@@ -83,8 +82,8 @@ class Test(unittest.TestCase):
         reset_msg.GapFillFlag = 'Y'
         reset_msg.Header.MsgSeqNum = 5
 
-        self.client_app.send_message(reset_msg)
-        self.client_app.engine.msg_seq_num_out = 10
+        self.client_app.send_message(self._testMethodName, reset_msg)
+        self.client_app.engines[self._testMethodName].msg_seq_num_out = 10
 
         
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
@@ -104,9 +103,9 @@ class Test(unittest.TestCase):
         reset_msg.NewSeqNo = 10
         reset_msg.GapFillFlag = 'Y'
 
-        self.client_app.send_message(reset_msg)
+        self.client_app.send_message(self._testMethodName, reset_msg)
 
-        self.client_app.engine.msg_seq_num_out = 10
+        self.client_app.engines[self._testMethodName].msg_seq_num_out = 10
 
         
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
@@ -125,9 +124,9 @@ class Test(unittest.TestCase):
         reset_msg.GapFillFlag = 'Y'
 
 
-        self.client_app.send_message(reset_msg)
+        self.client_app.send_message(self._testMethodName, reset_msg)
 
-        self.client_app.engine.msg_seq_num_out = 2
+        self.client_app.engines[self._testMethodName].msg_seq_num_out = 2
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXDropMessageError)
 
@@ -146,13 +145,13 @@ class Test(unittest.TestCase):
         reset_msg.GapFillFlag = 'Y'
 
 
-        self.client_app.send_message(reset_msg)
+        self.client_app.send_message(self._testMethodName, reset_msg)
 
-        self.client_app.engine.msg_seq_num_out = 2
+        self.client_app.engines[self._testMethodName].msg_seq_num_out = 2
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXSequenceTooLowError)
 
-        #self.client_app.engine.logout()
+        #self.client_app.engines[self._testMethodName].logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
 
@@ -167,7 +166,7 @@ class Test(unittest.TestCase):
         reset_msg.GapFillFlag = 'Y'
 
 
-        self.client_app.send_message(reset_msg)
+        self.client_app.send_message(self._testMethodName, reset_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXResetSequenceToLowerError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
@@ -185,8 +184,8 @@ class Test(unittest.TestCase):
         reset_msg.Header.MsgSeqNum = 999
         reset_msg.GapFillFlag = 'N'
 
-        self.client_app.send_message(reset_msg)
-        self.client_app.engine.msg_seq_num_out = 10
+        self.client_app.send_message(self._testMethodName, reset_msg)
+        self.client_app.engines[self._testMethodName].msg_seq_num_out = 10
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
 
@@ -201,8 +200,8 @@ class Test(unittest.TestCase):
         reset_msg.GapFillFlag = 'N'
         reset_msg.Header.MsgSeqNum = 999
 
-        self.client_app.send_message(reset_msg)
-        self.client_app.engine.msg_seq_num_out = 3
+        self.client_app.send_message(self._testMethodName, reset_msg)
+        self.client_app.engines[self._testMethodName].msg_seq_num_out = 3
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
 
@@ -220,8 +219,8 @@ class Test(unittest.TestCase):
         reset_msg.NewSeqNo = 0
         reset_msg.GapFillFlag = 'N'
 
-        self.client_app.send_message(reset_msg)
-        self.client_app.engine.msg_seq_num_out = 3
+        self.client_app.send_message(self._testMethodName, reset_msg)
+        self.client_app.engines[self._testMethodName].msg_seq_num_out = 3
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXResetSequenceToLowerError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
@@ -229,7 +228,7 @@ class Test(unittest.TestCase):
         self.do_logout(self.client_app)
 
     def do_logout(self, client_app):
-        client_app.engine.logout()
+        client_app.engines[self._testMethodName].logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
@@ -240,8 +239,8 @@ class Test(unittest.TestCase):
 
         
     def tearDown(self):
-        self.client_app.close_connection()
-        self.server_app.close_connection()
+        self.client_app.close_connection(self._testMethodName)
+        self.server_app.close_connection(self._testMethodName)
         self.server.stop_all()
         try:
             self.assertTrue(SERVER_QUEUE.empty())

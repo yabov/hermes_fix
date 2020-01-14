@@ -53,24 +53,24 @@ class MessageValidatorMixin(object):
             return None, None, None
         except fix_errors.FIXRejectError as e:
             logger.error(e)
-            self.application.on_error(e)
+            self.application.on_error(self.session_name, e)
             curr_seq = self.store.get_current_in_seq()
             self.store.set_current_in_seq(curr_seq + 1)
             self.send_reject(curr_seq, e.RefMsgType, e.RefTagID, e.Text, e.SessionRejectReason)
             return None, None, None
         except fix_errors.FIXDropMessageError as e:
-            self.application.on_error(e)
+            self.application.on_error(self.session_name, e)
             return None, None, None
         except Exception as e:
             raise
 
 
-    def on_first_message(self, msg):
+    def on_first_message(self, session_name, msg):
         if not isinstance(msg, self.message_lib.fix_messages.Logon):
             raise fix_errors.FIXInvalidFirstMessage("First message not a logon")
 
 
-    def on_validate_message(self, msg):
+    def on_validate_message(self, session_name, msg):
         if msg.Header.BeginString != self.__BeginString:
             error= f"Invalid BeginString [{msg.Header.BeginString}] on message, expecting [{self.__BeginString}]"
             raise fix_errors.FIXInvalidMessageError(error, wait_interval=2, send_test_msg=False)
@@ -87,14 +87,14 @@ class MessageValidatorMixin(object):
             raise fix_errors.RequiredTagMissingError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.OrigSendingTime, 
                 "Required tag missing", self.message_lib.fields.SessionRejectReason.ENUM_REQUIRED_TAG_MISSING)
 
-    def on_validate_sendtime(self, msg):        
+    def on_validate_sendtime(self, session_name, msg):        
         send_time = datetime.datetime.strptime(msg.Header.SendingTime, self.time_format)
         if abs(datetime.datetime.utcnow() - send_time) > self.send_time_tolerance:
             raise fix_errors.FIXSendTimeAccuracyError(msg.Header.MsgSeqNum, msg._msgtype, msg.Header.tags.SendingTime, 
                  "SendingTime accuracy problem", self.message_lib.fields.SessionRejectReason.ENUM_SENDING_TIME_ACCURACY_PROBLEM,
                  wait_interval=2, send_test_msg=False)
             
-    def on_validate_req_fields(self, msg):
+    def on_validate_req_fields(self, session_name, msg):
         tag = msg.get_first_unset_required_field()
         if tag is not None:
             raise fix_errors.FIXInvalidMessageFieldError(msg.Header.MsgSeqNum, msg._msgtype, tag,  "Required tag missing", 

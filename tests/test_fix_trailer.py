@@ -14,23 +14,23 @@ SERVER_QUEUE = queue.Queue()
 CLIENT_QUEUE = queue.Queue()
 
 class FIXTestAppServer(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
+    def on_queue_msg(self, session_name, msg):
         SERVER_QUEUE.put(msg)
 
-    def on_error(self, error):
+    def on_error(self, session_name, error):
         SERVER_QUEUE.put(error)
 
 class FIXTestAppClient(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
-        CLIENT_QUEUE.put(msg)    
+    def on_queue_msg(self, session_name, msg):
+        CLIENT_QUEUE.put(msg)   
 
-    def on_error(self, error):
+    def on_error(self, session_name, error):
         CLIENT_QUEUE.put(error)    
 
 
@@ -73,7 +73,7 @@ class Test(unittest.TestCase):
 
 
     def do_logout(self, client_app):
-        client_app.engine.logout()
+        client_app.engines[self._testMethodName].logout()
 
         resp_logout = SERVER_QUEUE.get(timeout=5)
         sent_logout = CLIENT_QUEUE.get(timeout=5)
@@ -95,10 +95,10 @@ class Test(unittest.TestCase):
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         order_msg.Trailer.CheckSum = '000'
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXGarbledMessageError)
 
-        self.client_app.engine.logout()
+        self.client_app.engines[self._testMethodName].logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
@@ -135,10 +135,10 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXGarbledMessageError)
 
-        self.client_app.engine.logout()
+        self.client_app.engines[self._testMethodName].logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
@@ -167,10 +167,10 @@ class Test(unittest.TestCase):
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         order_msg.Trailer.CheckSum = '00000'
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXGarbledMessageError)
 
-        self.client_app.engine.logout()
+        self.client_app.engines[self._testMethodName].logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)

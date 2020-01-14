@@ -15,23 +15,23 @@ SERVER_QUEUE = queue.Queue()
 CLIENT_QUEUE = queue.Queue()
 
 class FIXTestAppServer(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
+    def on_queue_msg(self, session_name, msg):
         SERVER_QUEUE.put(msg)
 
-    def on_error(self, error):
+    def on_error(self, session_name, error):
         SERVER_QUEUE.put(error)
 
 class FIXTestAppClient(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
-        CLIENT_QUEUE.put(msg)    
+    def on_queue_msg(self, session_name, msg):
+        CLIENT_QUEUE.put(msg)   
 
-    def on_error(self, error):
+    def on_error(self, session_name, error):
         CLIENT_QUEUE.put(error)    
 
 
@@ -74,7 +74,7 @@ class Test(unittest.TestCase):
 
 
     def do_logout(self, client_app):
-        client_app.engine.logout()
+        client_app.engines[self._testMethodName].logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
@@ -93,7 +93,7 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
 
         self.do_logout(self.client_app)
@@ -109,9 +109,9 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.engine.msg_seq_num_out = 10
+        self.client_app.engines[self._testMethodName].msg_seq_num_out = 10
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
         
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.ResendRequest)
@@ -135,9 +135,9 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.engine.msg_seq_num_out = 0
+        self.client_app.engines[self._testMethodName].msg_seq_num_out = 0
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXSequenceTooLowError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXSequenceTooLowError)
@@ -157,11 +157,11 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXGarbledMessageError)
 
         #self.do_logout(self.client_app)
-        self.client_app.engine.logout()
+        self.client_app.engines[self._testMethodName].logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
@@ -190,9 +190,9 @@ class Test(unittest.TestCase):
         order_msg.Header.OrigSendingTime = order_msg.TransactTime
         order_msg.Header.PossDupFlag = 'Y'
 
-        self.client_app.engine.msg_seq_num_out -= 1
+        self.client_app.engines[self._testMethodName].msg_seq_num_out -= 1
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXDupeMessageRecv)
 
@@ -222,7 +222,7 @@ class Test(unittest.TestCase):
         order_msg.Header.OrigSendingTime = (datetime.datetime.utcnow() + datetime.timedelta(hours=1)).strftime('%Y%m%d-%H:%M:%S.%f')
         order_msg.Header.PossDupFlag = 'Y'
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXSendTimeAccuracyError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
@@ -249,7 +249,7 @@ class Test(unittest.TestCase):
 
         order_msg.Header.PossDupFlag = 'Y'
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.RequiredTagMissingError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
@@ -268,7 +268,7 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
 
@@ -289,7 +289,7 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageError)
 
@@ -316,7 +316,7 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXBadCompIDError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
@@ -343,7 +343,7 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXBadCompIDError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
@@ -367,13 +367,13 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=5), fix_errors.FIXGarbledMessageError)
         for _ in range(11):
             self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXGarbledMessageError)
 
-        self.client_app.engine.logout()
+        self.client_app.engines[self._testMethodName].logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
@@ -404,7 +404,7 @@ class Test(unittest.TestCase):
 
         order_msg.Header.SendingTime = (datetime.datetime.utcnow() + datetime.timedelta(hours=1)).strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXSendTimeAccuracyError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
@@ -436,7 +436,7 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         fix_messages_4_2_0_base.OrderSingle._msgtype = 'D'
 
@@ -460,20 +460,20 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.server_app.engine.callback_register = fix_engine.CallbackRegistrar(self.server_app.engine.loop)
+        self.server_app.engines[self._testMethodName].callback_register = fix_engine.CallbackRegistrar(self.server_app.engines[self._testMethodName].loop)
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXUnsupportedMessageTypeError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.BusinessMessageReject)
 
-        self.server_app.register_callback(None,  self.server_app.on_queue_msg)
+        self.server_app.register_callback(self._testMethodName, None,  self.server_app.on_queue_msg)
 
         self.do_logout(self.client_app)
 
     def tearDown(self):
-        self.client_app.close_connection()
-        self.server_app.close_connection()
+        self.client_app.close_connection(self._testMethodName)
+        self.server_app.close_connection(self._testMethodName)
         self.server.stop_all()
         try:
             self.assertTrue(SERVER_QUEUE.empty())

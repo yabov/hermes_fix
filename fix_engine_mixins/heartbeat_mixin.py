@@ -39,12 +39,12 @@ class HeartBeatMixin:
         if self.out_heart_beat_task: self.out_heart_beat_task.cancel()
         if self.in_heart_beat_task: self.in_heart_beat_task.cancel()
 
-    def on_any_msg(self, msg):
+    def on_any_msg(self, session_name, msg):
         if not self.waiting_for_test_msg_id:
             future = asyncio.run_coroutine_threadsafe(self.schedule_next_in_beat_await(), self.loop)
             future.result()
 
-    def on_logon_hb(self, msg):
+    def on_logon_hb(self, session_name, msg):
         self.in_heart_beat_int = msg.HeartBtInt
         self.register_heartbeats()
 
@@ -80,7 +80,7 @@ class HeartBeatMixin:
         self.send_message(hrtbt)   
         self.schedule_next_out_beat()
 
-    def on_test_request(self, msg):
+    def on_test_request(self, session_name, msg):
         hrtbt= self.message_lib.fix_messages.Heartbeat()
         hrtbt.TestReqID = msg.TestReqID
         return hrtbt
@@ -105,7 +105,7 @@ class HeartBeatMixin:
         logger.error("Failed to respond to TestRequest")
         self.logout("Failed to respond to TestRequest", wait_interval=2, send_test_msg=False)
 
-    def on_heart_beat(self, msg):
+    def on_heart_beat(self, session_name, msg):
         if self.waiting_for_test_msg_id:
             if msg.TestReqID == str(self.waiting_for_test_msg_id):
                 self.waiting_for_test_msg_id = None
@@ -118,7 +118,7 @@ class HeartBeatMixin:
     def logout(self, text = None, wait_interval =10, send_test_msg = True):
         if send_test_msg:
             curr_seq = str(self.msg_seq_num_out)
-            self.register_admin_callback(self.message_lib.fix_messages.Heartbeat, lambda msg : self.on_hb_logout(msg, text, wait_interval), 
+            self.register_admin_callback(self.message_lib.fix_messages.Heartbeat, lambda session_name, msg : self.on_hb_logout(msg, text, wait_interval), 
                                         check_func = lambda msg: (msg.TestReqID == curr_seq),
                                         priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.HIGH,
                                         one_time=True, timeout=wait_interval, timeout_cb=self.no_heart_beat)

@@ -16,7 +16,7 @@ class SequenceCheckerMixin():
         self.register_admin_callback(self.message_lib.fix_messages.SequenceReset, self.on_sequence_reset, fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.NORMAL)
         self.register_admin_callback(self.message_lib.fix_messages.ResendRequest, self.on_resend_request)
 
-    def on_sequence_reset(self, msg):
+    def on_sequence_reset(self, session_name, msg):
         in_seq = self.store.get_current_in_seq()
         force_seq = msg.NewSeqNo-1
 
@@ -35,7 +35,7 @@ class SequenceCheckerMixin():
 
         self.store.set_current_in_seq(force_seq)
 
-    def on_msg_check_seq(self, msg):
+    def on_msg_check_seq(self, session_name, msg):
         if isinstance(msg, self.message_lib.fix_messages.SequenceReset) and msg.GapFillFlag != self.message_lib.fields.GapFillFlag.ENUM_GAP_FILL_MESSAGE:
             #SequenceReset - Reset: ignore all sequence checks
             return
@@ -53,7 +53,7 @@ class SequenceCheckerMixin():
             if msg._msgcat != 'admin': #since admin messages do not get resent we'll let this one through but will not update seq num
                 raise fix_errors.FIXEngineResendRequest("Resend Requested")
             else:
-                self.application.on_error(fix_errors.FIXEngineResendRequest("Resend Requested"))
+                self.application.on_error(self.session_name, fix_errors.FIXEngineResendRequest("Resend Requested"))
             return
         elif msg.Header.MsgSeqNum < in_seq:
             self.check_low_seq(in_seq, msg)
@@ -89,7 +89,7 @@ class SequenceCheckerMixin():
         gap_msg.Header.MsgSeqNum = last_sent_msg_num+1
         self.send_message(gap_msg, resend = True)
 
-    def on_resend_request(self, msg):
+    def on_resend_request(self, session_name, msg):
         last_sent_msg_num = msg.BeginSeqNo-1
         for msg_num, msg_type_str, resend_msg in self.store.get_messages(msg.BeginSeqNo, msg.EndSeqNo):
             try:

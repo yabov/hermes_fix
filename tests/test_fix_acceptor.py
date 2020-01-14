@@ -13,20 +13,20 @@ SERVER_QUEUE = queue.Queue()
 CLIENT_QUEUE = queue.Queue()
 
 class FIXTestAppServer(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
+    def on_queue_msg(self, session_name, msg):
         SERVER_QUEUE.put(msg)
 
-    def on_error(self, error):
+    def on_error(self, session_name, error):
         SERVER_QUEUE.put(error)
 
 class FIXTestAppClient(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
+    def on_queue_msg(self, session_name, msg):
         CLIENT_QUEUE.put(msg)        
 
 
@@ -58,7 +58,7 @@ class Test(unittest.TestCase):
         self.server.start()
 
     def do_logout(self, client_app):
-        client_app.engine.logout()
+        client_app.engines[self._testMethodName].logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
@@ -88,7 +88,12 @@ class Test(unittest.TestCase):
     def test_valid_logon_seq_high(self):
         client_app = FIXTestAppClient()
         client = fix.SocketConnection(client_app, self.store, self.settings_client)
-        client_app.on_engine_initialized = lambda : setattr(client_app.engine, 'msg_seq_num_out', 10)
+
+        def register_hack(session_name):
+            client_app.register_callback(session_name, None, client_app.on_queue_msg)
+            client_app.engines[session_name].msg_seq_num_out = 10
+
+        client_app.on_register_callbacks = register_hack
         client.start()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
@@ -164,7 +169,7 @@ class Test(unittest.TestCase):
     def test_invalid_first_message(self):
         hb = fix_messages_4_2_0_base.Heartbeat()
         hb.Header.BeginString = 'FIX.4.2'
-        hb.Header.SenderCompID = 'CLIENT'
+        hb.Header.SenderCompID = self._testMethodName
         hb.Header.TargetCompID = 'HOST'
         hb.Header.MsgSeqNum = 1
         
@@ -172,18 +177,17 @@ class Test(unittest.TestCase):
         client = fix.SocketConnection(client_app, self.store, self.settings_client)
 
         async def send_logon_hack():
-            client_app.engine._send(hb)
+            client_app.engines[self._testMethodName]._send(hb)
 
-        def register_hack():
-            client_app.register_callback(None, self.server_app.on_queue_msg)
-            client_app.engine.send_logon = send_logon_hack
+        def register_hack(session_name):
+            client_app.register_callback(session_name, None, client_app.on_queue_msg)
+            client_app.engines[session_name].send_logon = send_logon_hack
 
         client_app.on_register_callbacks = register_hack
 
         client.start()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidFirstMessage)
-        self.assertTrue(CLIENT_QUEUE.empty())
 
     """First message never received
         Disconnect
@@ -195,9 +199,9 @@ class Test(unittest.TestCase):
         async def send_logon_hack():
             return
 
-        def register_hack():
-            client_app.register_callback(None, self.server_app.on_queue_msg)
-            client_app.engine.send_logon = send_logon_hack
+        def register_hack(session_name):
+            client_app.register_callback(session_name, None, client_app.on_queue_msg)
+            client_app.engines[session_name].send_logon = send_logon_hack
 
         client_app.on_register_callbacks = register_hack
 

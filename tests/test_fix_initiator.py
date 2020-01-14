@@ -14,23 +14,23 @@ SERVER_QUEUE = queue.Queue()
 CLIENT_QUEUE = queue.Queue()
 
 class FIXTestAppServer(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
+    def on_queue_msg(self, session_name, msg):
         SERVER_QUEUE.put(msg)
 
-    def on_error(self, error):
+    def on_error(self, session_name, error):
         SERVER_QUEUE.put(error)
 
 class FIXTestAppClient(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
+    def on_queue_msg(self, session_name, msg):
         CLIENT_QUEUE.put(msg)    
 
-    def on_error(self, error):
+    def on_error(self, session_name, error):
         CLIENT_QUEUE.put(error)    
 
 
@@ -63,7 +63,7 @@ class Test(unittest.TestCase):
         self.server = fix.SocketConnection(self.server_app, self.store, self.settings)
 
     def do_logout(self, client_app):
-        client_app.engine.logout()
+        client_app.engines[self._testMethodName].logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
@@ -89,7 +89,14 @@ class Test(unittest.TestCase):
 
     """If MsgSeqNum(34) is too high then send ResendRequest<2>"""
     def test_valid_logon_seq_high(self):
-        self.server_app.on_engine_initialized = lambda : setattr(self.server_app.engine, 'msg_seq_num_out', 10)
+
+        def register_hack(session_name):
+            self.server_app.register_callback(session_name, None, self.server_app.on_queue_msg)
+            self.server_app.engines[session_name].msg_seq_num_out = 10
+
+
+
+        self.server_app.on_register_callbacks = register_hack
         self.server.start()
         self.client.start()
                 
@@ -124,14 +131,14 @@ class Test(unittest.TestCase):
         hb.Header.TargetCompID = 'HOST'
         hb.Header.MsgSeqNum = 1
         
-        def on_logon_hack(msg):
-            self.server_app.engine.settings = self.server_app.engine.find_session(msg.Header, self.server_app.engine.session_settings)
-            self.server_app.engine.init_settings()
+        def on_logon_hack(session_name, msg):
+            #self.server_app.engines[self._testMethodName].settings = self.server_app.engines[self._testMethodName].find_session(msg.Header, self.server_app.engines[self._testMethodName].session_settings)
+            #self.server_app.engines[self._testMethodName].init_settings()
             return hb
 
-        def register_hack():
-            self.server_app.register_callback(None, self.server_app.on_queue_msg)
-            self.server_app.engine.register_admin_callback(fix_messages_4_2_0_base.Logon, on_logon_hack, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST + 
+        def register_hack(session_name):
+            self.server_app.register_callback(session_name, None, self.server_app.on_queue_msg)
+            self.server_app.engines[self._testMethodName].register_admin_callback(fix_messages_4_2_0_base.Logon, on_logon_hack, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST + 
                         fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.BEFORE)
 
         self.server_app.on_register_callbacks = register_hack

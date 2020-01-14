@@ -17,24 +17,24 @@ SERVER_QUEUE = queue.Queue()
 CLIENT_QUEUE = queue.Queue()
 
 class FIXTestAppServer(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
+    def on_queue_msg(self, session_name, msg):
         SERVER_QUEUE.put(msg)
 
-    def on_error(self, error):
+    def on_error(self, session_name, error):
         SERVER_QUEUE.put(error)
 
 class FIXTestAppClient(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
-        CLIENT_QUEUE.put(msg)    
+    def on_queue_msg(self, session_name, msg):
+        CLIENT_QUEUE.put(msg)   
 
-    def on_error(self, error):
-        CLIENT_QUEUE.put(error)    
+    def on_error(self, session_name, error):
+        CLIENT_QUEUE.put(error)     
 
 
 class Test(unittest.TestCase):
@@ -76,7 +76,7 @@ class Test(unittest.TestCase):
 
 
     def do_logout(self, client_app):
-        client_app.engine.logout()
+        client_app.engines[self._testMethodName].logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
@@ -112,7 +112,7 @@ class Test(unittest.TestCase):
         order_msg.NoAllocsGroup = [ord_allocs1, ord_allocs2]
 
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         msg = SERVER_QUEUE.get(timeout=2)
         self.assertIsInstance(msg, fix_messages_4_2_0_base.OrderSingle)
@@ -129,13 +129,13 @@ class Test(unittest.TestCase):
     Increment inbound MsgSeqNum(34)
     Generate an "error" condition in test output"""
     def test_bad_field_no_validate(self):
-        self.server_app.engine.accept_unknown_fields = True
+        self.server_app.engines[self._testMethodName].accept_unknown_fields = True
 
         time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|40=1|999=123|21=1|55=AAPL|54=1|60={time}|'.replace('|','\x01').encode()
 
-        self.client_app.engine.writer.write(self.build_raw_msg(body))
-        self.client_app.engine.msg_seq_num_out +=1
+        self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
+        self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
 
@@ -147,8 +147,8 @@ class Test(unittest.TestCase):
         time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|40=1|999=123|21=1|55=AAPL|54=1|60={time}|'.replace('|','\x01').encode()
 
-        self.client_app.engine.writer.write(self.build_raw_msg(body))
-        self.client_app.engine.msg_seq_num_out +=1
+        self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
+        self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageFieldError)
@@ -166,8 +166,8 @@ class Test(unittest.TestCase):
         time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|40=1|21=1|54=1|60={time}|'.replace('|','\x01').encode()
 
-        self.client_app.engine.writer.write(self.build_raw_msg(body))
-        self.client_app.engine.msg_seq_num_out +=1
+        self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
+        self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageFieldError)
@@ -185,8 +185,8 @@ class Test(unittest.TestCase):
         time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|40=1|21=1|1=|55=AAPL|54=1|60={time}|'.replace('|','\x01').encode()
 
-        self.client_app.engine.writer.write(self.build_raw_msg(body))
-        self.client_app.engine.msg_seq_num_out +=1
+        self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
+        self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageFieldError)
@@ -205,8 +205,8 @@ class Test(unittest.TestCase):
         time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|40=999|21=1|55=AAPL|54=1|60={time}|'.replace('|','\x01').encode()
 
-        self.client_app.engine.writer.write(self.build_raw_msg(body))
-        self.client_app.engine.msg_seq_num_out +=1
+        self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
+        self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageFieldError)
@@ -224,8 +224,8 @@ class Test(unittest.TestCase):
         time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|38=a|40=1|21=1|55=AAPL|54=1|60={time}|'.replace('|','\x01').encode()
 
-        self.client_app.engine.writer.write(self.build_raw_msg(body))
-        self.client_app.engine.msg_seq_num_out +=1
+        self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
+        self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageFieldError)
@@ -243,8 +243,8 @@ class Test(unittest.TestCase):
         time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|38=10|40=1|21=1|55=AAPL|11=test_message|54=1|60={time}|'.replace('|','\x01').encode()
 
-        self.client_app.engine.writer.write(self.build_raw_msg(body))
-        self.client_app.engine.msg_seq_num_out +=1
+        self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
+        self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXRepeatingFieldError)
 
@@ -273,7 +273,7 @@ class Test(unittest.TestCase):
         ord_allocs2.AllocShares = 456
         order_msg.NoAllocsGroup = [ord_allocs1, ord_allocs2]
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXIncorrectNumInGroup)
 

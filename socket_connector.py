@@ -26,7 +26,7 @@ class SocketConnection:
         addr = writer.get_extra_info('peername')
         sockname = writer.get_extra_info('sockname')
         logger.info(f'Accepted New Connection on [{sockname}]<-->[{addr}]')
-        engine = FIXEngineAcceptor(self.application, self.storeFactory, self.session_settings, reader, writer, self.session_settings['DEFAULT'])
+        engine = FIXEngineAcceptor(self.application, self.storeFactory, self.session_settings, reader, writer, 'DEFAULT')
         try:
             await engine.serve_client()
         except Exception as e:
@@ -36,13 +36,14 @@ class SocketConnection:
         await writer.wait_closed()
 
     async def main(self, event_sync):
-
         engines = []
         self.lock = asyncio.Lock()
         for section in self.settings.sections():
             if self.settings[section]['ConnectionType'] == 'acceptor':
+                self.application.on_created(section)
                 engines.append(self.start_acceptor(section))
             elif self.settings[section]['ConnectionType'] == 'initiator':
+                self.application.on_created(section)
                 engines.append(self.start_initiator(section))
 
         self.engine_tasks = asyncio.gather(*engines)
@@ -107,7 +108,7 @@ class SocketConnection:
         addr = writer.get_extra_info('peername')
         sockname = writer.get_extra_info('sockname')
         try:
-            engine = FIXEngineInitiator(self.application, self.storeFactory, self.session_settings, reader, writer, self.settings[section])
+            engine = FIXEngineInitiator(self.application, self.storeFactory, self.session_settings, reader, writer, section)
             await engine.send_logon()
             await engine.serve_client()
         except ConnectionResetError:

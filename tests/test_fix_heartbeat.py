@@ -17,23 +17,23 @@ SERVER_QUEUE = queue.Queue()
 CLIENT_QUEUE = queue.Queue()
 
 class FIXTestAppServer(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
+    def on_queue_msg(self, session_name, msg):
         SERVER_QUEUE.put(msg)
 
-    def on_error(self, error):
+    def on_error(self, session_name, error):
         SERVER_QUEUE.put(error)
 
 class FIXTestAppClient(fix.Application):
-    def on_register_callbacks(self):
-        self.register_callback(None, self.on_queue_msg)
+    def on_register_callbacks(self, session_name):
+        self.register_callback(session_name, None, self.on_queue_msg)
 
-    def on_queue_msg(self, msg):
-        CLIENT_QUEUE.put(msg)    
+    def on_queue_msg(self, session_name, msg):
+        CLIENT_QUEUE.put(msg)   
 
-    def on_error(self, error):
+    def on_error(self, session_name, error):
         CLIENT_QUEUE.put(error)    
 
 
@@ -76,7 +76,7 @@ class Test(unittest.TestCase):
         self.assertIsInstance(sent_logon, fix_messages_4_2_0_base.Logon)
 
     def do_logout(self, client_app):
-        client_app.engine.logout()
+        client_app.engines[self._testMethodName].logout()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
@@ -111,7 +111,7 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.send_message(order_msg)
+        self.client_app.send_message(self._testMethodName, order_msg)
 
         #waiting for 2nd heartbeat
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
@@ -121,8 +121,8 @@ class Test(unittest.TestCase):
     """No Heartbeat during preset interval
     send TestMessage"""
     def test_msg_no_hb(self):
-        self.server_app.engine.out_heart_beat_int = 10
-        future_out = asyncio.run_coroutine_threadsafe(self.server_app.engine.schedule_next_out_beat_await(), self.server_app.engine.loop)
+        self.server_app.engines[self._testMethodName].out_heart_beat_int = 10
+        future_out = asyncio.run_coroutine_threadsafe(self.server_app.engines[self._testMethodName].schedule_next_out_beat_await(), self.server_app.engines[self._testMethodName].loop)
         future_out.result()
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
@@ -135,16 +135,16 @@ class Test(unittest.TestCase):
     """No Test Message response
     Logout"""
     def test_no_response_to_test_msg(self):
-        self.server_app.engine.out_heart_beat_int = 10
-        self.server_app.engine.in_heart_beat_int = 10
-        future_out = asyncio.run_coroutine_threadsafe(self.server_app.engine.schedule_next_out_beat_await(), self.server_app.engine.loop)
+        self.server_app.engines[self._testMethodName].out_heart_beat_int = 10
+        self.server_app.engines[self._testMethodName].in_heart_beat_int = 10
+        future_out = asyncio.run_coroutine_threadsafe(self.server_app.engines[self._testMethodName].schedule_next_out_beat_await(), self.server_app.engines[self._testMethodName].loop)
         future_out.result()
 
-        def on_test_msg(msg):
+        def on_test_msg(session, msg):
             raise fix_errors.FIXRejectError(1, '1', '1', 'TestReject', 1)
 
 
-        self.server_app.engine.register_admin_callback(fix_messages_4_2_0_base.TestRequest, on_test_msg, fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.NORMAL -1)
+        self.server_app.engines[self._testMethodName].register_admin_callback(fix_messages_4_2_0_base.TestRequest, on_test_msg, fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.NORMAL -1)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
 

@@ -85,13 +85,13 @@ class CallbackWrapper:
     def __eq__(self, other):
         return self.priority == other.priority and self.callback == other.callback
 
-    def __call__(self, msg):
+    def __call__(self, session_name, msg):
         if self.check_func(msg) or msg is None:
             if self.timer_handle:
                 self.timer_handle.cancel()
             if self.clean_up_func:
                 self.clean_up_func()
-            return self.callback(msg)
+            return self.callback(session_name, msg)
 
         return None
 
@@ -100,14 +100,15 @@ class CallbackWrapper:
 
 
 class FIXEngineBase():
-    def __init__(self, application, store_factory, session_settings, reader, writer, settings, max_workers = None):
-        self.application = application
+    def __init__(self, application, store_factory, session_settings, reader, writer, session_name, max_workers = None):
         self.store_factory = store_factory
         self.session_settings = session_settings
         self.store = None
         self.time_format = None
         self.application = application
-        self.settings = settings
+
+        self.session_name = session_name
+        self.settings = session_settings[session_name]
         self.reader = reader
         self.writer = writer
 
@@ -121,7 +122,6 @@ class FIXEngineBase():
 
         self.tid = threading.current_thread()
 
-        self.application.engine = self
         self.pool = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
 
         self.admin_callback_register = CallbackRegistrar(self.loop)
@@ -165,7 +165,7 @@ class FIXEngineBase():
         except:
             self.send_reject( ref_seq_num, ref_msg_type, ref_id, text, reason)
 
-    def on_logon(self, msg):
+    def on_logon(self, session_name, msg):
         raise NotImplementedError
 
     def init_message_lib(self, begin_string):
@@ -173,24 +173,23 @@ class FIXEngineBase():
 
     def init_settings(self):
         #TODO generate messages and swap in for generated class
-
         self.store = self.store_factory.create_storage(self.settings)
-        self.time_format = '%Y%m%d-%H:%M:%S' if self.settings.get('ForceSecondsPrecision', None)  == 'True' else '%Y%m%d-%H:%M:%S.%f'
-
+        self.time_format = self.settings.get('TimeFormat', fallback = '%Y%m%d-%H:%M:%S.%f') 
         self.msg_seq_num_out = self.store.get_current_out_seq()
         self.engine_key = self.make_engine_key()
-        self.application.on_engine_initialized() #pass in the engine to the application
+
+        self.application.on_engine_initialized(self, self.session_name) #pass in the engine to the application
 
     def log_out_sleep(self):
         raise fix_errors.FIXHardKillError("Failed to get logout while waiting, closing connection")
 
-    def on_logout(self, msg):
+    def on_logout(self, session_name, msg):
         if self.is_logged_on():
             self.waiting_for_logout = False
             self.logout(None, wait_interval =0, send_test_msg=False)
             self.close_connection()
 
-    def on_logout_response(self, msg):
+    def on_logout_response(self, session_name, msg):
         self.close_connection()
 
 
@@ -219,16 +218,16 @@ class FIXEngineBase():
         self._register_cb(self.callback_register, msg_class, callback, priority, check_func, one_time, timeout, timeout_cb)
 
     def _register_cb(self, cb_register, msg_class, callback, priority, check_func, one_time, timeout, timeout_cb):
-        timeout_func_wrapper = lambda : self.pool.submit(self.do_callbacks, None, [lambda x : timeout_cb()])
+        timeout_func_wrapper = lambda : self.pool.submit(self.do_callbacks, None, [lambda session_msg, msg : timeout_cb()])
         cb_register.add_callback(msg_class, callback, priority, check_func, one_time, timeout, timeout_func_wrapper)
 
     def register_admin_messages(self):
         self.register_admin_callback(self.message_lib.fix_messages.Logout, self.on_logout)
 
     def find_session(self, header, settings):
-        for section in settings.values():
+        for name, section in settings.items():
             if section.get('SenderCompID') == header.TargetCompID and section.get('TargetCompID') == header.SenderCompID and section.get('BeginString') == header.BeginString:
-                return section
+                return name, section
         
         logger.debug(f"Available Sessions {[section for section in settings.values()]}")
         raise fix_errors.FIXSessionNotFound("Session not found")
@@ -263,7 +262,7 @@ class FIXEngineBase():
             if len(callbacks) == 0 and msg._msgcat != 'admin':
                 error = f"Unsupported Message Type [{msg._msgtype}]"
                 logger.error(error)
-                self.application.on_error(fix_errors.FIXUnsupportedMessageTypeError(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE))
+                self.application.on_error(self.session_name, fix_errors.FIXUnsupportedMessageTypeError(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE))
                 self.send_biz_reject(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE)
 
             self.do_callbacks(msg, callbacks)
@@ -272,31 +271,31 @@ class FIXEngineBase():
         for callback in callbacks:
             response_msg = None
             try:
-                response_msg = callback(msg)
+                response_msg = callback(self.session_name, msg)
             except fix_errors.FIXDropMessageError as e:
-                self.application.on_error(e)
+                self.application.on_error(self.session_name, e)
                 return False
             except fix_errors.FIXRejectAndLogoutError as e:
-                self.application.on_error(e)
+                self.application.on_error(self.session_name, e)
                 self.store.set_current_in_seq(msg.Header.MsgSeqNum)
                 self.send_reject(msg.Header.MsgSeqNum, e.RefMsgType, e.RefTagID, e.Text, e.SessionRejectReason)
                 self.logout(e.Text, wait_interval=e.wait_interval, send_test_msg = e.send_test_msg)
                 return False
             except fix_errors.FIXRejectError as e:
-                self.application.on_error(e)
+                self.application.on_error(self.session_name, e)
                 logger.error(e)
                 self.store.set_current_in_seq(msg.Header.MsgSeqNum)
                 self.send_reject(msg.Header.MsgSeqNum, e.RefMsgType, e.RefTagID, e.Text, e.SessionRejectReason)
                 return False            
             except fix_errors.FIXLogoutError as e:
-                self.application.on_error(e)
+                self.application.on_error(self.session_name, e)
                 logger.error(e)
                 self.logout(e.Text, e.wait_interval, e.send_test_msg)
                 if not e.wait_interval:
                     self.close_connection(True)
                 return False
             except fix_errors.FIXHardKillError as e:
-                self.application.on_error(e)
+                self.application.on_error(self.session_name, e)
                 logger.error(e)
                 self.close_connection(False)
                 return False
@@ -360,7 +359,7 @@ class FIXEngineInitiator(FIXEngine):
         self.init_settings()
         self.register_admin_messages()
 
-        self.application.on_register_callbacks()
+        self.application.on_register_callbacks(self.session_name)
 
     def make_engine_key(self):
         ip = self.settings.get('SocketConnectHost', 'localhost')
@@ -374,7 +373,7 @@ class FIXEngineInitiator(FIXEngine):
         super().register_admin_messages(*args, **kwargs)
         self.register_admin_callback(self.message_lib.fix_messages.Logon, self.on_logon, priority = CallbackRegistrar.CALLBACK_PRIORITY.HIGH)
         
-    def on_logon(self, msg):
+    def on_logon(self, session_name, msg):
         ENGINE_LOGON_MAP[self.engine_key] = True
 
 
@@ -396,10 +395,16 @@ class FIXEngineAcceptor(FIXEngine):
         raise fix_errors.FIXHardKillError("No Logon received")
 
     #creating the first callback lets us get the beginstring and set a default message_lib based on version
-    def on_first_acceptor_msg(self, msg):
+    def on_first_acceptor_msg(self, session_name, msg):
         self.init_message_lib(msg.Header.BeginString)
+
+        #TODO: move to on_logon. currently here because application callbacks need to be registered before logon which needs session_name and the engine
+        self.session_name, self.settings = self.find_session(msg.Header, self.session_settings)
+        self.init_settings()
+
+
         self.register_admin_messages()
-        self.application.on_register_callbacks()
+        self.application.on_register_callbacks(self.session_name)
         self.msg_queue.put(msg)
         self.do_callbacks_in_thread()
 
@@ -409,10 +414,7 @@ class FIXEngineAcceptor(FIXEngine):
         super().register_admin_messages(*args, **kwargs)
 
 
-    def on_logon(self, msg):
-        self.settings = self.find_session(msg.Header, self.session_settings)
-        self.init_settings()
-
+    def on_logon(self, session_name, msg):
         if self.is_logged_on():
             raise fix_errors.FIXSessionExistsError("Session is already logged on")
 
