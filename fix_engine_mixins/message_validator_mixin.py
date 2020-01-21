@@ -43,7 +43,6 @@ class MessageValidatorMixin(object):
         try:
             msg, buffer, missed_fields =  await super().parse_message(*args, **kwargs)
             if not self.accept_unknown_fields and len(missed_fields) > 0:
-                print ('####', missed_fields)
                 ref_tag, _ = missed_fields[0].split(fix_message.EQU,1)
                 raise fix_errors.FIXInvalidMessageFieldError(msg.Header.MsgSeqNum, msg._msgtype, ref_tag, "Invalid tag number", self.message_lib.fields.SessionRejectReason.ENUM_INVALID_TAG_NUMBER)
             return msg, buffer, missed_fields

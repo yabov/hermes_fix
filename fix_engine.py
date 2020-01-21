@@ -9,7 +9,7 @@ import threading
 import functools
 
 
-from fix_engine_mixins import heartbeat_mixin, sequence_check_mixin, message_validator_mixin
+from fix_engine_mixins import heartbeat_mixin, sequence_check_mixin, message_validator_mixin, session_manager_mixin
 import fix_errors
 
 logger = logging.getLogger(__name__)
@@ -100,7 +100,7 @@ class CallbackWrapper:
 
 
 class FIXEngineBase():
-    def __init__(self, application, store_factory, session_settings, reader, writer, session_name, max_workers = None):
+    def __init__(self, application, store_factory, session_settings, session_name, max_workers = None):
         self.store_factory = store_factory
         self.session_settings = session_settings
         self.store = None
@@ -109,8 +109,8 @@ class FIXEngineBase():
 
         self.session_name = session_name
         self.settings = session_settings[session_name]
-        self.reader = reader
-        self.writer = writer
+        self.reader = None #set by sesion_manager_mixin
+        self.writer = None #set by sesion_manager_mixin
 
         self.message_lib = None
 
@@ -137,7 +137,7 @@ class FIXEngineBase():
     def is_logged_on(self):
         return ENGINE_LOGON_MAP.get(self.engine_key, False)
 
-    async def send_logon(self):
+    def send_logon(self):
         logon_msg = self.build_logon_msg()
         self.send_message(logon_msg)
 
@@ -190,6 +190,7 @@ class FIXEngineBase():
             self.close_connection()
 
     def on_logout_response(self, session_name, msg):
+        self.waiting_for_logout = False
         self.close_connection()
 
 
@@ -309,6 +310,8 @@ class FIXEngineBase():
     def close_connection(self, reset_logon = True):
         if reset_logon:
             ENGINE_LOGON_MAP[self.engine_key] = False
+        if self.store:
+            self.store.close()
 
     def build_logon_msg(self):
         logon = self.message_lib.fix_messages.Logon()
@@ -324,7 +327,8 @@ class FIXEngineBase():
             future.result()
 
     async def _send_await(self, *args, **kwargs):
-        return self._send(*args, **kwargs)
+        self._send(*args, **kwargs)
+        await self.writer.drain()
 
     def _send(self, msg, resend = False):
         if self.waiting_for_logout:
@@ -343,16 +347,19 @@ class FIXEngineBase():
             self.writer.write(buffer)
         except:
             logger.exception(f"Failed to send message [{buffer.translate(B_TABLE)}]")
-            return
+            raise
         
         if not resend:
             self.store.add_message(self.msg_seq_num_out, msg._msgtype, buffer)
             self.msg_seq_num_out +=1
             self.store.set_current_out_seq(self.msg_seq_num_out)
 
-class FIXEngine(message_validator_mixin.MessageValidatorMixin, heartbeat_mixin.HeartBeatMixin, sequence_check_mixin.SequenceCheckerMixin, FIXEngineBase): pass
+class FIXEngine(message_validator_mixin.MessageValidatorMixin, 
+                heartbeat_mixin.HeartBeatMixin, 
+                sequence_check_mixin.SequenceCheckerMixin, 
+                FIXEngineBase): pass
 
-class FIXEngineInitiator(FIXEngine):
+class FIXEngineInitiator(session_manager_mixin.SessionManagerInitiatorMixin, FIXEngine):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.init_message_lib(self.settings['BeginString'])
@@ -398,7 +405,7 @@ class FIXEngineAcceptor(FIXEngine):
     def on_first_acceptor_msg(self, session_name, msg):
         self.init_message_lib(msg.Header.BeginString)
 
-        #TODO: move to on_logon. currently here because application callbacks need to be registered before logon which needs session_name and the engine
+        #TODO: move to on_logon. currently here because application's callbacks need to be registered before logon which needs session_name and the engine
         self.session_name, self.settings = self.find_session(msg.Header, self.session_settings)
         self.init_settings()
 

@@ -8,25 +8,25 @@ class FileStore:
         
         self.db = None
 
-        file_path = None
+        self.file_path = None
         self.lock = threading.Lock()
 
         if session_settings['FileStorePath'] == ":memory:":
-            file_path = session_settings['FileStorePath']
-            self.db = sqlite3.connect(file_path, check_same_thread=False) # pylint: disable=no-member
+            self.file_path = session_settings['FileStorePath']
+            self.db = sqlite3.connect(self.file_path, check_same_thread=False) # pylint: disable=no-member
             self.create_schema()
         else:
             file_name = "%s.%s.%s.db"%(session_settings['BeginString'],session_settings['SenderCompID'],session_settings['TargetCompID'])
 
             path = session_settings['FileStorePath']
-            file_path = os.path.join(path, file_name)
+            self.file_path = os.path.join(path, file_name)
 
-            if not os.path.exists(file_path): 
+            if not os.path.exists(self.file_path): 
                 os.makedirs(path, exist_ok=True)
-                self.db = sqlite3.connect(file_path, check_same_thread=False)# pylint: disable=no-member
+                self.db = sqlite3.connect(self.file_path, check_same_thread=False)# pylint: disable=no-member
                 self.create_schema()
             else:
-                self.db = sqlite3.connect(file_path, check_same_thread=False)# pylint: disable=no-member
+                self.db = sqlite3.connect(self.file_path, check_same_thread=False)# pylint: disable=no-member
         
     def create_schema(self):
         with self.lock:
@@ -75,6 +75,20 @@ class FileStore:
             if msg_end:
                 sql += """ and msg_num <= :msg_end"""
             return cursor.execute(sql, {'msg_begin': msg_begin, 'msg_end': msg_end}).fetchall()
+
+    def reconnect(self):
+        self.db = sqlite3.connect(self.file_path, check_same_thread=False) # pylint: disable=no-member
+
+    def close(self):
+        self.db.close()
+
+    def clean_up(self):
+        with self.lock:
+            self.db.close()
+            del self.db
+            self.db = None
+            if self.file_path != ":memory:":
+                os.remove(self.file_path)
 
 class FileStoreFactory:
     def create_storage(self, session_settings):

@@ -6,7 +6,7 @@ import fix
 import message_lib.FIX_4_2.fix_messages as fix_messages_4_2_0_base
 import logging
 import queue
-import datetime
+from datetime import datetime, timedelta
 import fix_message
 import io
 import os
@@ -47,8 +47,12 @@ class Test(unittest.TestCase):
                     'SenderCompID' : 'HOST',
                     'TargetCompID' : self._testMethodName,#'CLIENT',
                     'SocketAcceptPort' : '5001',
-                    'FileStorePath' : ':memory:',
-                    'DataDictionary' : '../spec/FIX42.xml'}})
+                    'FileStorePath' : 'store',
+                    'DataDictionary' : '../spec/FIX42.xml',
+                    'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+                    'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+                    'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+                    'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
         self.settings_client  = fix.SessionSettings([])
         self.settings_client.read_dict({self._testMethodName : {'ConnectionType' : 'initiator',
@@ -57,8 +61,12 @@ class Test(unittest.TestCase):
             'TargetCompID' : 'HOST',
             'SocketConnectPort' : '5001',
             'SocketConnectHost' : 'localhost',
-            'FileStorePath' : ':memory:',
-            'DataDictionary' : '../spec/FIX42.xml'}})
+            'FileStorePath' : 'store',
+            'DataDictionary' : '../spec/FIX42.xml',
+            'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+            'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+            'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+            'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
         self.client_app = FIXTestAppClient()
         self.client = fix.SocketConnection(self.client_app, self.store, self.settings_client)
@@ -101,7 +109,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         order_msg.NoAllocs = 2
         ord_allocs1 = fix_messages_4_2_0_base.NoAllocsGroup()
         ord_allocs1.AllocAccount = 'Abc'
@@ -131,7 +139,7 @@ class Test(unittest.TestCase):
     def test_bad_field_no_validate(self):
         self.server_app.engines[self._testMethodName].accept_unknown_fields = True
 
-        time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        time = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|40=1|999=123|21=1|55=AAPL|54=1|60={time}|'.replace('|','\x01').encode()
 
         self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
@@ -144,7 +152,7 @@ class Test(unittest.TestCase):
 
     def test_bad_field_validate(self):
 
-        time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        time = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|40=1|999=123|21=1|55=AAPL|54=1|60={time}|'.replace('|','\x01').encode()
 
         self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
@@ -163,7 +171,7 @@ class Test(unittest.TestCase):
     Generate an "error" condition in test output"""
     def test_missing_req_field(self):
 
-        time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        time = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|40=1|21=1|54=1|60={time}|'.replace('|','\x01').encode()
 
         self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
@@ -182,7 +190,7 @@ class Test(unittest.TestCase):
     Generate an "error" condition in test output"""
     def test_missing_field_value(self):
 
-        time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        time = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|40=1|21=1|1=|55=AAPL|54=1|60={time}|'.replace('|','\x01').encode()
 
         self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
@@ -202,7 +210,7 @@ class Test(unittest.TestCase):
     Generate an "error" condition in test output"""
     def test_value_out_of_range(self):
 
-        time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        time = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|40=999|21=1|55=AAPL|54=1|60={time}|'.replace('|','\x01').encode()
 
         self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
@@ -221,7 +229,7 @@ class Test(unittest.TestCase):
     Generate an "error" condition in test output"""
     def test_value_incorrect(self):
 
-        time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        time = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|38=a|40=1|21=1|55=AAPL|54=1|60={time}|'.replace('|','\x01').encode()
 
         self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
@@ -240,7 +248,7 @@ class Test(unittest.TestCase):
     Generate an "error" condition in test output"""
     def test_dupe_field_val(self):
 
-        time = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        time = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         body = f'35=D|49={self._testMethodName}|56=HOST|34=2|52={time}|11=test_message|38=10|40=1|21=1|55=AAPL|11=test_message|54=1|60={time}|'.replace('|','\x01').encode()
 
         self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
@@ -263,7 +271,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         order_msg.NoAllocs = 3
         ord_allocs1 = fix_messages_4_2_0_base.NoAllocsGroup()
         ord_allocs1.AllocAccount = 'Abc'
@@ -281,9 +289,13 @@ class Test(unittest.TestCase):
 
         self.do_logout(self.client_app)
 
-
     def tearDown(self):
+        self.client.stop_all()
         self.server.stop_all()
+
+        self.server_app.close_connection(self._testMethodName)
+        self.client_app.close_connection(self._testMethodName)
+
         try:
             self.assertTrue(SERVER_QUEUE.empty())
             self.assertTrue(CLIENT_QUEUE.empty())
@@ -291,7 +303,8 @@ class Test(unittest.TestCase):
             while not SERVER_QUEUE.empty(): SERVER_QUEUE.get()
             while not CLIENT_QUEUE.empty(): CLIENT_QUEUE.get()
 
-
-
+            self.server_app.engines[self._testMethodName].store.clean_up()
+            self.client_app.engines[self._testMethodName].store.clean_up()
+            
 if __name__ == "__main__":
     unittest.main()

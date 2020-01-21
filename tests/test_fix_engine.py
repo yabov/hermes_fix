@@ -7,7 +7,7 @@ import fix
 import message_lib.FIX_4_2.fix_messages as fix_messages_4_2_0_base
 import logging
 import queue
-import datetime
+from datetime import datetime, timedelta
 
 logging.basicConfig(level=logging.DEBUG, format= '%(levelname)s-%(thread)d-%(filename)s:%(lineno)d - %(message)s')
 
@@ -16,6 +16,7 @@ CLIENT_QUEUE = queue.Queue()
 
 class FIXTestAppServer(fix.Application):
     def on_register_callbacks(self, session_name):
+        super().on_register_callbacks(session_name)
         self.register_callback(session_name, None, self.on_queue_msg)
 
     def on_queue_msg(self, session_name, msg):
@@ -26,6 +27,7 @@ class FIXTestAppServer(fix.Application):
 
 class FIXTestAppClient(fix.Application):
     def on_register_callbacks(self, session_name):
+        super().on_register_callbacks(session_name)
         self.register_callback(session_name, None, self.on_queue_msg)
 
     def on_queue_msg(self, session_name, msg):
@@ -45,8 +47,12 @@ class Test(unittest.TestCase):
                     'SenderCompID' : 'HOST',
                     'TargetCompID' : self._testMethodName,#'CLIENT',
                     'SocketAcceptPort' : '5001',
-                    'FileStorePath' : ':memory:',
-                    'DataDictionary' : '../spec/FIX42.xml'}})
+                    'FileStorePath' : 'store',
+                    'DataDictionary' : '../spec/FIX42.xml',
+                    'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+                    'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+                    'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+                    'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
         self.settings_client  = fix.SessionSettings([])
         self.settings_client.read_dict({self._testMethodName : {'ConnectionType' : 'initiator',
@@ -55,8 +61,12 @@ class Test(unittest.TestCase):
             'TargetCompID' : 'HOST',
             'SocketConnectPort' : '5001',
             'SocketConnectHost' : 'localhost',
-            'FileStorePath' : ':memory:',
-            'DataDictionary' : '../spec/FIX42.xml'}})
+            'FileStorePath' : 'store',
+            'DataDictionary' : '../spec/FIX42.xml',
+            'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+            'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+            'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+            'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
         self.client_app = FIXTestAppClient()
         self.client = fix.SocketConnection(self.client_app, self.store, self.settings_client)
@@ -91,7 +101,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(self._testMethodName, order_msg)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
@@ -107,7 +117,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.engines[self._testMethodName].msg_seq_num_out = 10
 
@@ -133,7 +143,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.engines[self._testMethodName].msg_seq_num_out = 0
 
@@ -141,7 +151,7 @@ class Test(unittest.TestCase):
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXSequenceTooLowError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXSequenceTooLowError)
-        #self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_engine.FIXSessionLogoutTimeoutWarning)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXHardKillError)
 
         
 
@@ -155,7 +165,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'+'\x01'+'BORKED'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(self._testMethodName, order_msg)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXGarbledMessageError)
@@ -185,7 +195,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         order_msg.Header.OrigSendingTime = order_msg.TransactTime
         order_msg.Header.PossDupFlag = 'Y'
@@ -217,9 +227,9 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        order_msg.Header.OrigSendingTime = (datetime.datetime.utcnow() + datetime.timedelta(hours=1)).strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.Header.OrigSendingTime = (datetime.utcnow() + timedelta(hours=1)).strftime('%Y%m%d-%H:%M:%S.%f')
         order_msg.Header.PossDupFlag = 'Y'
 
         self.client_app.send_message(self._testMethodName, order_msg)
@@ -245,7 +255,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         order_msg.Header.PossDupFlag = 'Y'
 
@@ -266,7 +276,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(self._testMethodName, order_msg)
 
@@ -287,7 +297,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(self._testMethodName, order_msg)
 
@@ -314,7 +324,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(self._testMethodName, order_msg)
 
@@ -341,7 +351,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(self._testMethodName, order_msg)
 
@@ -365,7 +375,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(self._testMethodName, order_msg)
 
@@ -400,9 +410,9 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        order_msg.Header.SendingTime = (datetime.datetime.utcnow() + datetime.timedelta(hours=1)).strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.Header.SendingTime = (datetime.utcnow() + timedelta(hours=1)).strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(self._testMethodName, order_msg)
 
@@ -434,7 +444,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.client_app.send_message(self._testMethodName, order_msg)
 
@@ -458,7 +468,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
         self.server_app.engines[self._testMethodName].callback_register = fix_engine.CallbackRegistrar(self.server_app.engines[self._testMethodName].loop)
 
@@ -471,18 +481,57 @@ class Test(unittest.TestCase):
 
         self.do_logout(self.client_app)
 
+
+    """Message to send/queue while disconnected	
+    Queue outgoing messages. Note there are two valid approaches:
+
+    Queue without regards to MsgSeqNum(34)
+    Store data for messages
+    Queue each message with the next MsgSeqNum value
+    Store data for messages in such a manner as to use and "consume" the next MsgSeqNum(34)
+    Note: SendingTime(52): must contain the time the message is sent not the time the message was queued"""
+    def test_queue_msg(self):
+        order_msg = fix_messages_4_2_0_base.OrderSingle()
+        order_msg.ClOrdID = "test_message"
+        order_msg.HandlInst = '1'
+        order_msg.Symbol = 'AAPL'
+        order_msg.Side = '1'
+        order_msg.OrdType = '1'
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
+
+        self.do_logout(self.client_app)
+
+        self.client_app.send_message(self._testMethodName, order_msg)
+
+        #self.client = fix.SocketConnection(self.client_app, self.store, self.settings_client)
+
+        #self.client.start()
+
+        resp_logon = SERVER_QUEUE.get(timeout=4)
+        sent_logon = CLIENT_QUEUE.get(timeout=4)
+        self.assertIsInstance(resp_logon, fix_messages_4_2_0_base.Logon)
+        self.assertIsInstance(sent_logon, fix_messages_4_2_0_base.Logon)
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
+
+        self.do_logout(self.client_app)
+
     def tearDown(self):
-        self.client_app.close_connection(self._testMethodName)
-        self.server_app.close_connection(self._testMethodName)
+        self.client.stop_all()
         self.server.stop_all()
+
+        self.server_app.close_connection(self._testMethodName)
+        self.client_app.close_connection(self._testMethodName)
+
         try:
             self.assertTrue(SERVER_QUEUE.empty())
             self.assertTrue(CLIENT_QUEUE.empty())
         finally:
             while not SERVER_QUEUE.empty(): SERVER_QUEUE.get()
             while not CLIENT_QUEUE.empty(): CLIENT_QUEUE.get()
-        
 
+            self.server_app.engines[self._testMethodName].store.clean_up()
+            self.client_app.engines[self._testMethodName].store.clean_up()
 
 
 

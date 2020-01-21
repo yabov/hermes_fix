@@ -6,6 +6,7 @@ import concurrent
 from threading import Thread
 from fix_engine import FIXEngineInitiator, FIXEngineAcceptor
 import configparser
+from datetime import datetime, timedelta
 
 
 logger = logging.getLogger(__name__)
@@ -16,24 +17,27 @@ class SocketConnection:
         self.application = application
         self.storeFactory = storeFactory
         self.server_map = {}
-        self.client_map = {}
         self.settings_map = {}
         self.session_settings = settings
         self.lock = None
         self.engine_tasks = None
+        self.stop_called = False
 
     async def on_connected_client(self, reader, writer):
         addr = writer.get_extra_info('peername')
         sockname = writer.get_extra_info('sockname')
         logger.info(f'Accepted New Connection on [{sockname}]<-->[{addr}]')
-        engine = FIXEngineAcceptor(self.application, self.storeFactory, self.session_settings, reader, writer, 'DEFAULT')
+        engine = FIXEngineAcceptor(self.application, self.storeFactory, self.session_settings, 'DEFAULT')
+        engine.reader = reader
+        engine.writer = writer
         try:
             await engine.serve_client()
         except Exception as e:
             logger.exception(e)
         writer.close()
-        logger.info(f"Ending Connection on [{sockname}]<-->[{addr}]")
         await writer.wait_closed()
+        del engine
+        logger.info(f"Ending Connection on [{sockname}]<-->[{addr}]")
 
     async def main(self, event_sync):
         engines = []
@@ -81,43 +85,56 @@ class SocketConnection:
         async with server:
             try:
                 await server.serve_forever()
-                #await asyncio.gather(server.serve_forever())
             except asyncio.CancelledError:
                 pass
         logger.debug("-----------------Ending Server-----------------")
 
-
     async def start_initiator(self, section):
-        logger.debug(f"Starting Initiator Session [{section}]...")
-        ip = self.settings[section]['SocketConnectHost']
+        connection_start_time = datetime.strptime(self.settings[section].get('ConnectionStartTime'), '%H:%M:%S').time()
+        connection_end_time = datetime.strptime(self.settings[section].get('ConnectionEndTime'), '%H:%M:%S').time()
+        connection_retry = self.settings[section].get("ConnectionRetryInterval", fallback = 2)
+        ip = self.settings[section].get('SocketConnectHost', fallback = 'localhost')
         port = self.settings[section]['SocketConnectPort']
-        reader = None
-        writer = None
-        if (ip, port) in self.client_map:
-            logger.debug(f"Client already created on {ip}:{port}")
-            reader, writer = self.client_map[(ip, port)]
-        else:
-            logger.debug(f"Creating Initiator on {ip}:{port}")
-            try:
-                reader, writer = await asyncio.open_connection(ip, port)
-            except:
-                logger.exception(f"Failed to connect to {ip}:{port}")
-            self.client_map[(ip,port)] = (reader, writer)
 
-        self.settings_map[(self.settings[section]['SenderCompID'], self.settings[section]['TargetCompID'])] = self.settings[section]
-        addr = writer.get_extra_info('peername')
-        sockname = writer.get_extra_info('sockname')
-        try:
-            engine = FIXEngineInitiator(self.application, self.storeFactory, self.session_settings, reader, writer, section)
-            await engine.send_logon()
-            await engine.serve_client()
-        except ConnectionResetError:
-            logger.error("Server Closed Connection")
-        except:
-            logger.exception("Error in client")
-        writer.close()
-        logger.info(f"Ending Connection on [{sockname}]<-->[{addr}]")
-        await writer.wait_closed()
+        engine = FIXEngineInitiator(self.application, self.storeFactory, self.session_settings, section)
+        while not self.stop_called:
+            reader, writer = await self.open_connection(ip, port, connection_retry, connection_start_time, connection_end_time)
+            addr = writer.get_extra_info('peername')
+            sockname = writer.get_extra_info('sockname')
+            logger.info(f"Opened Connection on [{sockname}]<-->[{addr}]")
+            engine.reader = reader
+            engine.writer = writer
+            try:
+                await engine.start()
+            except ConnectionResetError:
+                logger.error("Server Closed Connection")
+            except:
+                logger.exception("Error in client")
+            logger.info(f"Ending Connection on [{sockname}]<-->[{addr}]")
+            await asyncio.sleep(connection_retry)
+            if not self.stop_called:
+                logger.info("Reconnection client...")
+
+    def inside_time_range(self, start, end):
+        current_time = datetime.utcnow().time()
+        if start <= end:
+            if current_time > start and current_time < end:
+                return True
+        else:
+            if current_time > start or current_time < end:
+                return True
+        return False
+
+    async def open_connection(self, ip, port, connection_retry, connection_start_time, connection_end_time):
+        while not self.stop_called:
+            if self.inside_time_range(connection_start_time, connection_end_time):
+                try:
+                    logger.debug(f"Creating Initiator on {ip}:{port}")
+                    return await asyncio.open_connection(ip, port)
+                except:
+                    logger.exception(f"Failed to connect to {ip}:{port}")              
+                
+            await asyncio.sleep(connection_retry)
 
     def start_background_loop(self, loop):
         asyncio.set_event_loop(loop)
@@ -139,6 +156,7 @@ class SocketConnection:
 
     def stop_all(self):
         logger.debug("Stopping All")
+        self.stop_called = True
         for server, loop in self.server_map.values():
             try:
                 server.close() 
@@ -146,7 +164,8 @@ class SocketConnection:
                 future.result()
             except:
                 logger.debug("Server already closed")
-        self.engine_tasks.cancel()
+        if self.engine_tasks:
+            self.engine_tasks.cancel()
 
         
 

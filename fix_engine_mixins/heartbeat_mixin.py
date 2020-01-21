@@ -20,6 +20,7 @@ class HeartBeatMixin:
     def init_settings(self, *args, **kwargs):
         super().init_settings(*args, **kwargs)
         self.out_heart_beat_int = float(self.settings.get('HeartBeatInt', '30'))
+        self.hearbeat_grace_period = float(self.settings.get('HeatBeatGracePeriod', '1.2'))
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)

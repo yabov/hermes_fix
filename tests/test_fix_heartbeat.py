@@ -8,7 +8,7 @@ import fix
 import message_lib.FIX_4_2.fix_messages as fix_messages_4_2_0_base
 import logging
 import queue
-import datetime
+from datetime import datetime, timedelta
 import time
 
 logging.basicConfig(level=logging.DEBUG, format= '%(levelname)s-%(asctime)s-%(thread)d-%(filename)s:%(lineno)d - %(message)s')
@@ -47,9 +47,14 @@ class Test(unittest.TestCase):
                     'SenderCompID' : 'HOST',
                     'TargetCompID' : self._testMethodName,#'CLIENT',
                     'SocketAcceptPort' : '5001',
-                    'FileStorePath' : ':memory:',
+                    'FileStorePath' : 'store',
                     'HeartBeatInt' : '1',
-                    'DataDictionary' : '../spec/FIX42.xml'}})
+                    'HeatBeatGracePeriod' : '1.5',
+                    'DataDictionary' : '../spec/FIX42.xml',
+                    'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+                    'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+                    'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+                    'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
         self.settings_client  = fix.SessionSettings([])
         self.settings_client.read_dict({self._testMethodName : {'ConnectionType' : 'initiator',
@@ -58,9 +63,14 @@ class Test(unittest.TestCase):
             'TargetCompID' : 'HOST',
             'SocketConnectPort' : '5001',
             'SocketConnectHost' : 'localhost',
-            'FileStorePath' : ':memory:',
+            'FileStorePath' : 'store',
             'HeartBeatInt' : '1',
-            'DataDictionary' : '../spec/FIX42.xml'}})
+            'HeatBeatGracePeriod' : '1.5',
+            'DataDictionary' : '../spec/FIX42.xml',
+            'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+            'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+            'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+            'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
         self.client_app = FIXTestAppClient()
         self.client = fix.SocketConnection(self.client_app, self.store, self.settings_client)
@@ -101,7 +111,7 @@ class Test(unittest.TestCase):
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
 
-        time.sleep(.7)
+        #time.sleep(.5)
 
         order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.ClOrdID = "test_message"
@@ -109,8 +119,7 @@ class Test(unittest.TestCase):
         order_msg.Symbol = 'AAPL'
         order_msg.Side = '1'
         order_msg.OrdType = '1'
-        order_msg.TransactTime = datetime.datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
-
+        order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
         self.client_app.send_message(self._testMethodName, order_msg)
 
         #waiting for 2nd heartbeat
@@ -157,8 +166,21 @@ class Test(unittest.TestCase):
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
     
     def tearDown(self):
+        self.client.stop_all()
         self.server.stop_all()
 
+        self.server_app.close_connection(self._testMethodName)
+        self.client_app.close_connection(self._testMethodName)
+
+        try:
+            self.assertTrue(SERVER_QUEUE.empty())
+            self.assertTrue(CLIENT_QUEUE.empty())
+        finally:
+            while not SERVER_QUEUE.empty(): SERVER_QUEUE.get()
+            while not CLIENT_QUEUE.empty(): CLIENT_QUEUE.get()
+
+            self.server_app.engines[self._testMethodName].store.clean_up()
+            self.client_app.engines[self._testMethodName].store.clean_up()
 
 if __name__ == "__main__":
     unittest.main()
