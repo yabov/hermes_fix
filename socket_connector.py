@@ -30,14 +30,15 @@ class SocketConnection:
         engine = FIXEngineAcceptor(self.application, self.storeFactory, self.session_settings, 'DEFAULT')
         engine.reader = reader
         engine.writer = writer
+
         try:
-            await engine.serve_client()
-        except Exception as e:
-            logger.exception(e)
-        writer.close()
-        await writer.wait_closed()
-        del engine
+            await engine.start()
+        except ConnectionResetError:
+            logger.error("Client Closed Connection")
+        except:
+            logger.exception("Error in server")
         logger.info(f"Ending Connection on [{sockname}]<-->[{addr}]")
+
 
     async def main(self, event_sync):
         engines = []

@@ -111,7 +111,7 @@ class Test(unittest.TestCase):
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
 
-        #time.sleep(.5)
+        time.sleep(.7)
 
         order_msg = fix_messages_4_2_0_base.OrderSingle()
         order_msg.ClOrdID = "test_message"

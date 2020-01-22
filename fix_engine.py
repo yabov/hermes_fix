@@ -301,7 +301,8 @@ class FIXEngineBase():
                 self.close_connection(False)
                 return False
             except:
-                logger.exception("Uncaught exception")
+                if self.is_logged_on():
+                    logger.exception("Uncaught exception")
             if response_msg is not None:
                 self.send_message(response_msg)
 
@@ -348,11 +349,16 @@ class FIXEngineBase():
         except:
             logger.exception(f"Failed to send message [{buffer.translate(B_TABLE)}]")
             raise
-        
-        if not resend:
-            self.store.add_message(self.msg_seq_num_out, msg._msgtype, buffer)
-            self.msg_seq_num_out +=1
-            self.store.set_current_out_seq(self.msg_seq_num_out)
+
+        try:
+            if not resend: #it's possible that is self.store.clean_up is called while sending a message we'd fail to add it but at that point it doesn't matter
+                self.store.add_message(self.msg_seq_num_out, msg._msgtype, buffer)
+                self.msg_seq_num_out +=1
+                self.store.set_current_out_seq(self.msg_seq_num_out)
+        except:
+            if self.store.db:
+                raise
+    
 
 class FIXEngine(message_validator_mixin.MessageValidatorMixin, 
                 heartbeat_mixin.HeartBeatMixin, 
@@ -384,7 +390,7 @@ class FIXEngineInitiator(session_manager_mixin.SessionManagerInitiatorMixin, FIX
         ENGINE_LOGON_MAP[self.engine_key] = True
 
 
-class FIXEngineAcceptor(FIXEngine):
+class FIXEngineAcceptor(session_manager_mixin.SessionManagerAcceptorMixin, FIXEngine):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.register_admin_callback(None, self.on_first_acceptor_msg, priority=CallbackRegistrar.CALLBACK_PRIORITY.FIRST+CallbackRegistrar.CALLBACK_PRIORITY.BEFORE, 
@@ -417,7 +423,7 @@ class FIXEngineAcceptor(FIXEngine):
 
     def register_admin_messages(self, *args, **kwargs):
         self.register_admin_callback(self.message_lib.fix_messages.Logon, self.on_logon, 
-            priority = CallbackRegistrar.CALLBACK_PRIORITY.FIRST) #High priority to init_settings before other checks
+            priority = CallbackRegistrar.CALLBACK_PRIORITY.HIGH + CallbackRegistrar.CALLBACK_PRIORITY.BEFORE)
         super().register_admin_messages(*args, **kwargs)
 
 
@@ -428,6 +434,5 @@ class FIXEngineAcceptor(FIXEngine):
         ENGINE_LOGON_MAP[self.engine_key] = True
         
         logon_msg = self.build_logon_msg()
-
         return logon_msg
 

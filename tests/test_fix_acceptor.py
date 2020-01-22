@@ -118,8 +118,23 @@ class Test(unittest.TestCase):
     def test_dupe_logon(self):
         self.client.start()
 
+        settings_client2  = fix.SessionSettings([])
+        settings_client2.read_dict({self._testMethodName : {'ConnectionType' : 'initiator',
+            'BeginString' : 'FIX.4.2',
+            'SenderCompID' : self._testMethodName,#'CLIENT',
+            'TargetCompID' : 'HOST',
+            'SocketConnectPort' : '5001',
+            'SocketConnectHost' : 'localhost',
+            'FileStorePath' : ':memory:',
+            'DataDictionary' : '../spec/FIX42.xml',
+            'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+            'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+            'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+            'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
+
+
         client_app2 = FIXTestAppClient()
-        client2 = fix.SocketConnection(client_app2, self.store, self.settings_client)
+        client2 = fix.SocketConnection(client_app2, self.store, settings_client2)
         resp_logon = SERVER_QUEUE.get(timeout=2)
         sent_logon = CLIENT_QUEUE.get(timeout=2)
         self.assertIsInstance(resp_logon, fix_messages_4_2_0_base.Logon)

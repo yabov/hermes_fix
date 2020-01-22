@@ -170,13 +170,41 @@ class Test(unittest.TestCase):
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
 
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
+    
+    """	Reject when connection is not outside of logon hours"""
+    def test_reject_out_of_window(self):
+        self.settings = fix.SessionSettings([])
+        self.settings.read_dict({self._testMethodName : {'ConnectionType' : 'acceptor',
+                    'BeginString' : 'FIX.4.2',
+                    'SenderCompID' : 'HOST',
+                    'TargetCompID' : self._testMethodName,#'CLIENT',
+                    'SocketAcceptPort' : '5001',
+                    'FileStorePath' : 'store',
+                    'DataDictionary' : '../spec/FIX42.xml',
+                    'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+                    'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+                    'LogonTime' : (datetime.utcnow() + timedelta(seconds = 8)).time().strftime('%H:%M:%S'),
+                    'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
+
+
+        self.server_app = FIXTestAppServer()
+        self.server = fix.SocketConnection(self.server_app, self.store, self.settings)
+
+        self.server.start()
+        self.client.start()
+
+
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXRejectError)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_errors.FIXInvalidFirstMessage)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXDropMessageError)
+
 
     def tearDown(self):
-        self.client.stop_all()
-        self.server.stop_all()
-
         self.server_app.close_connection(self._testMethodName)
         self.client_app.close_connection(self._testMethodName)
+        
+        self.client.stop_all()
+        self.server.stop_all()
 
         try:
             self.assertTrue(SERVER_QUEUE.empty())

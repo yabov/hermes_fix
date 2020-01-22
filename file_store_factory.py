@@ -32,13 +32,24 @@ class FileStore:
         with self.lock:
             cursor = self.db.cursor()
             cursor.execute("""CREATE TABLE IN_SEQ (msg_num int)""")
-            cursor.execute("""INSERT INTO IN_SEQ VALUES (0)""")
             cursor.execute("""CREATE TABLE OUT_SEQ (msg_num int)""")
-            cursor.execute("""INSERT INTO OUT_SEQ VALUES (1)""")
             cursor.execute("""CREATE TABLE MESSAGE_OUT (msg_num int, msg_type text, msg data)""")
-            cursor.execute("""CREATE TABLE SESSION (session_date_time text)""")
-            cursor.execute("""INSERT INTO SESSION VALUES (:date_time)""", {'date_time' :datetime.datetime.utcnow()})
+            cursor.execute("""CREATE TABLE SESSION (session_date_time real)""")
             self.db.commit()
+        self.init_schema()
+
+    def init_schema(self):
+        with self.lock:
+            cursor = self.db.cursor()
+            cursor.execute("""INSERT INTO IN_SEQ VALUES (0)""")
+            cursor.execute("""INSERT INTO OUT_SEQ VALUES (1)""")
+            cursor.execute("""INSERT INTO SESSION VALUES (:date_time)""", {'date_time' :datetime.datetime.utcnow().timestamp()})
+            self.db.commit()
+
+    def get_session_time(self):
+        with self.lock:
+            cursor = self.db.cursor()
+            return cursor.execute("""SELECT session_date_time from SESSION""").fetchone()[0]
 
     def get_current_in_seq(self):
         with self.lock:
@@ -81,6 +92,16 @@ class FileStore:
 
     def close(self):
         self.db.close()
+
+    def new_day(self):
+        with self.lock:
+            cursor = self.db.cursor()
+            cursor.execute("""DELETE FROM  IN_SEQ""")
+            cursor.execute("""DELETE FROM  OUT_SEQ""")
+            cursor.execute("""DELETE FROM  MESSAGE_OUT""")
+            cursor.execute("""DELETE FROM  SESSION""")
+            self.db.commit()         
+        self.init_schema()   
 
     def clean_up(self):
         with self.lock:
