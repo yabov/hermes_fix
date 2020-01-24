@@ -59,7 +59,7 @@ class SessionManagerInitiatorMixin(object):
             await self.serve_client()
             self.writer.close()
             await self.writer.wait_closed()
-        except concurrent.futures._base.CancelledError:
+        except concurrent.futures.CancelledError:
             pass
         except ConnectionResetError:
             logger.error("Server Closed Connection")

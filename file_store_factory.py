@@ -91,7 +91,8 @@ class FileStore:
         self.db = sqlite3.connect(self.file_path, check_same_thread=False) # pylint: disable=no-member
 
     def close(self):
-        self.db.close()
+        with self.lock:
+            self.db.close()
 
     def new_day(self):
         with self.lock:

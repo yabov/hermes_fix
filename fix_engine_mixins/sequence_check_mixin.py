@@ -53,7 +53,7 @@ class SequenceCheckerMixin():
             if msg._msgcat != 'admin': #since admin messages do not get resent we'll let this one through but will not update seq num
                 raise fix_errors.FIXEngineResendRequest("Resend Requested")
             else:
-                self.application.on_error(self.session_name, fix_errors.FIXEngineResendRequest("Resend Requested"))
+                self.application._on_error(self.session_name, fix_errors.FIXEngineResendRequest("Resend Requested"))
             return
         elif msg.Header.MsgSeqNum < in_seq:
             self.check_low_seq(in_seq, msg)

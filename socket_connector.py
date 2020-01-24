@@ -112,8 +112,8 @@ class SocketConnection:
             except:
                 logger.exception("Error in client")
             logger.info(f"Ending Connection on [{sockname}]<-->[{addr}]")
-            await asyncio.sleep(connection_retry)
             if not self.stop_called:
+                await asyncio.sleep(connection_retry)
                 logger.info("Reconnection client...")
 
     def inside_time_range(self, start, end):
