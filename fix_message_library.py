@@ -29,7 +29,7 @@ async def create_message_from_stream(reader, messages, settings):
         byte = await reader.read(1) #read 1 byte to make sure strem has data on it        
         return await  asyncio.wait_for(_parse_into_buffer(byte, reader, buffer, messages, settings),
                      timeout = read_timeout)
-    except (asyncio.streams.IncompleteReadError, ConnectionAbortedError, concurrent.futures.CancelledError):
+    except (asyncio.IncompleteReadError, ConnectionAbortedError, concurrent.futures.CancelledError):
         raise
     except (fix_errors.FIXInvalidMessageTypeError, fix_errors.FIXInvalidMessageFieldError, fix_errors.FIXRejectError):
         raise

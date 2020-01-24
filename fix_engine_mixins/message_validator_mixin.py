@@ -46,7 +46,7 @@ class MessageValidatorMixin(object):
                 ref_tag, _ = missed_fields[0].split(fix_message.EQU,1)
                 raise fix_errors.FIXInvalidMessageFieldError(msg.Header.MsgSeqNum, msg._msgtype, ref_tag, "Invalid tag number", self.message_lib.fields.SessionRejectReason.ENUM_INVALID_TAG_NUMBER)
             return msg, buffer, missed_fields
-        except (asyncio.streams.IncompleteReadError, ConnectionError) as e:
+        except (asyncio.IncompleteReadError, ConnectionError) as e:
             logger.debug(f"Connection closed {e}")
             self.close_connection()
             return None, None, None
