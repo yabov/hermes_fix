@@ -27,7 +27,7 @@ class SessionManagerInitiatorMixin(object):
 
     def reconnect(self):
         self.store = self.store_factory.create_storage(self.settings)
-        self.application.on_reconnect(self.session_name)
+        self.application._on_reconnect(self.session_name)
         self.check_new_day()
 
     def close_connection(self, *args, **kwargs):
@@ -137,7 +137,7 @@ class SessionManagerAcceptorMixin(object):
     def on_logon_check_time(self, session_name, msg):
         if not self.inside_time_range(self.logon_time, self.logout_time):
             error = "Application not available"
-            self.application.on_error(self.session_name, fix_errors.FIXUnsupportedMessageTypeError(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE))
+            self.application._on_error(self.session_name, fix_errors.FIXUnsupportedMessageTypeError(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE))
             self.send_biz_reject(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_APPLICATION_NOT_AVAILABLE)
             raise fix_errors.FIXDropMessageError("Application not available")
 

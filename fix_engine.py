@@ -4,10 +4,7 @@ import fix_message_library
 import datetime
 import concurrent.futures
 import queue
-import heapq
 import threading
-import functools
-
 
 from fix_engine_mixins import heartbeat_mixin, sequence_check_mixin, message_validator_mixin, session_manager_mixin
 import fix_errors
@@ -17,8 +14,6 @@ logger = logging.getLogger(__name__)
 B_TABLE = bytes.maketrans(b'\x01', b'|')
 
 ENGINE_LOGON_MAP = {}
-
-class CallBackPriorityExistsError(Exception): pass
 class CallbackRegistrar:
     class CALLBACK_PRIORITY:
         FIRST = 0
@@ -178,7 +173,7 @@ class FIXEngineBase():
         self.msg_seq_num_out = self.store.get_current_out_seq()
         self.engine_key = self.make_engine_key()
 
-        self.application.on_engine_initialized(self, self.session_name) #pass in the engine to the application
+        self.application._on_engine_initialized(self.session_name, self) #pass in the engine to the application
 
     def log_out_sleep(self):
         raise fix_errors.FIXHardKillError("Failed to get logout while waiting, closing connection")
@@ -263,7 +258,7 @@ class FIXEngineBase():
             if len(callbacks) == 0 and msg._msgcat != 'admin':
                 error = f"Unsupported Message Type [{msg._msgtype}]"
                 logger.error(error)
-                self.application.on_error(self.session_name, fix_errors.FIXUnsupportedMessageTypeError(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE))
+                self.application._on_error(self.session_name, fix_errors.FIXUnsupportedMessageTypeError(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE))
                 self.send_biz_reject(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE)
 
             self.do_callbacks(msg, callbacks)
@@ -274,29 +269,29 @@ class FIXEngineBase():
             try:
                 response_msg = callback(self.session_name, msg)
             except fix_errors.FIXDropMessageError as e:
-                self.application.on_error(self.session_name, e)
+                self.application._on_error(self.session_name, e)
                 return False
             except fix_errors.FIXRejectAndLogoutError as e:
-                self.application.on_error(self.session_name, e)
+                self.application._on_error(self.session_name, e)
                 self.store.set_current_in_seq(msg.Header.MsgSeqNum)
                 self.send_reject(msg.Header.MsgSeqNum, e.RefMsgType, e.RefTagID, e.Text, e.SessionRejectReason)
                 self.logout(e.Text, wait_interval=e.wait_interval, send_test_msg = e.send_test_msg)
                 return False
             except fix_errors.FIXRejectError as e:
-                self.application.on_error(self.session_name, e)
+                self.application._on_error(self.session_name, e)
                 logger.error(e)
                 self.store.set_current_in_seq(msg.Header.MsgSeqNum)
                 self.send_reject(msg.Header.MsgSeqNum, e.RefMsgType, e.RefTagID, e.Text, e.SessionRejectReason)
                 return False            
             except fix_errors.FIXLogoutError as e:
-                self.application.on_error(self.session_name, e)
+                self.application._on_error(self.session_name, e)
                 logger.error(e)
                 self.logout(e.Text, e.wait_interval, e.send_test_msg)
                 if not e.wait_interval:
                     self.close_connection(True)
                 return False
             except fix_errors.FIXHardKillError as e:
-                self.application.on_error(self.session_name, e)
+                self.application._on_error(self.session_name, e)
                 logger.error(e)
                 self.close_connection(False)
                 return False
@@ -313,6 +308,8 @@ class FIXEngineBase():
             ENGINE_LOGON_MAP[self.engine_key] = False
         if self.store:
             self.store.close()
+
+        self.application._on_connection_closed(self.session_name)
 
     def build_logon_msg(self):
         logon = self.message_lib.fix_messages.Logon()
@@ -372,7 +369,7 @@ class FIXEngineInitiator(session_manager_mixin.SessionManagerInitiatorMixin, FIX
         self.init_settings()
         self.register_admin_messages()
 
-        self.application.on_register_callbacks(self.session_name)
+        self.application._on_register_callbacks(self.session_name)
 
     def make_engine_key(self):
         ip = self.settings.get('SocketConnectHost', 'localhost')
@@ -417,7 +414,7 @@ class FIXEngineAcceptor(session_manager_mixin.SessionManagerAcceptorMixin, FIXEn
 
 
         self.register_admin_messages()
-        self.application.on_register_callbacks(self.session_name)
+        self.application._on_register_callbacks(self.session_name)
         self.msg_queue.put(msg)
         self.do_callbacks_in_thread()
 

@@ -52,13 +52,13 @@ class MessageValidatorMixin(object):
             return None, None, None
         except fix_errors.FIXRejectError as e:
             logger.error(e)
-            self.application.on_error(self.session_name, e)
+            self.application._on_error(self.session_name, e)
             curr_seq = self.store.get_current_in_seq()
             self.store.set_current_in_seq(curr_seq + 1)
             self.send_reject(curr_seq, e.RefMsgType, e.RefTagID, e.Text, e.SessionRejectReason)
             return None, None, None
         except fix_errors.FIXDropMessageError as e:
-            self.application.on_error(self.session_name, e)
+            self.application._on_error(self.session_name, e)
             return None, None, None
         except Exception as e:
             raise

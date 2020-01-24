@@ -45,10 +45,10 @@ class SocketConnection:
         self.lock = asyncio.Lock()
         for section in self.settings.sections():
             if self.settings[section]['ConnectionType'] == 'acceptor':
-                self.application.on_created(section)
+                self.application._on_created(section)
                 engines.append(self.start_acceptor(section))
             elif self.settings[section]['ConnectionType'] == 'initiator':
-                self.application.on_created(section)
+                self.application._on_created(section)
                 engines.append(self.start_initiator(section))
 
         self.engine_tasks = asyncio.gather(*engines)
