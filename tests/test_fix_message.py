@@ -1,15 +1,18 @@
 import unittest 
 import asyncio
 
-import fix_errors
-import fix
-import message_lib.FIX_4_2.fix_messages as fix_messages_4_2_0_base
 import logging
 import queue
 from datetime import datetime, timedelta
-import fix_message
 import io
 import os
+
+from .. import fix_errors
+from .. import fix
+from .. import fix_engine
+from ..message_lib.FIX_4_2 import fix_messages as fix_messages_4_2_0_base
+from .. import fix_message
+
 
 logging.basicConfig(level=logging.DEBUG, format= '%(levelname)s-%(thread)d-%(filename)s:%(lineno)d - %(message)s')
 
@@ -305,6 +308,6 @@ class Test(unittest.TestCase):
 
             self.server_app.engines[self._testMethodName].store.clean_up()
             self.client_app.engines[self._testMethodName].store.clean_up()
-            
+
 if __name__ == "__main__":
     unittest.main()

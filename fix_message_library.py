@@ -1,12 +1,12 @@
 import asyncio
-
-import fix_message
-from fix_message import SEP, EQU, b_SEP, b_EQU
 import io
 import logging
 import concurrent
-import fix_errors
-from message_lib import *
+
+from . import fix_errors
+from . import fix_message
+from .fix_message import SEP, EQU, b_SEP, b_EQU
+from .message_lib import *
 
 logger = logging.getLogger(__name__)
 

@@ -1,13 +1,12 @@
 import asyncio
 import logging
-import fix_message_library
 import threading
 import concurrent
 from threading import Thread
-from fix_engine import FIXEngineInitiator, FIXEngineAcceptor
 import configparser
 from datetime import datetime, timedelta
 
+from .fix_engine import FIXEngineInitiator, FIXEngineAcceptor
 
 logger = logging.getLogger(__name__)
 

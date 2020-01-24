@@ -1,8 +1,9 @@
 import logging
-import fix_message_library
-import fix_engine
-import fix_message
-import fix_errors
+
+from .. import fix_message_library
+from .. import fix_engine
+from .. import fix_message
+from .. import fix_errors
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,5 @@
 from . import field_types
-import fix_enum_type
+from ... import fix_enum_type
 
 class Account (field_types.String_Type) :
     _tag = '1'

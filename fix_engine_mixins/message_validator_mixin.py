@@ -1,10 +1,12 @@
 import logging
 import asyncio
-import fix_engine
 import heapq
-import fix_errors
 import datetime
-import fix_message
+
+from .. import fix_engine
+from .. import fix_message
+from .. import fix_errors
+
 
 logger = logging.getLogger(__name__)
 

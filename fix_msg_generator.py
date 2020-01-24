@@ -4,7 +4,7 @@ import re
 import os
 
 FILE_HEADER = """
-import fix_message
+from ... import fix_message
 from . import fields
 from . import field_types
 
@@ -23,7 +23,7 @@ class Trailer(fix_message.MessageBase):
         register_StandardTrailer_component(self)
 """
 FIELD_HEADER ="""from . import field_types
-import fix_enum_type
+from ... import fix_enum_type
 """
 
 FIELD_BASE_TYPE_FORMATTER = """

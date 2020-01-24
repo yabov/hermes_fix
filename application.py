@@ -1,7 +1,9 @@
 import asyncio
-import fix_engine
 import queue
 import logging
+
+from . import fix_engine
+
 
 logger = logging.getLogger(__name__)
 

@@ -1,13 +1,14 @@
 import asyncio
 import logging
-import fix_message_library
 import datetime
 import concurrent.futures
 import queue
 import threading
 
-from fix_engine_mixins import heartbeat_mixin, sequence_check_mixin, message_validator_mixin, session_manager_mixin
-import fix_errors
+from . import fix_message_library
+
+from .fix_engine_mixins import heartbeat_mixin, sequence_check_mixin, message_validator_mixin, session_manager_mixin
+from . import fix_errors
 
 logger = logging.getLogger(__name__)
 

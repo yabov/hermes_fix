@@ -1,4 +1,4 @@
-import fix_errors
+from . import fix_errors
 
 class EnumType(type):       
     def __new__(metacls, cls, bases, classdict):

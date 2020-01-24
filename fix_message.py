@@ -1,8 +1,10 @@
 import logging
 from collections import OrderedDict
 import io
-import fix_errors
 from collections.abc import MutableSequence
+
+from . import fix_errors
+
 
 logger = logging.getLogger(__name__)
 

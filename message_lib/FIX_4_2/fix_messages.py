@@ -1,5 +1,5 @@
 
-import fix_message
+from ... import fix_message
 from . import fields
 from . import field_types
 

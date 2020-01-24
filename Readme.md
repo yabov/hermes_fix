@@ -32,6 +32,8 @@ ConnectionType=acceptor
 SenderCompID=HOST
 TargetCompID=CLIENT
 FileStorePath=store
+SocketAcceptPort=5001
+SocketAcceptHost=localhost
 
 
 [Session_Name2]
@@ -39,6 +41,8 @@ ConnectionType=initiator
 SenderCompID=CLIENT
 TargetCompID=HOST
 FileStorePath=store
+SocketConnectPort=5001
+SocketConnectHost=localhost
 ```
 
 |  Setting Name | Description  |  Valid Values | Default|
