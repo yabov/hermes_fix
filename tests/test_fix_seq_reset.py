@@ -6,10 +6,10 @@ import queue
 from datetime import datetime, timedelta
 import time
 
-from .. import fix_errors
-from .. import fix
-from .. import fix_engine
-from ..message_lib.FIX_4_2 import fix_messages as fix_messages_4_2_0_base
+from hermes_fix import fix_errors
+from hermes_fix import fix
+from hermes_fix import fix_engine
+from hermes_fix.message_lib.FIX_4_2 import fix_messages as fix_messages_4_2_0_base
 
 logging.basicConfig(level=logging.DEBUG, format= '%(levelname)s-%(asctime)s-%(thread)d-%(filename)s:%(lineno)d - %(message)s')
 

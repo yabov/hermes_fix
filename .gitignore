@@ -1,3 +1,5 @@
 store/
 __pycache__/
 .vscode
+dist/
+hermes_fix.egg-info/

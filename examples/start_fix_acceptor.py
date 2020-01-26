@@ -1,6 +1,3 @@
-import sys
-import os
-sys.path.append(os.path.join('..', '..'))
 import time
 import logging
 

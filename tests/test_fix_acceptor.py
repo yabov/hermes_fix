@@ -3,9 +3,9 @@ import logging
 import queue
 from datetime import datetime, timedelta
 
-from .. import fix_errors
-from .. import fix
-from ..message_lib.FIX_4_2 import fix_messages as fix_messages_4_2_0_base
+from hermes_fix import fix_errors
+from hermes_fix import fix
+from hermes_fix.message_lib.FIX_4_2 import fix_messages as fix_messages_4_2_0_base
 
 
 logging.basicConfig(level=logging.DEBUG, format= '%(levelname)s-%(thread)d-%(filename)s:%(lineno)d - %(message)s')
