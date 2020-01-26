@@ -5,10 +5,10 @@ import concurrent
 
 from . import fix_errors
 from . import fix_message
-from .fix_message import SEP, EQU, b_SEP, b_EQU
+from .utils.constants import SEP, EQU, b_SEP, b_EQU
 from .message_lib import *
 
-logger = logging.getLogger(__name__)
+from .utils.log import logger
 
 MESSAGE_BASE_LIBRARY = {}
 MESSAGE_BASE_LIBRARY[FIX_4_0.fix_messages.BEGINSTRING] = FIX_4_0

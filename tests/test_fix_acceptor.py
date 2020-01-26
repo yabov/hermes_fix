@@ -44,8 +44,8 @@ class Test(unittest.TestCase):
                     'FileStorePath' : 'store',
                     'DataDictionary' : '../spec/FIX42.xml',
                     'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
-                    'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
-                    'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+                    'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+                    'LogonTime': (datetime.utcnow() - timedelta(seconds=10)).time().strftime('%H:%M:%S'),
                     'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
         self.settings_client  = fix.SessionSettings([])
@@ -58,8 +58,8 @@ class Test(unittest.TestCase):
             'FileStorePath' : 'store',
             'DataDictionary' : '../spec/FIX42.xml',
             'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
-            'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
-            'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+            'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+            'LogonTime': (datetime.utcnow() - timedelta(seconds=10)).time().strftime('%H:%M:%S'),
             'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
         self.client_app = FIXTestAppClient()
@@ -128,8 +128,8 @@ class Test(unittest.TestCase):
             'FileStorePath' : ':memory:',
             'DataDictionary' : '../spec/FIX42.xml',
             'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
-            'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
-            'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+            'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+            'LogonTime': (datetime.utcnow() - timedelta(seconds=10)).time().strftime('%H:%M:%S'),
             'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
 

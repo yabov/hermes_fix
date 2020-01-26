@@ -3,9 +3,12 @@ import queue
 import logging
 
 from . import fix_engine
+from .fix_callbacks import CallbackRegistrar
+from . import fix_message
+from . import fix_errors
+from typing import Callable, Type, NewType
 
-
-logger = logging.getLogger(__name__)
+from .utils.log import logger
 
 class Application:
     """
@@ -38,7 +41,7 @@ class Application:
         self.register_callback(session_name, 
                                self.engines[session_name].message_lib.fix_messages.Logon, 
                                self._on_logon, 
-                               priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST)
+                               priority = CallbackRegistrar.CALLBACK_PRIORITY.FIRST)
         self.on_register_callbacks(session_name)
 
     def _on_logon(self, session_name, msg):
@@ -50,7 +53,9 @@ class Application:
             self.send_message(session_name, msg)
             msg = self.message_queue_map[session_name].get_nowait()
 
-    def send_message(self, session_name, msg):
+    def send_message(self, 
+                     session_name: str,
+                     msg: fix_message.MessageBase) -> None:
         """
         Send a FIX message
 
@@ -67,9 +72,15 @@ class Application:
             logger.debug("Failed to send message, queuing for next logon")
             self.message_queue_map[session_name].put(msg)
 
-    def register_callback(self, session_name, msg_class, callback, 
-                        priority=fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.NORMAL, check_func = None, one_time = False,
-                        timeout=None, timeout_cb=None):
+    def register_callback(self, 
+                          session_name : str, 
+                          msg_class : Type[fix_message.MessageBase], 
+                          callback: Callable[[str, fix_message.MessageBase], fix_message.MessageBase],
+                          priority  : CallbackRegistrar.CALLBACK_PRIORITY = CallbackRegistrar.CALLBACK_PRIORITY.NORMAL,
+                          check_func : Callable[[fix_message.MessageBase], bool] = None, 
+                          one_time : bool = False,
+                          timeout : float = None, 
+                          timeout_cb : Callable[[], None] = None) -> None:
 
         """
         function to register a call back when a message comes to the FIX engine
@@ -103,7 +114,7 @@ class Application:
     def _on_reconnect(self, session_name):
         self.on_reconnect(session_name)
 
-    def close_connection(self, session_name):
+    def close_connection(self, session_name : str) -> None:
         """
         closes the FIX connection associated with session_name.
         Warning: unless the server is stopped a client will initiate a reconnect
@@ -114,19 +125,19 @@ class Application:
     def _on_connection_closed(self, session_name):
         self.on_connection_closed(session_name)
 
-    def logout(self, session_name):
+    def logout(self, session_name : str) -> None:
         """
         Send a FIX logout
         """
         self.engines[session_name].logout()
 
-    def on_created(self, session_name):
+    def on_created(self, session_name : str) -> None:
         """
         Called when the application's underlying engine is first created, before a connection is established
         """
         pass
 
-    def on_engine_initialized(self, session_name, engine):
+    def on_engine_initialized(self, session_name : str, engine : fix_engine.FIXEngineBase) -> None:
         """
         Called once the engine is initialized.
         For Initiator: called immediately before sending a Logon message
@@ -134,25 +145,25 @@ class Application:
         """
         pass
     
-    def on_register_callbacks(self, session_name):
+    def on_register_callbacks(self, session_name : str) -> None:
         """
         Called to instruct the application to register callbacks 
         """
         pass
 
-    def on_error(self, session_name, error): 
+    def on_error(self, session_name: str, error: fix_errors.FIXEngineError) -> None:
         """
         Called when the FIX engine throws any kind of FIX error as defined in the fix_errors module
         """
         pass
 
-    def on_reconnect(self, session_name):
+    def on_reconnect(self, session_name: str) -> None:
         """
         Called when a Initiator drops the FIX connection and reconnects
         """
         pass
 
-    def on_connection_closed(self, session_name):
+    def on_connection_closed(self, session_name: str) -> None:
         """
         Called after the FIX connection is closed to perform cleanup.
         Warning: Initiator may attempt to reconnect if server is not stopped

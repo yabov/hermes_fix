@@ -8,6 +8,8 @@ from .. import fix_errors
 from .. import fix
 from .. import fix_engine
 from ..message_lib.FIX_4_2 import fix_messages as fix_messages_4_2_0_base
+from ..fix_callbacks import CallbackRegistrar
+
 
 
 logging.basicConfig(level=logging.DEBUG, format= '%(levelname)s-%(thread)d-%(filename)s:%(lineno)d - %(message)s')
@@ -51,8 +53,8 @@ class Test(unittest.TestCase):
                     'FileStorePath' : 'store',
                     'DataDictionary' : '../spec/FIX42.xml',
                     'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
-                    'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
-                    'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+                    'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+                    'LogonTime': (datetime.utcnow() - timedelta(seconds=10)).time().strftime('%H:%M:%S'),
                     'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
         self.settings_client  = fix.SessionSettings([])
@@ -65,8 +67,8 @@ class Test(unittest.TestCase):
             'FileStorePath' : 'store',
             'DataDictionary' : '../spec/FIX42.xml',
             'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
-            'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
-            'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+            'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+            'LogonTime': (datetime.utcnow() - timedelta(seconds=10)).time().strftime('%H:%M:%S'),
             'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
         self.client_app = FIXTestAppClient()
@@ -471,7 +473,7 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.server_app.engines[self._testMethodName].callback_register = fix_engine.CallbackRegistrar(self.server_app.engines[self._testMethodName].loop)
+        self.server_app.engines[self._testMethodName].callback_register = CallbackRegistrar(self.server_app.engines[self._testMethodName].loop)
 
         self.client_app.send_message(self._testMethodName, order_msg)
 

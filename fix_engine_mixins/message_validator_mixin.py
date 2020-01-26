@@ -6,9 +6,8 @@ import datetime
 from .. import fix_engine
 from .. import fix_message
 from .. import fix_errors
-
-
-logger = logging.getLogger(__name__)
+from ..fix_callbacks import CallbackRegistrar
+from ..utils.log import logger
 
 class MessageValidatorMixin(object):
     def __init__(self, *args, **kwargs):
@@ -31,13 +30,13 @@ class MessageValidatorMixin(object):
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_admin_callback(None, self.on_first_message, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST , one_time = True)
+        self.register_admin_callback(None, self.on_first_message, priority = CallbackRegistrar.CALLBACK_PRIORITY.FIRST , one_time = True)
         if self.validate_comp_ids:
-            self.register_admin_callback(None, self.on_validate_message, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST + fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.AFTER)
+            self.register_admin_callback(None, self.on_validate_message, priority = CallbackRegistrar.CALLBACK_PRIORITY.FIRST + CallbackRegistrar.CALLBACK_PRIORITY.AFTER)
         if self.send_time_tolerance > datetime.timedelta(minutes=0):
-            self.register_admin_callback(None, self.on_validate_sendtime, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST + fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.AFTER)
+            self.register_admin_callback(None, self.on_validate_sendtime, priority = CallbackRegistrar.CALLBACK_PRIORITY.FIRST + CallbackRegistrar.CALLBACK_PRIORITY.AFTER)
         if self.validate_req_fields:
-            self.register_admin_callback(None, self.on_validate_req_fields, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST + fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.AFTER)
+            self.register_admin_callback(None, self.on_validate_req_fields, priority = CallbackRegistrar.CALLBACK_PRIORITY.FIRST + CallbackRegistrar.CALLBACK_PRIORITY.AFTER)
         
 
 

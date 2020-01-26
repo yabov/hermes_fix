@@ -8,6 +8,8 @@ from .. import fix_errors
 from .. import fix
 from .. import fix_engine
 from ..message_lib.FIX_4_2 import fix_messages as fix_messages_4_2_0_base
+from ..fix_callbacks import CallbackRegistrar
+
 
 logging.basicConfig(level=logging.DEBUG, format= '%(levelname)s-%(thread)d-%(filename)s:%(lineno)d - %(message)s')
 
@@ -48,8 +50,8 @@ class Test(unittest.TestCase):
                     'FileStorePath' : 'store',
                     'DataDictionary' : '../spec/FIX42.xml',
                     'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
-                    'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
-                    'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+                    'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+                    'LogonTime': (datetime.utcnow() - timedelta(seconds=10)).time().strftime('%H:%M:%S'),
                     'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
         self.settings_client  = fix.SessionSettings([])
@@ -62,8 +64,8 @@ class Test(unittest.TestCase):
             'FileStorePath' : 'store',
             'DataDictionary' : '../spec/FIX42.xml',
             'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
-            'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
-            'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+            'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+            'LogonTime': (datetime.utcnow() - timedelta(seconds=10)).time().strftime('%H:%M:%S'),
             'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
 
@@ -148,8 +150,8 @@ class Test(unittest.TestCase):
 
         def register_hack(session_name):
             self.server_app.register_callback(session_name, None, self.server_app.on_queue_msg)
-            self.server_app.engines[self._testMethodName].register_admin_callback(fix_messages_4_2_0_base.Logon, on_logon_hack, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.FIRST + 
-                        fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.BEFORE)
+            self.server_app.engines[self._testMethodName].register_admin_callback(fix_messages_4_2_0_base.Logon, on_logon_hack, priority = CallbackRegistrar.CALLBACK_PRIORITY.FIRST + 
+                        CallbackRegistrar.CALLBACK_PRIORITY.BEFORE)
 
         self.server_app.on_register_callbacks = register_hack
         self.server.start()

@@ -3,8 +3,8 @@ import asyncio
 import threading
 
 from .. import fix_engine
-
-logger = logging.getLogger(__name__)
+from ..fix_callbacks import CallbackRegistrar
+from ..utils.log import logger
 
 class HeartBeatMixin: 
     def __init__(self, *args, **kwargs):
@@ -28,7 +28,7 @@ class HeartBeatMixin:
         self.register_admin_callback(self.message_lib.fix_messages.Logon, self.on_logon_hb)
         self.register_admin_callback(self.message_lib.fix_messages.Heartbeat, self.on_heart_beat)
         self.register_admin_callback(self.message_lib.fix_messages.TestRequest, self.on_test_request)
-        self.register_admin_callback(None, self.on_any_msg, priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.LAST)
+        self.register_admin_callback(None, self.on_any_msg, priority = CallbackRegistrar.CALLBACK_PRIORITY.LAST)
 
     def build_logon_msg(self, *args, **kwargs):
         msg = super().build_logon_msg(*args, **kwargs)
@@ -122,7 +122,7 @@ class HeartBeatMixin:
             curr_seq = str(self.msg_seq_num_out)
             self.register_admin_callback(self.message_lib.fix_messages.Heartbeat, lambda session_name, msg : self.on_hb_logout(msg, text, wait_interval), 
                                         check_func = lambda msg: (msg.TestReqID == curr_seq),
-                                        priority = fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.HIGH,
+                                        priority = CallbackRegistrar.CALLBACK_PRIORITY.HIGH,
                                         one_time=True, timeout=wait_interval, timeout_cb=self.no_heart_beat)
             self.send_test_message()
         else:

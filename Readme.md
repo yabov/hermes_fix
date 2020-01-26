@@ -6,14 +6,24 @@ A fully native python FIX engine implementation inspired by QuickFIX.
 see *samples/* folder for additional examples
 ```python
 import hermes_fix as fix
+import time
+import logging
 
-class FIXApp(fix.Application): pass
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(levelname)s-%(asctime)s-%(thread)d-%(filename)s:%(lineno)d - %(message)s')
 
-settings  = fix.SessionSettings('config.ini')
-client_app = FIXApp()
-store = fix.FileStoreFactory()
-client = fix.SocketConnection(client_app, store, settings)
-client.start()
+class FIXApp(fix.Application):
+    pass
+
+def main():
+    settings = fix.SessionSettings('config.ini')
+    client_app = FIXApp()
+    store = fix.FileStoreFactory()
+    client = fix.SocketConnection(client_app, store, settings)
+    task = client.start()
+
+    while not task.done():
+        print(task.result())
 ```
 
 ### Configuration Settings

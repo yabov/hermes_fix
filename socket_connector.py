@@ -6,12 +6,15 @@ from threading import Thread
 import configparser
 from datetime import datetime, timedelta
 
+from .application import Application
+from .file_store_factory import FileStoreFactory
+from .session_settings import SessionSettings
 from .fix_engine import FIXEngineInitiator, FIXEngineAcceptor
 
-logger = logging.getLogger(__name__)
+from .utils.log import logger
 
 class SocketConnection:
-    def __init__(self, application, storeFactory, settings):
+    def __init__(self, application : Application, storeFactory : FileStoreFactory, settings : SessionSettings):
         self.settings = settings
         self.application = application
         self.storeFactory = storeFactory
@@ -141,7 +144,7 @@ class SocketConnection:
         loop.run_forever()
 
 
-    def start(self):
+    def start(self) -> asyncio.Task:
         loop = asyncio.new_event_loop()
         t = Thread(target=self.start_background_loop, args=(loop,), daemon=True)
         t.start()
@@ -154,7 +157,7 @@ class SocketConnection:
         return task
         
 
-    def stop_all(self):
+    def stop_all(self) -> None:
         logger.debug("Stopping All")
         self.stop_called = True
         for server, loop in self.server_map.values():

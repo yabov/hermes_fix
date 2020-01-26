@@ -4,14 +4,9 @@ import io
 from collections.abc import MutableSequence
 
 from . import fix_errors
+from .utils.constants import SEP, EQU, b_SEP, b_EQU 
 
-
-logger = logging.getLogger(__name__)
-
-SEP = '\x01'
-EQU = '='
-b_SEP = SEP.encode()
-b_EQU = EQU.encode()
+from .utils.log import logger
 
 def calc_checksum(buffer):
     checksum =  '%03d' % (sum(c for c in buffer.getbuffer()) % 256) 

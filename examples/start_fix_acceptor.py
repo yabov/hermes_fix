@@ -1,10 +1,11 @@
-
 import sys
 import os
 sys.path.append(os.path.join('..', '..'))
-import hermes_fix as fix
 import time
 import logging
+
+import hermes_fix as fix  # pylint: disable=import-error
+
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(levelname)s-%(asctime)s-%(thread)d-%(filename)s:%(lineno)d - %(message)s')
@@ -20,7 +21,9 @@ def main():
     task = client.start()
 
     while not task.done():
-        print(task.result())
+        time.sleep(1)
+
+    print(task.result())
 
 
 if __name__ == '__main__':

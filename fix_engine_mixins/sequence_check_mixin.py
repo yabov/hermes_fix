@@ -4,8 +4,8 @@ from .. import fix_message_library
 from .. import fix_engine
 from .. import fix_message
 from .. import fix_errors
-
-logger = logging.getLogger(__name__)
+from ..fix_callbacks import CallbackRegistrar
+from ..utils.log import logger
 
 class SequenceCheckerMixin():
     def __init__(self, *args, **kwargs):
@@ -13,8 +13,8 @@ class SequenceCheckerMixin():
 
     def register_admin_messages(self, *args, **kwargs):
         super().register_admin_messages(*args, **kwargs)
-        self.register_admin_callback(None, self.on_msg_check_seq, fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.HIGH)
-        self.register_admin_callback(self.message_lib.fix_messages.SequenceReset, self.on_sequence_reset, fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.NORMAL)
+        self.register_admin_callback(None, self.on_msg_check_seq, CallbackRegistrar.CALLBACK_PRIORITY.HIGH)
+        self.register_admin_callback(self.message_lib.fix_messages.SequenceReset, self.on_sequence_reset, CallbackRegistrar.CALLBACK_PRIORITY.NORMAL)
         self.register_admin_callback(self.message_lib.fix_messages.ResendRequest, self.on_resend_request)
 
     def on_sequence_reset(self, session_name, msg):

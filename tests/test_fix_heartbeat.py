@@ -10,6 +10,8 @@ from .. import fix_errors
 from .. import fix
 from .. import fix_engine
 from ..message_lib.FIX_4_2 import fix_messages as fix_messages_4_2_0_base
+from ..fix_callbacks import CallbackRegistrar
+
 
 logging.basicConfig(level=logging.DEBUG, format= '%(levelname)s-%(asctime)s-%(thread)d-%(filename)s:%(lineno)d - %(message)s')
 
@@ -52,8 +54,8 @@ class Test(unittest.TestCase):
                     'HeatBeatGracePeriod' : '1.5',
                     'DataDictionary' : '../spec/FIX42.xml',
                     'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
-                    'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
-                    'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+                    'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+                    'LogonTime': (datetime.utcnow() - timedelta(seconds=10)).time().strftime('%H:%M:%S'),
                     'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
         self.settings_client  = fix.SessionSettings([])
@@ -68,8 +70,8 @@ class Test(unittest.TestCase):
             'HeatBeatGracePeriod' : '1.5',
             'DataDictionary' : '../spec/FIX42.xml',
             'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
-            'ConnectionEndTime' : (datetime.utcnow() +  + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
-            'LogonTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
+            'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
+            'LogonTime': (datetime.utcnow() - timedelta(seconds=10)).time().strftime('%H:%M:%S'),
             'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S')}})
 
         self.client_app = FIXTestAppClient()
@@ -153,7 +155,7 @@ class Test(unittest.TestCase):
             raise fix_errors.FIXRejectError(1, '1', '1', 'TestReject', 1)
 
 
-        self.server_app.engines[self._testMethodName].register_admin_callback(fix_messages_4_2_0_base.TestRequest, on_test_msg, fix_engine.CallbackRegistrar.CALLBACK_PRIORITY.NORMAL -1)
+        self.server_app.engines[self._testMethodName].register_admin_callback(fix_messages_4_2_0_base.TestRequest, on_test_msg, CallbackRegistrar.CALLBACK_PRIORITY.NORMAL -1)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
 
