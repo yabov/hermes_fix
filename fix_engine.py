@@ -11,8 +11,7 @@ from .fix_engine_mixins import heartbeat_mixin, sequence_check_mixin, message_va
 from . import fix_errors
 from .fix_callbacks import CallbackRegistrar
 from .utils.log import logger
-
-B_TABLE = bytes.maketrans(b'\x01', b'|')
+from .utils.constants import B_TABLE
 
 ENGINE_LOGON_MAP = {}
 
