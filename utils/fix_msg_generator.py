@@ -104,11 +104,12 @@ def generate_fix_classes(file_name):
     tree = ET.parse(file_name)
     root = tree.getroot()
     
+    path_to_msg_lib = os.path.join('..', 'message_lib')
     
-    os.makedirs('message_lib', exist_ok=True)
+    os.makedirs(path_to_msg_lib, exist_ok=True)
     
     fix_root = root.findall('fix')
-    header_writer =  open(os.path.join('message_lib', '__init__.py'), 'w')
+    header_writer = open(os.path.join(path_to_msg_lib, '__init__.py'), 'w')
 
     for fix in fix_root:
         global TAG_NAME_MAP, FIELD_TYPE_MAP
@@ -119,7 +120,7 @@ def generate_fix_classes(file_name):
         
         header_writer.write(f"from . import {fix_version.replace('.','_')}\n")
 
-        path = os.path.join('message_lib', fix_version.replace('.','_'))
+        path = os.path.join(path_to_msg_lib, fix_version.replace('.', '_'))
         os.makedirs(path, exist_ok=True)
 
         with open(os.path.join(path, '__init__.py'), 'w') as message_writer:

@@ -6,7 +6,7 @@ from . import fix_engine
 from .fix_callbacks import CallbackRegistrar
 from . import fix_message
 from . import fix_errors
-from typing import Callable, Type, NewType
+from typing import Callable, Type, NewType, Optional
 
 from .utils.log import logger
 
@@ -77,10 +77,10 @@ class Application:
                           msg_class : Type[fix_message.MessageBase], 
                           callback: Callable[[str, fix_message.MessageBase], fix_message.MessageBase],
                           priority  : CallbackRegistrar.CALLBACK_PRIORITY = CallbackRegistrar.CALLBACK_PRIORITY.NORMAL,
-                          check_func : Callable[[fix_message.MessageBase], bool] = None, 
-                          one_time : bool = False,
-                          timeout : float = None, 
-                          timeout_cb : Callable[[], None] = None) -> None:
+                          check_func : Optional[Callable[[fix_message.MessageBase], bool]] = None, 
+                          one_time : Optional[bool] = False,
+                          timeout : Optional[float] = None, 
+                          timeout_cb : Optional[Callable[[], None]] = None) -> None:
 
         """
         function to register a call back when a message comes to the FIX engine

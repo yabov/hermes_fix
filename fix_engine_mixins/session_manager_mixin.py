@@ -23,29 +23,36 @@ class SessionManagerBaseMixin(object):
     def check_new_day(self):
         session_time = datetime.datetime.fromtimestamp(
             self.store.get_session_time())
-        next_logout = self.calc_next_time(
-            session_time, self.logout_time, datetime.timedelta(days=0))
+        next_logout = self.calc_next_time(session_time, self.logout_time)
         if next_logout < 0:
             self.store.new_day()
 
     def handle_logout_timer(self):
-        if self.inside_time_range(self.logout_time, self.logon_time):
+        if self.inside_time_range(self.logout_time, self.logon_time) and self.is_logged_on():
             logger.debug("Logging out")
             self.logout()
+        else:
+            pass
+            #logger.debug(
+            #    f"Not inside logout window of {self.logon_time} to {self.logout_time}")
 
-        offset = datetime.timedelta(days=1)
         next = self.calc_next_time(
-            datetime.datetime.utcnow(), self.logout_time, offset)
+            datetime.datetime.utcnow(), self.logout_time)
         logger.debug(f"Next Logout scheduled in {next} seconds")
         self.logout_handle = self.loop.call_later(
             next, self.handle_logout_timer)
 
-    def calc_next_time(self, from_date_time, time, offset):
-        next = datetime.datetime.combine(from_date_time + offset, time)
+    def calc_next_time(self, from_date_time, time):
+        next = datetime.datetime.combine(from_date_time, time)
         now = datetime.datetime.utcnow()
 
         delta = next - now
-        return delta.total_seconds()
+        seconds = delta.total_seconds()
+        one_day = 60*60*24
+        if seconds < 0:
+            return seconds + one_day
+        else:
+            return seconds
 
     def inside_time_range(self, start, end):
         current_time = datetime.datetime.utcnow()
@@ -53,11 +60,10 @@ class SessionManagerBaseMixin(object):
         end_time = datetime.datetime.combine(current_time, end)
 
         if start_time <= end_time:
-            #1 second grace period in case timer fires early
-            if (current_time - start_time) > datetime.timedelta(seconds=-1) and (current_time - end_time) < datetime.timedelta(seconds=1):
+            if (current_time > start_time) and (current_time < end_time):
                 return True
         else:
-            if (current_time - start_time) > datetime.timedelta(seconds=-1) or (current_time - end_time) < datetime.timedelta(seconds=1):
+            if (current_time > start_time) or (current_time < end_time):
                 return True
         return False
             
@@ -67,6 +73,8 @@ class SessionManagerInitiatorMixin(SessionManagerBaseMixin):
         super().init_settings(*args, **kwargs)
         self.logon_time = datetime.datetime.strptime(self.settings.get('LogonTime'), '%H:%M:%S').time()
         self.logout_time = datetime.datetime.strptime(self.settings.get('LogoutTime'), '%H:%M:%S').time()
+        logger.debug(
+            f"Initiator {self.session_name} logon time: {self.logon_time}, logout time: {self.logout_time}")
         self.check_new_day()
 
     def reconnect(self):
@@ -101,9 +109,12 @@ class SessionManagerInitiatorMixin(SessionManagerBaseMixin):
 
     def handle_logon_timer(self):
         if self.inside_time_range(self.logon_time, self.logout_time):
+            logger.debug("Sending logon for initiator")
             self.send_logon()
-        offset = datetime.timedelta(days=1)
-        next = self.calc_next_time(datetime.datetime.utcnow(), self.logon_time, offset)
+        else:
+            pass
+            #logger.debug(f"Not inside logon window of {self.logon_time} to {self.logout_time}")
+        next = self.calc_next_time(datetime.datetime.utcnow(), self.logon_time)
         logger.debug(f"Next Logon scheduled in {next} seconds")
         self.logon_handle = self.loop.call_later(next, self.handle_logon_timer)
 
@@ -113,6 +124,8 @@ class SessionManagerAcceptorMixin(SessionManagerBaseMixin):
         super().init_settings(*args, **kwargs)
         self.logon_time = datetime.datetime.strptime(self.settings.get('LogonTime'), '%H:%M:%S').time()
         self.logout_time = datetime.datetime.strptime(self.settings.get('LogoutTime'), '%H:%M:%S').time()
+        logger.debug(
+            f"Acceptor {self.session_name} logon time: {self.logon_time}, logout time: {self.logout_time}")
 
         self.handle_logout_timer()
 

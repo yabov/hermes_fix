@@ -88,8 +88,6 @@ class Test(unittest.TestCase):
     def test_reconnect(self):
 
         self.server.start()
-
-        self.settings_client
         self.client.start()
 
         resp_logon = SERVER_QUEUE.get(timeout=2)
