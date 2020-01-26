@@ -3,7 +3,7 @@
 A fully native python FIX engine implementation inspired by QuickFIX.
 
 ## Getting Started
-see *samples/* folder for additional examples
+see *examples/* folder for additional examples
 ```python
 import hermes_fix as fix
 import time

@@ -23,7 +23,7 @@ class Trailer(fix_message.MessageBase):
         register_StandardTrailer_component(self)
 """
 FIELD_HEADER ="""from . import field_types
-from ... import fix_enum_type
+from ...utils import fix_enum_type
 """
 
 FIELD_BASE_TYPE_FORMATTER = """
