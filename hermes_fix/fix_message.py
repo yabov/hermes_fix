@@ -9,7 +9,7 @@ from .utils.constants import SEP, EQU, b_SEP, b_EQU
 from .utils.log import logger
 
 def calc_checksum(buffer):
-    checksum =  '%03d' % (sum(c for c in buffer.getbuffer()) % 256) 
+    checksum =  '%03d' % (sum(buffer.getbuffer()) % 256) 
     return checksum
 
 class Content:
