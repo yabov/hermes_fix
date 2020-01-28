@@ -1,2 +1,4 @@
 [run]
-omit = tests/*,message_lib/*
+omit =
+    hermes_fix/message_lib/*
+    tests/*
