@@ -1,14 +1,12 @@
 import asyncio
-import queue
 import logging
+import queue
+from typing import Callable, NewType, Optional, Type
 
-from . import fix_engine
+from . import fix_engine, fix_errors, fix_message
 from .fix_callbacks import CallbackRegistrar
-from . import fix_message
-from . import fix_errors
-from typing import Callable, Type, NewType, Optional
-
 from .utils.log import logger
+
 
 class Application:
     """
@@ -36,24 +34,27 @@ class Application:
     def _on_engine_initialized(self, session_name, engine):
         self.engines[session_name] = engine
         self.on_engine_initialized(session_name, engine)
-        
+
     def _on_register_callbacks(self, session_name):
-        self.register_callback(session_name, 
-                               self.engines[session_name].message_lib.fix_messages.Logon, 
-                               self._on_logon, 
-                               priority = CallbackRegistrar.CALLBACK_PRIORITY.FIRST)
+        self.register_callback(session_name,
+                               self.engines[session_name].message_lib.fix_messages.Logon,
+                               self._on_logon,
+                               priority=CallbackRegistrar.CALLBACK_PRIORITY.FIRST)
         self.on_register_callbacks(session_name)
 
     def _on_logon(self, session_name, msg):
-        self.message_queue_map[session_name].put(None) #chaser to ensure that we stop instead of cycling through the queue if send_message fails here
+        # chaser to ensure that we stop instead of cycling through the queue if send_message fails here
+        self.message_queue_map[session_name].put(None)
         msg = self.message_queue_map[session_name].get_nowait()
         while msg:
-            msg.Header = self.engines[session_name].message_lib.fix_messages.Header()
-            msg.Trailer = self.engines[session_name].message_lib.fix_messages.Trailer()
+            msg.Header = self.engines[session_name].message_lib.fix_messages.Header(
+            )
+            msg.Trailer = self.engines[session_name].message_lib.fix_messages.Trailer(
+            )
             self.send_message(session_name, msg)
             msg = self.message_queue_map[session_name].get_nowait()
 
-    def send_message(self, 
+    def send_message(self,
                      session_name: str,
                      msg: fix_message.MessageBase) -> None:
         """
@@ -72,16 +73,15 @@ class Application:
             logger.debug("Failed to send message, queuing for next logon")
             self.message_queue_map[session_name].put(msg)
 
-    def register_callback(self, 
-                          session_name : str, 
-                          msg_class : Type[fix_message.MessageBase], 
+    def register_callback(self,
+                          session_name: str,
+                          msg_class: Type[fix_message.MessageBase],
                           callback: Callable[[str, fix_message.MessageBase], fix_message.MessageBase],
-                          priority  : CallbackRegistrar.CALLBACK_PRIORITY = CallbackRegistrar.CALLBACK_PRIORITY.NORMAL,
-                          check_func : Optional[Callable[[fix_message.MessageBase], bool]] = None, 
-                          one_time : Optional[bool] = False,
-                          timeout : Optional[float] = None, 
-                          timeout_cb : Optional[Callable[[], None]] = None) -> None:
-
+                          priority: CallbackRegistrar.CALLBACK_PRIORITY = CallbackRegistrar.CALLBACK_PRIORITY.NORMAL,
+                          check_func: Optional[Callable[[fix_message.MessageBase], bool]] = None,
+                          one_time: Optional[bool] = False,
+                          timeout: Optional[float] = None,
+                          timeout_cb: Optional[Callable[[], None]] = None) -> None:
         """
         function to register a call back when a message comes to the FIX engine
         the same message can have multiple callbacks registered, use priority to define the order in which they are called
@@ -106,15 +106,16 @@ class Application:
         timeout_cb function of signature func() -> None called if a timeout has occured
 
         """
-        self.engines[session_name].register_callback(msg_class, callback, priority, check_func, one_time)
+        self.engines[session_name].register_callback(
+            msg_class, callback, priority, check_func, one_time)
 
-    def _on_error(self, session_name, error): 
+    def _on_error(self, session_name, error):
         self.on_error(session_name, error)
 
     def _on_reconnect(self, session_name):
         self.on_reconnect(session_name)
 
-    def close_connection(self, session_name : str) -> None:
+    def close_connection(self, session_name: str) -> None:
         """
         closes the FIX connection associated with session_name.
         Warning: unless the server is stopped a client will initiate a reconnect
@@ -125,27 +126,27 @@ class Application:
     def _on_connection_closed(self, session_name):
         self.on_connection_closed(session_name)
 
-    def logout(self, session_name : str) -> None:
+    def logout(self, session_name: str) -> None:
         """
         Send a FIX logout
         """
         self.engines[session_name].logout()
 
-    def on_created(self, session_name : str) -> None:
+    def on_created(self, session_name: str) -> None:
         """
         Called when the application's underlying engine is first created, before a connection is established
         """
         pass
 
-    def on_engine_initialized(self, session_name : str, engine : fix_engine.FIXEngineBase) -> None:
+    def on_engine_initialized(self, session_name: str, engine: fix_engine.FIXEngineBase) -> None:
         """
         Called once the engine is initialized.
         For Initiator: called immediately before sending a Logon message
         For Acceptor:  called after reciept of first Logon message from Initiator
         """
         pass
-    
-    def on_register_callbacks(self, session_name : str) -> None:
+
+    def on_register_callbacks(self, session_name: str) -> None:
         """
         Called to instruct the application to register callbacks 
         """

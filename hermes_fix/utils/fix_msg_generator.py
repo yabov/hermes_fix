@@ -22,7 +22,7 @@ class Trailer(fix_message.MessageBase):
         super().__init__()
         register_StandardTrailer_component(self)
 """
-FIELD_HEADER ="""from . import field_types
+FIELD_HEADER = """from . import field_types
 from ...utils import fix_enum_type
 """
 
@@ -38,7 +38,8 @@ class {name}({subclass}): pass
 
 FIELD_TYPE_HEADER = """ """
 
-BASE_TYPE_MAP = {'String' : 'str', 'char' : 'str', 'Pattern' : 'str', 'data' : 'str', 'date' : 'str', 'time' : 'str'}
+BASE_TYPE_MAP = {'String': 'str', 'char': 'str',
+                 'Pattern': 'str', 'data': 'str', 'date': 'str', 'time': 'str'}
 
 FIELD_CLASS_FORMATTER = """
 class {name} (field_types.{type}_Type{enum}) :
@@ -66,7 +67,7 @@ GROUP_FORMATTER_TRAILER = """{indent}self.register_group(fields.{group_no_name},
 """
 
 
-MESSAGE_CLASS_FORMATTER  = """
+MESSAGE_CLASS_FORMATTER = """
 class {name}(fix_message.MessageBase):
     _msgtype = '{msgtype}'
     _msgcat = '{msgcat}'
@@ -89,25 +90,27 @@ MVS_TYPE_FORMATTER = """
 class MultipleValueString_Type(str): pass
 """
 
-BOOLEAN_TYPE_FORMATTER ="""
+BOOLEAN_TYPE_FORMATTER = """
 class Boolean_Type(str): pass
 """
 
 TAG_NAME_MAP = {}
 FIELD_TYPE_MAP = {}
 
+
 def camel_to_snake(name):
-  name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-  return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).upper()
+    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).upper()
+
 
 def generate_fix_classes(file_name):
     tree = ET.parse(file_name)
     root = tree.getroot()
-    
+
     path_to_msg_lib = os.path.join('..', 'message_lib')
-    
+
     os.makedirs(path_to_msg_lib, exist_ok=True)
-    
+
     fix_root = root.findall('fix')
     header_writer = open(os.path.join(path_to_msg_lib, '__init__.py'), 'w')
 
@@ -116,8 +119,9 @@ def generate_fix_classes(file_name):
         TAG_NAME_MAP = {}
         FIELD_TYPE_MAP = {}
         fix_version = fix.get('version')
-        if fix_version == 'FIXT.1.1': continue 
-        
+        if fix_version == 'FIXT.1.1':
+            continue
+
         header_writer.write(f"from . import {fix_version.replace('.','_')}\n")
 
         path = os.path.join(path_to_msg_lib, fix_version.replace('.', '_'))
@@ -127,44 +131,47 @@ def generate_fix_classes(file_name):
             message_writer.write('from . import field_types\n')
             message_writer.write('from . import fields\n')
             message_writer.write('from . import fix_messages\n')
-            
+
         with open(os.path.join(path, 'field_types.py'), 'w') as message_writer:
             generate_fields_types(fix, fix_version, message_writer)
 
         with open(os.path.join(path, 'fields.py'), 'w') as message_writer:
             generate_fields(fix, fix_version, message_writer)
-            
+
         with open(os.path.join(path, "fix_messages.py"), 'w') as message_writer:
-            message_writer.write(FILE_HEADER.format(fix_version = fix_version))
+            message_writer.write(FILE_HEADER.format(fix_version=fix_version))
             generate_repeating_groups(fix, fix_version, {}, message_writer)
             generate_components(fix, fix_version, message_writer)
             generate_messages(fix, fix_version, message_writer)
 
     header_writer.close()
 
+
 def generate_fields_types(root, fix_version, writer):
     writer.write(FIELD_TYPE_HEADER)
     for child in root.find('datatypes'):
         name = child.get('name')
         type = child.get('baseType', name)
-        
+
         FIELD_TYPE_MAP[name] = BASE_TYPE_MAP.get(type)
 
         if type == name:
             writer.write(
-                FIELD_BASE_TYPE_FORMATTER.format(name = name + '_Type', subclass = BASE_TYPE_MAP.get(type, type))
+                FIELD_BASE_TYPE_FORMATTER.format(
+                    name=name + '_Type', subclass=BASE_TYPE_MAP.get(type, type))
             )
         else:
             writer.write(
-                FIELD_TYPE_FORMATTER.format(name = name+ '_Type', subclass = type+ '_Type')
+                FIELD_TYPE_FORMATTER.format(
+                    name=name + '_Type', subclass=type + '_Type')
             )
-    
+
     if 'Length' not in FIELD_TYPE_MAP:
         writer.write(LENGTH_TYPE_FORMATTER)
-        
+
     if 'MultipleValueString' not in FIELD_TYPE_MAP:
         writer.write(MVS_TYPE_FORMATTER)
-        
+
     if 'Boolean' not in FIELD_TYPE_MAP:
         writer.write(BOOLEAN_TYPE_FORMATTER)
 
@@ -175,75 +182,85 @@ def generate_fields(root, fix_version, writer):
         name = child.get('name')
         type = child.get('type')
         number = child.get('id')
-        
 
         TAG_NAME_MAP[number] = name
 
         enums = child.findall('enum')
         enum = ""
-        if len(enums) > 0: 
-            enum = ', field_types.' + type+'_Type.mro()[-2], metaclass = fix_enum_type.EnumType'
-        writer.write(FIELD_CLASS_FORMATTER.format(name = name, type = type, number = number, enum = enum))
-        
+        if len(enums) > 0:
+            enum = ', field_types.' + type + \
+                '_Type.mro()[-2], metaclass = fix_enum_type.EnumType'
+        writer.write(FIELD_CLASS_FORMATTER.format(
+            name=name, type=type, number=number, enum=enum))
+
         for enum in child.findall('enum'):
-            description = camel_to_snake( enum.get('symbolicName'))
+            description = camel_to_snake(enum.get('symbolicName'))
             str_formatter = ""
             if FIELD_TYPE_MAP.get(child.get('type'), 'str') == 'str':
-                str_formatter = "'{value}'" 
+                str_formatter = "'{value}'"
             else:
                 try:
                     float(enum.get('value'))
                     str_formatter = "{value}"
-                except: 
+                except:
                     continue
-                
-            writer.write(ENUM_FORMATTER.format(description = description, value = str_formatter.format(value = enum.get('value'))  ))
 
-def find_rec(node, element, level = 0):
+            writer.write(ENUM_FORMATTER.format(
+                description=description, value=str_formatter.format(value=enum.get('value'))))
+
+
+def find_rec(node, element, level=0):
     for item in node.iter():
         for group in item.findall(element):
             yield group
     find_rec(item, element, level+1)
 
 
-def generate_repeating_groups(fix, fix_version, repeating_groups_map, writer ):
+def generate_repeating_groups(fix, fix_version, repeating_groups_map, writer):
     writer.write('##############Begin Repeating Groups###############\n')
     indent = ''
     for child in find_rec(fix, 'repeatingGroup'):
-        if child.get('id') in repeating_groups_map: continue
+        if child.get('id') in repeating_groups_map:
+            continue
         repeating_groups_map[child.get('id')] = 1
-        writer.write(GROUP_FORMATTER.format(indent = indent, group = TAG_NAME_MAP[child.get('id')]))
-        generate_body(child,fix_version, writer, indent + ' '*8)
+        writer.write(GROUP_FORMATTER.format(
+            indent=indent, group=TAG_NAME_MAP[child.get('id')]))
+        generate_body(child, fix_version, writer, indent + ' '*8)
     writer.write('##############End Repeating Groups###############\n')
-    
 
-        
-def generate_components(root, fix_version, writer, indent = '    '):
+
+def generate_components(root, fix_version, writer, indent='    '):
     writer.write('##############Begin Componenets###############\n')
     for component in root.find('components'):
-        writer.write(COMPONENT_HEADER.format(component = component.get('name')))
+        writer.write(COMPONENT_HEADER.format(component=component.get('name')))
         generate_body(component, fix_version, writer, indent)
     writer.write('##############End Componenets###############\n')
 
-def generate_body(component, fix_version, writer, indent = '    '):
+
+def generate_body(component, fix_version, writer, indent='    '):
     for child in component:
         if child.tag == 'fieldRef':
-            writer.write(FIELD_FORMATTER.format(indent = indent, field = child.get('name'), required = 'True' if child.get('required') == '1' else 'False'))
+            writer.write(FIELD_FORMATTER.format(indent=indent, field=child.get(
+                'name'), required='True' if child.get('required') == '1' else 'False'))
         elif child.tag == 'componentRef' and child.get('name') not in ['StandardHeader', 'StandardTrailer']:
-            writer.write(COMPONENT_FORMATTER.format(indent = indent, component = child.get('name'), instance = 'self'))
+            writer.write(COMPONENT_FORMATTER.format(
+                indent=indent, component=child.get('name'), instance='self'))
         elif child.tag == 'repeatingGroup':
             #writer.write(GROUP_FORMATTER.format(indent = indent, group = TAG_NAME_MAP[child.get('id')]))
             #generate_body(child,fix_version, writer, indent + ' '*8)
-            writer.write(GROUP_FORMATTER_TRAILER.format(indent = indent, group_no_name = TAG_NAME_MAP[child.get('id')], group = TAG_NAME_MAP[child.get('id')], required = 'True' if child.get('required') == '1' else 'False'))
+            writer.write(GROUP_FORMATTER_TRAILER.format(indent=indent, group_no_name=TAG_NAME_MAP[child.get(
+                'id')], group=TAG_NAME_MAP[child.get('id')], required='True' if child.get('required') == '1' else 'False'))
 
     writer.write('\n')
 
-def generate_messages(root, fix_version, writer, indent = '    '):
-    for msg in root.find('messages'):
-        writer.write(MESSAGE_CLASS_FORMATTER.format(name = msg.get('name'), msgtype = msg.get('msgType'), msgcat = 'admin' if msg.get('category') == 'Session' else 'app' ))
-        generate_body(msg, fix_version, writer, indent + ' '*4)
-        writer.write(MESSAGE_CLASS_TRAILER.format(name = msg.get('name'), msgtype = msg.get('msgType')))
 
+def generate_messages(root, fix_version, writer, indent='    '):
+    for msg in root.find('messages'):
+        writer.write(MESSAGE_CLASS_FORMATTER.format(name=msg.get('name'), msgtype=msg.get(
+            'msgType'), msgcat='admin' if msg.get('category') == 'Session' else 'app'))
+        generate_body(msg, fix_version, writer, indent + ' '*4)
+        writer.write(MESSAGE_CLASS_TRAILER.format(
+            name=msg.get('name'), msgtype=msg.get('msgType')))
 
 
 if __name__ == '__main__':

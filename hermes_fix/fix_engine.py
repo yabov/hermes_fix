@@ -1,19 +1,19 @@
 import asyncio
-import logging
-import datetime
 import concurrent.futures
+import datetime
+import logging
 import queue
 import threading
 
-from . import fix_message_library
-
-from .fix_engine_mixins import heartbeat_mixin, sequence_check_mixin, message_validator_mixin, session_manager_mixin
-from . import fix_errors
+from . import fix_errors, fix_message_library
 from .fix_callbacks import CallbackRegistrar
-from .utils.log import logger
+from .fix_engine_mixins import (heartbeat_mixin, message_validator_mixin,
+                                sequence_check_mixin, session_manager_mixin)
 from .utils.constants import B_TABLE
+from .utils.log import logger
 
 ENGINE_LOGON_MAP = {}
+
 
 class FIXEngineBase():
     def __init__(self, application, store_factory, session_settings, session_name, max_workers=None):
@@ -198,9 +198,9 @@ class FIXEngineBase():
             if len(callbacks) == 0 and msg._msgcat != 'admin':
                 error = f"Unsupported Message Type [{msg._msgtype}]"
                 logger.error(error)
-                self.application._on_error(self.session_name, 
-                                          fix_errors.FIXUnsupportedMessageTypeError(msg.Header.MsgSeqNum, msg._msgtype, 
-                                                None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE))
+                self.application._on_error(self.session_name,
+                                           fix_errors.FIXUnsupportedMessageTypeError(msg.Header.MsgSeqNum, msg._msgtype,
+                                                                                     None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE))
                 self.send_biz_reject(msg.Header.MsgSeqNum, msg._msgtype, None, error,
                                      self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE)
 

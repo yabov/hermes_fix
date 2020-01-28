@@ -1,20 +1,22 @@
 import asyncio
-import logging
-import threading
 import concurrent
-from threading import Thread
 import configparser
+import logging
+import ssl
+import threading
 from datetime import datetime, timedelta
+from threading import Thread
 
 from .application import Application
 from .file_store_factory import FileStoreFactory
+from .fix_engine import FIXEngineAcceptor, FIXEngineInitiator
 from .session_settings import SessionSettings
-from .fix_engine import FIXEngineInitiator, FIXEngineAcceptor
-
+from .utils import constants
 from .utils.log import logger
 
+
 class SocketConnection:
-    def __init__(self, application : Application, storeFactory : FileStoreFactory, settings : SessionSettings):
+    def __init__(self, application: Application, storeFactory: FileStoreFactory, settings: SessionSettings):
         self.settings = settings
         self.application = application
         self.storeFactory = storeFactory
@@ -29,7 +31,8 @@ class SocketConnection:
         addr = writer.get_extra_info('peername')
         sockname = writer.get_extra_info('sockname')
         logger.info(f'Accepted New Connection on [{sockname}]<-->[{addr}]')
-        engine = FIXEngineAcceptor(self.application, self.storeFactory, self.session_settings, 'DEFAULT')
+        engine = FIXEngineAcceptor(
+            self.application, self.storeFactory, self.session_settings, 'DEFAULT')
         engine.reader = reader
         engine.writer = writer
 
@@ -41,6 +44,38 @@ class SocketConnection:
             logger.exception("Error in server")
         logger.info(f"Ending Connection on [{sockname}]<-->[{addr}]")
 
+    def build_ssl_context(self, section):
+        protocol = self.settings[section].get('SSLProtocol', None)
+        if protocol is None:
+            return None
+
+        ssl_contex = ssl.SSLContext(
+            getattr(ssl._SSLMethod, protocol))  # pylint: disable=no-member
+        for option in self.settings[section].get('SSLOptions', '').split(','):
+            ssl_contex.options |= getattr(ssl, option.strip())
+
+        cert_file = self.settings[section].get('SSLCertFile', None)
+        if cert_file:
+            cert_key_file = self.settings[section].get('SSLCertKeyFile', None)
+            cert_password = self.settings[section].get('SSLCertPassword', None)
+            ssl_contex.load_cert_chain(
+                cert_file, keyfile=cert_key_file, password=cert_password)
+
+        ca_file = self.settings[section].get('SSLCAFile', None)
+        ssl_contex.load_verify_locations(cafile=ca_file)
+
+        ssl_contex.check_hostname = self.settings[section].getboolean(
+            'SSLCheckHostName', None)
+
+        verify_mode = self.settings[section].get('SSLVerifyMode', None)
+        ssl_contex.verify_mode = getattr(
+            ssl.VerifyMode, verify_mode)  # pylint: disable=no-member
+
+        ciphers = self.settings[section].get('SSLCiphers', None)
+        if ciphers:
+            ssl_contex.set_ciphers(ciphers)
+
+        return ssl_contex
 
     async def main(self, event_sync):
         engines = []
@@ -62,7 +97,6 @@ class SocketConnection:
         except:
             logger.exception("engine ended with errors")
 
-
     async def start_acceptor(self, section):
         logger.debug(f"Starting Acceptor Session [{section}]...")
         ip = self.settings[section].get('SocketAcceptHost', 'localhost')
@@ -72,7 +106,8 @@ class SocketConnection:
             if (ip, port) in self.server_map:
                 logger.debug(f"Server already created on {ip}:{port}")
                 server, _ = self.server_map[(ip, port)]
-                self.settings_map[(self.settings[section]['SenderCompID'], self.settings[section]['TargetCompID'])] = self.settings[section]
+                self.settings_map[(self.settings[section]['SenderCompID'],
+                                   self.settings[section]['TargetCompID'])] = self.settings[section]
                 return
             else:
                 logger.debug(f"Creating Acceptor on {ip}:{port}")
@@ -80,7 +115,8 @@ class SocketConnection:
                     server = await asyncio.start_server(self.on_connected_client, ip, port)
                 except:
                     logger.exception(f"Failed to start server on {ip}:{port}")
-                self.server_map[(ip,port)] = (server, asyncio.get_running_loop())
+                self.server_map[(ip, port)] = (
+                    server, asyncio.get_running_loop())
 
         addr = server.sockets[0].getsockname()
         logger.debug(f"Connection Created, serving on {addr}")
@@ -93,13 +129,18 @@ class SocketConnection:
         logger.debug("-----------------Ending Server-----------------")
 
     async def start_initiator(self, section):
-        connection_start_time = datetime.strptime(self.settings[section].get('ConnectionStartTime'), '%H:%M:%S').time()
-        connection_end_time = datetime.strptime(self.settings[section].get('ConnectionEndTime'), '%H:%M:%S').time()
-        connection_retry = self.settings[section].get("ConnectionRetryInterval", fallback = 2)
-        ip = self.settings[section].get('SocketConnectHost', fallback = 'localhost')
+        connection_start_time = datetime.strptime(
+            self.settings[section].get('ConnectionStartTime'), '%H:%M:%S').time()
+        connection_end_time = datetime.strptime(
+            self.settings[section].get('ConnectionEndTime'), '%H:%M:%S').time()
+        connection_retry = self.settings[section].get(
+            "ConnectionRetryInterval", fallback=2)
+        ip = self.settings[section].get(
+            'SocketConnectHost', fallback='localhost')
         port = self.settings[section]['SocketConnectPort']
 
-        engine = FIXEngineInitiator(self.application, self.storeFactory, self.session_settings, section)
+        engine = FIXEngineInitiator(
+            self.application, self.storeFactory, self.session_settings, section)
         while not self.stop_called:
             reader, writer = await self.open_connection(ip, port, connection_retry, connection_start_time, connection_end_time)
             addr = writer.get_extra_info('peername')
@@ -135,41 +176,37 @@ class SocketConnection:
                     logger.debug(f"Creating Initiator on {ip}:{port}")
                     return await asyncio.open_connection(ip, port)
                 except:
-                    logger.exception(f"Failed to connect to {ip}:{port}")              
-                
+                    logger.exception(f"Failed to connect to {ip}:{port}")
+
             await asyncio.sleep(connection_retry)
 
     def start_background_loop(self, loop):
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
-
     def start(self) -> asyncio.Task:
         loop = asyncio.new_event_loop()
-        t = Thread(target=self.start_background_loop, args=(loop,), daemon=True)
+        t = Thread(target=self.start_background_loop,
+                   args=(loop,), daemon=True)
         t.start()
 
         event_sync = threading.Event()
         task = asyncio.run_coroutine_threadsafe(self.main(event_sync), loop)
-        
-        event_sync.wait() #block until server is started
+
+        event_sync.wait()  # block until server is started
 
         return task
-        
 
     def stop_all(self) -> None:
         logger.debug("Stopping All")
         self.stop_called = True
         for server, loop in self.server_map.values():
             try:
-                server.close() 
-                future = asyncio.run_coroutine_threadsafe(server.wait_closed(), loop)
+                server.close()
+                future = asyncio.run_coroutine_threadsafe(
+                    server.wait_closed(), loop)
                 future.result()
             except:
                 logger.debug("Server already closed")
         if self.engine_tasks:
             self.engine_tasks.cancel()
-
-        
-
-

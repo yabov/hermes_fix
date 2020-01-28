@@ -1,15 +1,13 @@
-import logging
 import asyncio
-import heapq
-import datetime
-import datetime
 import concurrent
+import datetime
+import heapq
+import logging
 
-from .. import fix_engine
-from .. import fix_errors
-from .. import fix_message
+from .. import fix_engine, fix_errors, fix_message
 from ..fix_callbacks import CallbackRegistrar
 from ..utils.log import logger
+
 
 class SessionManagerBaseMixin(object):
     def __init__(self, *args, **kwargs):
@@ -33,7 +31,7 @@ class SessionManagerBaseMixin(object):
             self.logout()
         else:
             pass
-            #logger.debug(
+            # logger.debug(
             #    f"Not inside logout window of {self.logon_time} to {self.logout_time}")
 
         next = self.calc_next_time(
@@ -66,13 +64,15 @@ class SessionManagerBaseMixin(object):
             if (current_time > start_time) or (current_time < end_time):
                 return True
         return False
-            
+
 
 class SessionManagerInitiatorMixin(SessionManagerBaseMixin):
     def init_settings(self, *args, **kwargs):
         super().init_settings(*args, **kwargs)
-        self.logon_time = datetime.datetime.strptime(self.settings.get('LogonTime'), '%H:%M:%S').time()
-        self.logout_time = datetime.datetime.strptime(self.settings.get('LogoutTime'), '%H:%M:%S').time()
+        self.logon_time = datetime.datetime.strptime(
+            self.settings.get('LogonTime'), '%H:%M:%S').time()
+        self.logout_time = datetime.datetime.strptime(
+            self.settings.get('LogoutTime'), '%H:%M:%S').time()
         logger.debug(
             f"Initiator {self.session_name} logon time: {self.logon_time}, logout time: {self.logout_time}")
         self.check_new_day()
@@ -84,8 +84,10 @@ class SessionManagerInitiatorMixin(SessionManagerBaseMixin):
 
     def close_connection(self, *args, **kwargs):
         super().close_connection(*args, **kwargs)
-        if self.logout_handle: self.logout_handle.cancel()
-        if self.logon_handle: self.logon_handle.cancel()
+        if self.logout_handle:
+            self.logout_handle.cancel()
+        if self.logon_handle:
+            self.logon_handle.cancel()
 
     async def start(self):
         if self.is_reconnect:
@@ -122,8 +124,10 @@ class SessionManagerInitiatorMixin(SessionManagerBaseMixin):
 class SessionManagerAcceptorMixin(SessionManagerBaseMixin):
     def init_settings(self, *args, **kwargs):
         super().init_settings(*args, **kwargs)
-        self.logon_time = datetime.datetime.strptime(self.settings.get('LogonTime'), '%H:%M:%S').time()
-        self.logout_time = datetime.datetime.strptime(self.settings.get('LogoutTime'), '%H:%M:%S').time()
+        self.logon_time = datetime.datetime.strptime(
+            self.settings.get('LogonTime'), '%H:%M:%S').time()
+        self.logout_time = datetime.datetime.strptime(
+            self.settings.get('LogoutTime'), '%H:%M:%S').time()
         logger.debug(
             f"Acceptor {self.session_name} logon time: {self.logon_time}, logout time: {self.logout_time}")
 
@@ -132,21 +136,23 @@ class SessionManagerAcceptorMixin(SessionManagerBaseMixin):
         self.check_new_day()
 
     def register_admin_messages(self, *args, **kwargs):
-        self.register_admin_callback(self.message_lib.fix_messages.Logon, self.on_logon_check_time, 
-            priority = CallbackRegistrar.CALLBACK_PRIORITY.HIGH + 2*CallbackRegistrar.CALLBACK_PRIORITY.BEFORE)
+        self.register_admin_callback(self.message_lib.fix_messages.Logon, self.on_logon_check_time,
+                                     priority=CallbackRegistrar.CALLBACK_PRIORITY.HIGH + 2*CallbackRegistrar.CALLBACK_PRIORITY.BEFORE)
         super().register_admin_messages(*args, **kwargs)
 
     def on_logon_check_time(self, session_name, msg):
         if not self.inside_time_range(self.logon_time, self.logout_time):
             error = "Application not available"
-            self.application._on_error(self.session_name, fix_errors.FIXUnsupportedMessageTypeError(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE))
-            self.send_biz_reject(msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_APPLICATION_NOT_AVAILABLE)
+            self.application._on_error(self.session_name, fix_errors.FIXUnsupportedMessageTypeError(
+                msg.Header.MsgSeqNum, msg._msgtype, None, error, self.message_lib.fields.BusinessRejectReason.ENUM_UNSUPPORTED_MESSAGE_TYPE))
+            self.send_biz_reject(msg.Header.MsgSeqNum, msg._msgtype, None, error,
+                                 self.message_lib.fields.BusinessRejectReason.ENUM_APPLICATION_NOT_AVAILABLE)
             raise fix_errors.FIXDropMessageError("Application not available")
-
 
     def close_connection(self, *args, **kwargs):
         super().close_connection(*args, **kwargs)
-        if self.logout_handle: self.logout_handle.cancel()
+        if self.logout_handle:
+            self.logout_handle.cancel()
 
     async def start(self):
         try:
@@ -155,9 +161,3 @@ class SessionManagerAcceptorMixin(SessionManagerBaseMixin):
             await self.writer.wait_closed()
         except concurrent.futures._base.CancelledError:
             pass
-
-
-
-
-
-

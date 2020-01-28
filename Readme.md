@@ -78,7 +78,6 @@ SocketConnectHost=localhost
 
 
 ### Whats left
-* connection start and end time for initiator
 * dynamic message generation from config file
 * SSL support
 * Days support for session logon and logout

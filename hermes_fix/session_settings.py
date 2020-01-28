@@ -1,9 +1,10 @@
 import configparser
 import io
-from typing import Union, List
 import os
+from typing import List, Union
 
 configName = Union[str, dict, io.IOBase, List[str]]
+
 
 class SessionSettings(configparser.ConfigParser):
     def __init__(self, config: configName) -> None:
@@ -17,5 +18,5 @@ class SessionSettings(configparser.ConfigParser):
         elif isinstance(config, io.IOBase):
             self.read_file(config)
         else:
-            raise TypeError(f"Config must be of type {configName}, but got type {type(config)}")
-
+            raise TypeError(
+                f"Config must be of type {configName}, but got type {type(config)}")
