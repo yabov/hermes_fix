@@ -2,6 +2,10 @@
 
 A fully native python FIX engine implementation inspired by QuickFIX.
 
+![Python package](https://github.com/yabov/hermes_fix/workflows/Python%20package/badge.svg)
+[![codecov](https://codecov.io/gh/yabov/hermes_fix/branch/master/graph/badge.svg?token=sGgRmhpHud)](https://codecov.io/gh/yabov/hermes_fix)
+
+
 ## Getting Started
 see *examples/* folder for additional examples
 ```python
