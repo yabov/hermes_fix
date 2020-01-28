@@ -2,3 +2,5 @@
 omit =
     hermes_fix/message_lib/*
     tests/*
+    setup.py
+    hermes_fix/utils/fix_msg_generator.py
