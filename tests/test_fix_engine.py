@@ -148,13 +148,16 @@ class Test(unittest.TestCase):
         order_msg.OrdType = '1'
         order_msg.TransactTime = datetime.utcnow().strftime('%Y%m%d-%H:%M:%S.%f')
 
-        self.client_app.engines[self._testMethodName].msg_seq_num_out = 0
+        self.client_app.engines[self._testMethodName].store.new_day()
+        self.client_app.engines[self._testMethodName].store.set_current_in_seq(1)
+        self.client_app.engines[self._testMethodName].msg_seq_num_out = 1
 
         self.client_app.send_message(self._testMethodName, order_msg)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXSequenceTooLowError)
         self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXSequenceTooLowError)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXHardKillError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
+        #self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXSequenceTooLowError)
+        #self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXHardKillError)
 
         
 
@@ -203,8 +206,11 @@ class Test(unittest.TestCase):
         order_msg.Header.OrigSendingTime = order_msg.TransactTime
         order_msg.Header.PossDupFlag = 'Y'
 
-        self.client_app.engines[self._testMethodName].msg_seq_num_out -= 1
+        self.client_app.engines[self._testMethodName].store.new_day()
+        self.client_app.engines[self._testMethodName].store.set_current_in_seq(1)
+        self.client_app.engines[self._testMethodName].msg_seq_num_out = 1
 
+        
         self.client_app.send_message(self._testMethodName, order_msg)
 
         self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXDupeMessageRecv)
