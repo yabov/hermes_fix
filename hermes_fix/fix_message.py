@@ -164,7 +164,7 @@ class MessageBase(object):
         if value == "": 
             raise fix_errors.FIXTagEmptyError("Value is empty", content.field_type._tag)
         if content:
-            if isinstance(value, content.field_type):
+            if isinstance(value, content.field_type) or value is None:
                 content.value = value
             else:
                 content.value = content.field_type(value)

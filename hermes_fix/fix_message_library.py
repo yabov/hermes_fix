@@ -141,7 +141,12 @@ def create_message_from_binary(data, msg_class, messages):
     trailer = messages.fix_messages.Trailer()
     _build_from_list(trailer, data_list, True, messages, msg_class)
 
-    return header, msg, trailer
+    msg.Header = header
+    msg.Trailer = trailer
+
+    strip_msg_for_resend(messages, msg)
+
+    return msg
 
 
 def _build_from_list(obj, data_list, stop_if_field_not_defined, messages, msg_class, ignore_invalid_field_vals=False):
@@ -163,3 +168,20 @@ def _build_from_list(obj, data_list, stop_if_field_not_defined, messages, msg_cl
         if messages.fix_messages.BEGINSTRING >= 'FIX.4.3':
             e.SessionRejectReason = messages.fields.SessionRejectReason.ENUM_TAG_APPEARS_MORE_THAN_ONCE
         raise e
+
+
+def strip_msg_for_resend(messages, msg):
+    """
+    Cleans up all required header and trailer fields for resending a message
+    Fields like SenderCompID,TargetCompD,SndingTime, CheckSum, etc... need to be cleaned
+    """
+    msg.Header.PossDupFlag = messages.fields.PossDupFlag.ENUM_POSSIBLE_DUPLICATE
+    msg.Header.OrigSendingTime = msg.Header.SendingTime
+
+    msg.Header.BeginString = None
+    msg.Header.BodyLength = None
+    msg.Header.MsgType = None
+    msg.Header.SenderCompID = None
+    msg.Header.TargetCompID = None
+    msg.Header.SendingTime = None
+    msg.Trailer.CheckSum = None

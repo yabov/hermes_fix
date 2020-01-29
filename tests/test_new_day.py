@@ -53,7 +53,7 @@ class Test(unittest.TestCase):
                     'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
                     'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
                     'LogonTime': (datetime.utcnow() + timedelta(seconds=6)).time().strftime('%H:%M:%S'),
-                    'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 4)).time().strftime('%H:%M:%S')}})
+                    'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 5)).time().strftime('%H:%M:%S')}})
 
         self.settings_client  = fix.SessionSettings([])
         self.settings_client.read_dict({self._testMethodName : {'ConnectionType' : 'initiator',
@@ -67,7 +67,7 @@ class Test(unittest.TestCase):
             'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
             'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
             'LogonTime': (datetime.utcnow() + timedelta(seconds=6)).time().strftime('%H:%M:%S'),
-            'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 2)).time().strftime('%H:%M:%S')}})
+            'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 3)).time().strftime('%H:%M:%S')}})
 
 
         self.client_app = FIXTestAppClient()

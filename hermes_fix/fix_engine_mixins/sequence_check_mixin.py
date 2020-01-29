@@ -98,17 +98,14 @@ class SequenceCheckerMixin():
         last_sent_msg_num = msg.BeginSeqNo-1
         for msg_num, msg_type_str, resend_msg in self.store.get_messages(msg.BeginSeqNo, msg.EndSeqNo):
             try:
-                header, msg, _ = fix_message_library.create_message_from_binary(
+                msg = fix_message_library.create_message_from_binary(
                     resend_msg, msg_type_str, self.message_lib)
             except Exception:
                 logger.exception("Failed to replay message")
                 self.send_gap_fill(last_sent_msg_num, msg_num+1)
                 last_sent_msg_num = msg_num
                 continue
-            msg.Header.PossDupFlag = self.message_lib.fields.PossDupFlag.ENUM_POSSIBLE_DUPLICATE
-            msg.Header.OrigSendingTime = header.SendingTime
-            msg.Header.MsgSeqNum = msg_num
-            #TODO: preserve third party addressing
+
             if msg._msgcat == 'app' or isinstance(msg, self.message_lib.fix_messages.Logout):
                 if last_sent_msg_num < msg_num-1:
                     self.send_gap_fill(last_sent_msg_num, msg_num)
