@@ -251,6 +251,7 @@ class FIXEngineBase():
 
     def close_connection(self, reset_logon=True):
         if reset_logon:
+            self.waiting_for_logout = False
             ENGINE_LOGON_MAP[self.engine_key] = False
         if self.store:
             self.store.close()

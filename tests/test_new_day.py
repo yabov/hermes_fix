@@ -52,8 +52,8 @@ class Test(unittest.TestCase):
                     'DataDictionary' : '../spec/FIX42.xml',
                     'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
                     'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
-                    'LogonTime': (datetime.utcnow() + timedelta(seconds=4)).time().strftime('%H:%M:%S'),
-                    'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 2)).time().strftime('%H:%M:%S')}})
+                    'LogonTime': (datetime.utcnow() + timedelta(seconds=6)).time().strftime('%H:%M:%S'),
+                    'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 4)).time().strftime('%H:%M:%S')}})
 
         self.settings_client  = fix.SessionSettings([])
         self.settings_client.read_dict({self._testMethodName : {'ConnectionType' : 'initiator',
@@ -66,7 +66,7 @@ class Test(unittest.TestCase):
             'DataDictionary' : '../spec/FIX42.xml',
             'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
             'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
-            'LogonTime': (datetime.utcnow() + timedelta(seconds=4)).time().strftime('%H:%M:%S'),
+            'LogonTime': (datetime.utcnow() + timedelta(seconds=6)).time().strftime('%H:%M:%S'),
             'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 2)).time().strftime('%H:%M:%S')}})
 
 
@@ -78,11 +78,11 @@ class Test(unittest.TestCase):
     def do_logout(self, client_app):
         client_app.engines[self._testMethodName].logout()
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
 
     """ start session in logged on state, wait for logout, ensure new day is performed and logon happens with reset sequence numbers"""
     def test_new_day(self):
@@ -90,28 +90,26 @@ class Test(unittest.TestCase):
         self.server.start()
         self.client.start()
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2),
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3),
                               fix_messages_4_2_0_base.Logon)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2),
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3),
                               fix_messages_4_2_0_base.Logon)
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2),
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3),
                               fix_messages_4_2_0_base.TestRequest)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2),
-                              fix_messages_4_2_0_base.TestRequest)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2),
-                              fix_messages_4_2_0_base.Heartbeat)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2),
-                              fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2),
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3),
                               fix_messages_4_2_0_base.Heartbeat)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2),
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3),
+                              fix_messages_4_2_0_base.Logout)
+        
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3),
                               fix_messages_4_2_0_base.Logout)
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=4),
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=5),
                               fix_messages_4_2_0_base.Logon)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=4),
+
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=5),
                               fix_messages_4_2_0_base.Logon)
 
         self.do_logout(self.client_app)

@@ -106,12 +106,21 @@ class HeartBeatMixin:
         self.send_test_message()
         self.schedule_next_in_beat()
 
-    def send_test_message(self):
+    def send_test_message(self,  success_callback = None, error_callback = None, wait_interval=10):
         if self.waiting_for_test_msg_id:
             return  # do not send another TestRequest
         msg = self.message_lib.fix_messages.TestRequest()
-        msg.TestReqID = self.msg_seq_num_out
+        curr_seq = str(self.msg_seq_num_out)
+
+        msg.TestReqID = curr_seq
         self.waiting_for_test_msg_id = self.msg_seq_num_out
+
+        if success_callback:
+            self.register_admin_callback(self.message_lib.fix_messages.Heartbeat, lambda session_name, msg: success_callback(session_name, msg),
+                                            check_func=lambda msg: (msg.TestReqID == curr_seq),
+                                            priority=CallbackRegistrar.CALLBACK_PRIORITY.HIGH,
+                                            one_time=True, timeout=wait_interval, timeout_cb=error_callback)
+
         self.send_message(msg)
 
     def no_heart_beat(self):
@@ -132,13 +141,8 @@ class HeartBeatMixin:
 
     def logout(self, text=None, wait_interval=10, send_test_msg=True):
         if send_test_msg:
-            curr_seq = str(self.msg_seq_num_out)
-            self.register_admin_callback(self.message_lib.fix_messages.Heartbeat, lambda session_name, msg: self.on_hb_logout(msg, text, wait_interval),
-                                         check_func=lambda msg: (
-                                             msg.TestReqID == curr_seq),
-                                         priority=CallbackRegistrar.CALLBACK_PRIORITY.HIGH,
-                                         one_time=True, timeout=wait_interval, timeout_cb=self.no_heart_beat)
-            self.send_test_message()
+            success_callback = (lambda session_name, msg: self.on_hb_logout(msg, text, wait_interval))
+            self.send_test_message(success_callback, self.no_heart_beat, wait_interval)
         else:
             super().logout(text, wait_interval)
 

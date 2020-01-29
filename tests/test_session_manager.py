@@ -78,11 +78,11 @@ class Test(unittest.TestCase):
     def do_logout(self, client_app):
         client_app.engines[self._testMethodName].logout()
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
 
     """	Reconnect after Logout """
     def test_reconnect(self):
@@ -90,8 +90,8 @@ class Test(unittest.TestCase):
         self.server.start()
         self.client.start()
 
-        resp_logon = SERVER_QUEUE.get(timeout=2)
-        sent_logon = CLIENT_QUEUE.get(timeout=2)
+        resp_logon = SERVER_QUEUE.get(timeout=3)
+        sent_logon = CLIENT_QUEUE.get(timeout=3)
 
         self.assertIsInstance(resp_logon, fix_messages_4_2_0_base.Logon)
         self.assertIsInstance(sent_logon, fix_messages_4_2_0_base.Logon)
@@ -128,8 +128,8 @@ class Test(unittest.TestCase):
         self.server.start()
         self.client.start()
 
-        resp_logon = SERVER_QUEUE.get(timeout=2)
-        sent_logon = CLIENT_QUEUE.get(timeout=2)
+        resp_logon = SERVER_QUEUE.get(timeout=3)
+        sent_logon = CLIENT_QUEUE.get(timeout=3)
 
         self.assertIsInstance(resp_logon, fix_messages_4_2_0_base.Logon)
         self.assertIsInstance(sent_logon, fix_messages_4_2_0_base.Logon)
@@ -150,7 +150,7 @@ class Test(unittest.TestCase):
             'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
             'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
             'LogonTime' : (datetime.utcnow() + timedelta(seconds = 0)).time().strftime('%H:%M:%S'),
-            'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 2)).time().strftime('%H:%M:%S')}})
+            'LogoutTime' : (datetime.utcnow() + timedelta(seconds = 3)).time().strftime('%H:%M:%S')}})
 
 
         self.client_app = FIXTestAppClient()
@@ -159,8 +159,8 @@ class Test(unittest.TestCase):
         self.server.start()
         self.client.start()
 
-        resp_logon = SERVER_QUEUE.get(timeout=2)
-        sent_logon = CLIENT_QUEUE.get(timeout=2)
+        resp_logon = SERVER_QUEUE.get(timeout=3)
+        sent_logon = CLIENT_QUEUE.get(timeout=3)
 
         self.assertIsInstance(resp_logon, fix_messages_4_2_0_base.Logon)
         self.assertIsInstance(sent_logon, fix_messages_4_2_0_base.Logon)
@@ -194,9 +194,9 @@ class Test(unittest.TestCase):
         self.client.start()
 
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXRejectError)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_errors.FIXInvalidFirstMessage)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXDropMessageError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXRejectError)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_errors.FIXInvalidFirstMessage)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXDropMessageError)
 
 
     def tearDown(self):

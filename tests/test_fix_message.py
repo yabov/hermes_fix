@@ -50,7 +50,7 @@ class Test(unittest.TestCase):
                     'SenderCompID' : 'HOST',
                     'TargetCompID' : self._testMethodName,#'CLIENT',
                     'SocketAcceptPort' : '5001',
-                    'FileStorePath' : 'store',
+                    'FileStorePath' : ':memory:',
                     'DataDictionary' : '../spec/FIX42.xml',
                     'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
                     'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
@@ -64,7 +64,7 @@ class Test(unittest.TestCase):
             'TargetCompID' : 'HOST',
             'SocketConnectPort' : '5001',
             'SocketConnectHost' : 'localhost',
-            'FileStorePath' : 'store',
+            'FileStorePath' : ':memory:',
             'DataDictionary' : '../spec/FIX42.xml',
             'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
             'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
@@ -79,8 +79,8 @@ class Test(unittest.TestCase):
         self.server.start()
         self.client.start()
 
-        resp_logon = SERVER_QUEUE.get(timeout=2)
-        sent_logon = CLIENT_QUEUE.get(timeout=2)
+        resp_logon = SERVER_QUEUE.get(timeout=3)
+        sent_logon = CLIENT_QUEUE.get(timeout=3)
         self.assertIsInstance(resp_logon, fix_messages_4_2_0_base.Logon)
         self.assertIsInstance(sent_logon, fix_messages_4_2_0_base.Logon)
 
@@ -89,11 +89,11 @@ class Test(unittest.TestCase):
     def do_logout(self, client_app):
         client_app.engines[self._testMethodName].logout()
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
 
     def build_raw_msg(self, body):
         raw_msg = io.BytesIO()        
@@ -125,7 +125,7 @@ class Test(unittest.TestCase):
 
         self.client_app.send_message(self._testMethodName, order_msg)
 
-        msg = SERVER_QUEUE.get(timeout=2)
+        msg = SERVER_QUEUE.get(timeout=3)
         self.assertIsInstance(msg, fix_messages_4_2_0_base.OrderSingle)
         self.assertEqual(msg.NoAllocs, 2)
         self.assertEqual(msg.NoAllocsGroup[0].AllocAccount, 'Abc')
@@ -148,7 +148,7 @@ class Test(unittest.TestCase):
         self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
         self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.OrderSingle)
 
         self.do_logout(self.client_app)
 
@@ -162,9 +162,9 @@ class Test(unittest.TestCase):
         self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageFieldError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXInvalidMessageFieldError)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Reject)
 
         self.do_logout(self.client_app)
 
@@ -181,9 +181,9 @@ class Test(unittest.TestCase):
         self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageFieldError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXInvalidMessageFieldError)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Reject)
 
         self.do_logout(self.client_app)
 
@@ -200,9 +200,9 @@ class Test(unittest.TestCase):
         self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageFieldError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXInvalidMessageFieldError)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Reject)
 
         self.do_logout(self.client_app)
 
@@ -220,9 +220,9 @@ class Test(unittest.TestCase):
         self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageFieldError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXInvalidMessageFieldError)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Reject)
 
         self.do_logout(self.client_app)
 
@@ -239,9 +239,9 @@ class Test(unittest.TestCase):
         self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXInvalidMessageFieldError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXInvalidMessageFieldError)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Reject)
 
         self.do_logout(self.client_app)
 
@@ -257,9 +257,9 @@ class Test(unittest.TestCase):
         self.client_app.engines[self._testMethodName].writer.write(self.build_raw_msg(body))
         self.client_app.engines[self._testMethodName].msg_seq_num_out +=1
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXRepeatingFieldError)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXRepeatingFieldError)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Reject)
 
         self.do_logout(self.client_app)
 
@@ -286,9 +286,9 @@ class Test(unittest.TestCase):
 
         self.client_app.send_message(self._testMethodName, order_msg)
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXIncorrectNumInGroup)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXIncorrectNumInGroup)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Reject)
 
         self.do_logout(self.client_app)
 

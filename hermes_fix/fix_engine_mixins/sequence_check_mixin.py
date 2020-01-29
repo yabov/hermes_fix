@@ -40,12 +40,12 @@ class SequenceCheckerMixin():
         self.store.set_current_in_seq(force_seq)
 
     def on_msg_check_seq(self, session_name, msg):
+
         if isinstance(msg, self.message_lib.fix_messages.SequenceReset) and msg.GapFillFlag != self.message_lib.fields.GapFillFlag.ENUM_GAP_FILL_MESSAGE:
             # SequenceReset - Reset: ignore all sequence checks
             return
 
         in_seq = self.store.get_current_in_seq()+1
-
         if msg.Header.MsgSeqNum == in_seq:
             self.check_seq_same(msg)
             self.store.set_current_in_seq(msg.Header.MsgSeqNum)
@@ -108,6 +108,7 @@ class SequenceCheckerMixin():
             msg.Header.PossDupFlag = self.message_lib.fields.PossDupFlag.ENUM_POSSIBLE_DUPLICATE
             msg.Header.OrigSendingTime = header.SendingTime
             msg.Header.MsgSeqNum = msg_num
+            #TODO: preserve third party addressing
             if msg._msgcat == 'app' or isinstance(msg, self.message_lib.fix_messages.Logout):
                 if last_sent_msg_num < msg_num-1:
                     self.send_gap_fill(last_sent_msg_num, msg_num)

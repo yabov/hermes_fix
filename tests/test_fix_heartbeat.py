@@ -49,7 +49,7 @@ class Test(unittest.TestCase):
                     'SenderCompID' : 'HOST',
                     'TargetCompID' : self._testMethodName,#'CLIENT',
                     'SocketAcceptPort' : '5001',
-                    'FileStorePath' : 'store',
+                    'FileStorePath' : ':memory:',
                     'HeartBeatInt' : '1',
                     'HeatBeatGracePeriod' : '2',
                     'DataDictionary' : '../spec/FIX42.xml',
@@ -65,7 +65,7 @@ class Test(unittest.TestCase):
             'TargetCompID' : 'HOST',
             'SocketConnectPort' : '5001',
             'SocketConnectHost' : 'localhost',
-            'FileStorePath' : 'store',
+            'FileStorePath' : ':memory:',
             'HeartBeatInt' : '1',
             'HeatBeatGracePeriod' : '2',
             'DataDictionary' : '../spec/FIX42.xml',
@@ -82,36 +82,36 @@ class Test(unittest.TestCase):
         self.server.start()
         self.client.start()
 
-        resp_logon = SERVER_QUEUE.get(timeout=2)
-        sent_logon = CLIENT_QUEUE.get(timeout=2)
+        resp_logon = SERVER_QUEUE.get(timeout=3)
+        sent_logon = CLIENT_QUEUE.get(timeout=3)
         self.assertIsInstance(resp_logon, fix_messages_4_2_0_base.Logon)
         self.assertIsInstance(sent_logon, fix_messages_4_2_0_base.Logon)
 
     def do_logout(self, client_app):
         client_app.engines[self._testMethodName].logout()
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
 
     """No data sent during preset heartbeat interval (HeartBeatInt(108) field)	
     Send Heartbeat message"""
     def test_valid_msg(self):
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
 
         #waiting for 2nd heartbeat
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
         self.do_logout(self.client_app)
 
     """Data sent during preset heartbeat interval (HeartBeatInt(108) field)	
     skip Heartbeat message"""
     def test_msg_instead_of_hb(self):
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
 
         time.sleep(.5)
 
@@ -125,8 +125,8 @@ class Test(unittest.TestCase):
         self.client_app.send_message(self._testMethodName, order_msg)
 
         #waiting for 2nd heartbeat
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.OrderSingle)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.OrderSingle)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
         self.do_logout(self.client_app)
 
     """No Heartbeat during preset interval
@@ -136,10 +136,10 @@ class Test(unittest.TestCase):
         future_out = asyncio.run_coroutine_threadsafe(self.server_app.engines[self._testMethodName].schedule_next_out_beat_await(), self.server_app.engines[self._testMethodName].loop)
         future_out.result()
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
 
         self.do_logout(self.client_app)
 
@@ -157,15 +157,15 @@ class Test(unittest.TestCase):
 
         self.server_app.engines[self._testMethodName].register_admin_callback(fix_messages_4_2_0_base.TestRequest, on_test_msg, CallbackRegistrar.CALLBACK_PRIORITY.NORMAL -1)
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_errors.FIXRejectError)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Reject)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_errors.FIXRejectError)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Reject)
 
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
     
     def tearDown(self):
         self.client.stop_all()

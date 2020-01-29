@@ -47,7 +47,7 @@ class Test(unittest.TestCase):
                     'SenderCompID' : 'HOST',
                     'TargetCompID' : self._testMethodName,#'CLIENT',
                     'SocketAcceptPort' : '5001',
-                    'FileStorePath' : 'store',
+                    'FileStorePath' : ':memory:',
                     'DataDictionary' : '../spec/FIX42.xml',
                     'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
                     'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
@@ -61,7 +61,7 @@ class Test(unittest.TestCase):
             'TargetCompID' : 'HOST',
             'SocketConnectPort' : '5001',
             'SocketConnectHost' : 'localhost',
-            'FileStorePath' : 'store',
+            'FileStorePath' : ':memory:',
             'DataDictionary' : '../spec/FIX42.xml',
             'ConnectionStartTime' : datetime.utcnow().time().strftime('%H:%M:%S'),
             'ConnectionEndTime' : (datetime.utcnow() + timedelta(seconds = 10)).time().strftime('%H:%M:%S'),
@@ -77,11 +77,11 @@ class Test(unittest.TestCase):
     def do_logout(self, client_app):
         client_app.engines[self._testMethodName].logout()
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.TestRequest)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Heartbeat)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.TestRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Heartbeat)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logout)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logout)
 
     """	Receive Logon<A> message"""
     """Respond with Logon<A> response message"""
@@ -90,8 +90,8 @@ class Test(unittest.TestCase):
         self.server.start()
         self.client.start()
 
-        resp_logon = SERVER_QUEUE.get(timeout=2)
-        sent_logon = CLIENT_QUEUE.get(timeout=2)
+        resp_logon = SERVER_QUEUE.get(timeout=3)
+        sent_logon = CLIENT_QUEUE.get(timeout=3)
 
         self.assertIsInstance(resp_logon, fix_messages_4_2_0_base.Logon)
         self.assertIsInstance(sent_logon, fix_messages_4_2_0_base.Logon)
@@ -113,12 +113,12 @@ class Test(unittest.TestCase):
         self.client.start()
                 
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logon)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_errors.FIXEngineResendRequest)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logon)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_errors.FIXEngineResendRequest)
 
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logon)
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.ResendRequest)
-        self.assertIsInstance(CLIENT_QUEUE.get(timeout=2), fix_messages_4_2_0_base.SequenceReset)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logon)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.ResendRequest)
+        self.assertIsInstance(CLIENT_QUEUE.get(timeout=3), fix_messages_4_2_0_base.SequenceReset)
 
         self.do_logout(self.client_app)
 
@@ -157,8 +157,8 @@ class Test(unittest.TestCase):
         self.server.start()
         self.client.start()
 
-        self.assertIsInstance(SERVER_QUEUE.get(timeout=2), fix_messages_4_2_0_base.Logon)
-        error = CLIENT_QUEUE.get(timeout=2)
+        self.assertIsInstance(SERVER_QUEUE.get(timeout=3), fix_messages_4_2_0_base.Logon)
+        error = CLIENT_QUEUE.get(timeout=3)
         self.assertIsInstance(error, fix_errors.FIXInvalidFirstMessage)
 
     def tearDown(self):

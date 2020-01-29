@@ -43,16 +43,24 @@ class Application:
         self.on_register_callbacks(session_name)
 
     def _on_logon(self, session_name, msg):
+        if not self.message_queue_map[session_name].empty():
+            success_cb = lambda session_name, msg: self._flush_msg_queue(session_name)
+            #if we fail to get a response we should disconnect
+            error_cb = lambda : self.engines[session_name].logout("Failed to get response for TestRequest", send_test_message = False)
+            self.engines[session_name].send_test_message(success_cb, error_cb)
+
+    def _flush_msg_queue(self, session_name):
+        msg_queue = self.message_queue_map[session_name]
         # chaser to ensure that we stop instead of cycling through the queue if send_message fails here
-        self.message_queue_map[session_name].put(None)
-        msg = self.message_queue_map[session_name].get_nowait()
+        msg_queue.put(None)
+        engine = self.engines[session_name]
+        msg = msg_queue.get_nowait()
         while msg:
-            msg.Header = self.engines[session_name].message_lib.fix_messages.Header(
-            )
-            msg.Trailer = self.engines[session_name].message_lib.fix_messages.Trailer(
-            )
+            #TODO: preserve third party addressing
+            msg.Header = engine.message_lib.fix_messages.Header()
+            msg.Trailer = engine.message_lib.fix_messages.Trailer()
             self.send_message(session_name, msg)
-            msg = self.message_queue_map[session_name].get_nowait()
+            msg = msg_queue.get_nowait()
 
     def send_message(self,
                      session_name: str,

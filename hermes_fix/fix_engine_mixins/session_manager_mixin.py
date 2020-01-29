@@ -21,9 +21,11 @@ class SessionManagerBaseMixin(object):
     def check_new_day(self):
         session_time = datetime.datetime.fromtimestamp(
             self.store.get_session_time())
-        next_logout = self.calc_next_time(session_time, self.logout_time)
+        next_logout = self.calc_next_time(session_time, self.logout_time, offset_by_day = False)
+        print (f"CHECKING NEW DAY {session_time} {next_logout}")
         if next_logout < 0:
             self.store.new_day()
+            self.msg_seq_num_out = self.store.get_current_out_seq()
 
     def handle_logout_timer(self):
         if self.inside_time_range(self.logout_time, self.logon_time) and self.is_logged_on():
@@ -40,13 +42,15 @@ class SessionManagerBaseMixin(object):
         self.logout_handle = self.loop.call_later(
             next, self.handle_logout_timer)
 
-    def calc_next_time(self, from_date_time, time):
+    def calc_next_time(self, from_date_time, time, offset_by_day = True):
         next = datetime.datetime.combine(from_date_time, time)
         now = datetime.datetime.utcnow()
 
         delta = next - now
         seconds = delta.total_seconds()
-        one_day = 60*60*24
+        one_day = 0
+        if offset_by_day:
+            one_day = 60*60*24
         if seconds < 0:
             return seconds + one_day
         else:
@@ -79,8 +83,12 @@ class SessionManagerInitiatorMixin(SessionManagerBaseMixin):
 
     def reconnect(self):
         self.store = self.store_factory.create_storage(self.settings)
-        self.application._on_reconnect(self.session_name)
         self.check_new_day()
+        self.msg_seq_num_out = self.store.get_current_out_seq()
+
+        self.application._on_reconnect(self.session_name)
+        
+        
 
     def close_connection(self, *args, **kwargs):
         super().close_connection(*args, **kwargs)
@@ -114,8 +122,8 @@ class SessionManagerInitiatorMixin(SessionManagerBaseMixin):
             logger.debug("Sending logon for initiator")
             self.send_logon()
         else:
-            pass
-            #logger.debug(f"Not inside logon window of {self.logon_time} to {self.logout_time}")
+            #pass
+            logger.debug(f"Not inside logon window of {self.logon_time} to {self.logout_time}")
         next = self.calc_next_time(datetime.datetime.utcnow(), self.logon_time)
         logger.debug(f"Next Logon scheduled in {next} seconds")
         self.logon_handle = self.loop.call_later(next, self.handle_logon_timer)
