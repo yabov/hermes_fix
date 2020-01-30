@@ -45,7 +45,7 @@ LogoutTime=07:54:00
 ConnectionType=acceptor
 SenderCompID=HOST
 TargetCompID=CLIENT
-FileStorePath=store
+StorageConnectionString=sqlite:///:memory:?check_same_thread=False
 SocketAcceptPort=5001
 SocketAcceptHost=localhost
 
@@ -54,7 +54,7 @@ SocketAcceptHost=localhost
 ConnectionType=initiator
 SenderCompID=CLIENT
 TargetCompID=HOST
-FileStorePath=store
+StorageConnectionString=sqlite:///:memory:?check_same_thread=False
 SocketConnectPort=5001
 SocketConnectHost=localhost
 ```

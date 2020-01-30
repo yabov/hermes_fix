@@ -4,3 +4,6 @@ omit =
     tests/*
     setup.py
     hermes_fix/utils/fix_msg_generator.py
+
+[report]
+fail_under = 90

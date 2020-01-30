@@ -39,7 +39,7 @@ class SQLAlchemyStore:
             if not os.path.exists(path):
                 os.makedirs(path, exist_ok=True)
         
-        engine = create_engine(connection_string, echo=True)
+        engine = create_engine(connection_string, echo=False)
         self.db = engine.connect()
         metadata.create_all(engine)
         self._init_schema()
