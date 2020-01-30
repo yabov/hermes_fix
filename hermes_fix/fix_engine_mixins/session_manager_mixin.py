@@ -22,7 +22,6 @@ class SessionManagerBaseMixin(object):
         session_time = datetime.datetime.fromtimestamp(
             self.store.get_session_time())
         next_logout = self.calc_next_time(session_time, self.logout_time, offset_by_day = False)
-        print (f"CHECKING NEW DAY {session_time} {next_logout}")
         if next_logout < 0:
             self.store.new_day()
             self.msg_seq_num_out = self.store.get_current_out_seq()
