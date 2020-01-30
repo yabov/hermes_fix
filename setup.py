@@ -9,5 +9,8 @@ setup(
     author_email='yevgeny.abov@gmail.com',
     license='unlicense',
     packages=find_packages(exclude=['tests*', 'examples*']),
+    install_requires=[
+        'sqlalchemy',
+    ],
     zip_safe=False
 )

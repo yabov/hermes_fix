@@ -64,6 +64,7 @@ SocketConnectHost=localhost
 |SenderCompID| Your identifier when sending messages| String| |
 |TargetCompID| Their identifier when sending messages| String| |
 |ConnectionType| Identifies the session as acceptor or initiator| acceptor <br> initiator| |
+|StorageConnectionString| sqlalchemy style connect string to database| ex: sqlite:///:memory:?check_same_thread=False <br> for sqlite must use check_same_thread=False| |
 |SocketAcceptHost|For acceptor the machine name to listen for connections| ip address<br>machine name| localhost|
 |SocketAcceptPort|Port to listen for connections| integer||
 |SocketConnectHost|For initiator the machine to connect to| ip address<br>machine name| |
