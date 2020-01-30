@@ -51,8 +51,11 @@ class SocketConnection:
 
         ssl_contex = ssl.SSLContext(
             getattr(ssl._SSLMethod, protocol))  # pylint: disable=no-member
-        for option in self.settings[section].get('SSLOptions', '').split(','):
-            ssl_contex.options |= getattr(ssl, option.strip())
+        
+        ssl_options = self.settings[section].get('SSLOptions', None)
+        if ssl_options is not None:
+            for option in ssl_options:
+                ssl_contex.options |= getattr(ssl, option.strip())
 
         cert_file = self.settings[section].get('SSLCertFile', None)
         if cert_file:
@@ -62,17 +65,19 @@ class SocketConnection:
                 cert_file, keyfile=cert_key_file, password=cert_password)
 
         ca_file = self.settings[section].get('SSLCAFile', None)
-        ssl_contex.load_verify_locations(cafile=ca_file)
+        if ca_file is not None:
+            ssl_contex.load_verify_locations(cafile=ca_file)
 
         ssl_contex.check_hostname = self.settings[section].getboolean(
-            'SSLCheckHostName', None)
+            'SSLCheckHostName', False)
 
         verify_mode = self.settings[section].get('SSLVerifyMode', None)
-        ssl_contex.verify_mode = getattr(
-            ssl.VerifyMode, verify_mode)  # pylint: disable=no-member
+        if verify_mode is not None:
+            ssl_contex.verify_mode = getattr(
+                ssl.VerifyMode, verify_mode)  # pylint: disable=no-member
 
         ciphers = self.settings[section].get('SSLCiphers', None)
-        if ciphers:
+        if ciphers is not None:
             ssl_contex.set_ciphers(ciphers)
 
         return ssl_contex
@@ -112,7 +117,7 @@ class SocketConnection:
             else:
                 logger.debug(f"Creating Acceptor on {ip}:{port}")
                 try:
-                    server = await asyncio.start_server(self.on_connected_client, ip, port)
+                    server = await asyncio.start_server(self.on_connected_client, ip, port, ssl = self.build_ssl_context(section))
                 except:
                     logger.exception(f"Failed to start server on {ip}:{port}")
                 self.server_map[(ip, port)] = (
@@ -142,7 +147,7 @@ class SocketConnection:
         engine = FIXEngineInitiator(
             self.application, self.storeFactory, self.session_settings, section)
         while not self.stop_called:
-            reader, writer = await self.open_connection(ip, port, connection_retry, connection_start_time, connection_end_time)
+            reader, writer = await self.open_connection(ip, port, connection_retry, connection_start_time, connection_end_time, ssl = self.build_ssl_context(section))
             addr = writer.get_extra_info('peername')
             sockname = writer.get_extra_info('sockname')
             logger.info(f"Opened Connection on [{sockname}]<-->[{addr}]")
@@ -169,12 +174,12 @@ class SocketConnection:
                 return True
         return False
 
-    async def open_connection(self, ip, port, connection_retry, connection_start_time, connection_end_time):
+    async def open_connection(self, ip, port, connection_retry, connection_start_time, connection_end_time, ssl):
         while not self.stop_called:
             if self.inside_time_range(connection_start_time, connection_end_time):
                 try:
                     logger.debug(f"Creating Initiator on {ip}:{port}")
-                    return await asyncio.open_connection(ip, port)
+                    return await asyncio.open_connection(ip, port, ssl = ssl)
                 except:
                     logger.exception(f"Failed to connect to {ip}:{port}")
 
