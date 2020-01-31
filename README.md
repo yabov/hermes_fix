@@ -78,8 +78,22 @@ SocketConnectHost=localhost
 |MessageReadTimeout |  Timeout in seconds to wait for a complete FIX message to be sent from first byte received | Positive float| 2 |
 |IgnoreChecksum| skip checksum calculation |  True<br>False| False |
 |IgnoreInvalidFieldValues| Drop fields that are incorrect type or invalid Enum or tag=\<SOH\>|  True<br>False| False |
-
-
+||
+|SSL Options|
+|SSLProtocol| SSL Protocol version as specified in https://docs.python.org/3/library/ssl.html#ssl.PROTOCOL_TLS | ssl.PROTOCOL_* | |
+|SSLOptions | SSL Options as specified by https://docs.python.org/3/library/ssl.html#ssl.OP_ALL <br> Options are comma separated and bit-or'd together| ssl.OP_* | |
+||||
+|SSLCertFile| Server side - Certificate path https://docs.python.org/3/library/ssl.html#ssl.SSLContext.load_cert_chain |||
+|SSLCertKeyFile| Optional Certificate key file path|||
+|SSLCertPassword| Optional Password for certificate key file|||
+||||
+|SSLCAFile| Client side - Certificate path https://docs.python.org/3/library/ssl.html#ssl.SSLContext.load_verify_locations |||
+|SSLCAPath| Optional path to multiple ca certificates|||
+|SSLCAData| Optional ascii encode certificate|||
+||||
+|SSLCheckHostName| https://docs.python.org/3/library/ssl.html#ssl.SSLContext.check_hostname |True <br> False| True|
+|SSLVerifyMode| https://docs.python.org/3/library/ssl.html#ssl.SSLContext.verify_mode | | |
+|SSLCiphers| https://docs.python.org/3/library/ssl.html#ssl.SSLContext.set_ciphers | | |
 
 
 ### What's missing
