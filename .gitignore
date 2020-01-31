@@ -5,3 +5,4 @@ dist/
 hermes_fix.egg-info/
 coverage.xml
 .coverage
+build/

@@ -6,9 +6,8 @@ import queue
 from datetime import datetime, timedelta
 import time
 
+import hermes_fix as fix
 from hermes_fix import fix_errors
-from hermes_fix import fix
-from hermes_fix import fix_engine
 from hermes_fix.message_lib.FIX_4_2 import fix_messages as fix_messages_4_2_0_base
 
 
@@ -40,40 +39,6 @@ class FIXTestAppClient(fix.Application):
     def on_error(self, session_name, error):
         CLIENT_QUEUE.put(error)
 
-
-"""
-        protocol = self.settings[section].get('SSLProtocol', None)
-        if protocol is None:
-            return None
-
-        ssl_contex = ssl.SSLContext(
-            getattr(ssl._SSLMethod, protocol))  # pylint: disable=no-member
-        for option in self.settings[section].get('SSLOptions', '').split(','):
-            ssl_contex.options |= getattr(ssl, option.strip())
-
-        cert_file = self.settings[section].get('SSLCertFile', None)
-        if cert_file:
-            cert_key_file = self.settings[section].get('SSLCertKeyFile', None)
-            cert_password = self.settings[section].get('SSLCertPassword', None)
-            ssl_contex.load_cert_chain(
-                cert_file, keyfile=cert_key_file, password=cert_password)
-
-        ca_file = self.settings[section].get('SSLCAFile', None)
-        ssl_contex.load_verify_locations(cafile=ca_file)
-
-        ssl_contex.check_hostname = self.settings[section].getboolean(
-            'SSLCheckHostName', None)
-
-        verify_mode = self.settings[section].get('SSLVerifyMode', None)
-        ssl_contex.verify_mode = getattr(
-            ssl.VerifyMode, verify_mode)  # pylint: disable=no-member
-
-        ciphers = self.settings[section].get('SSLCiphers', None)
-        if ciphers:
-            ssl_contex.set_ciphers(ciphers)
-
-        return ssl_contex
-"""
 class Test(unittest.TestCase):
     def setUp(self):
         #print("Entering", self._testMethodName)
@@ -84,7 +49,10 @@ class Test(unittest.TestCase):
                                                         'SenderCompID': 'HOST',
                                                         'TargetCompID': self._testMethodName,  # 'CLIENT',
                                                         'SocketAcceptPort': '5001',
-                                                        'SSLProtocol' : 'PROTOCOL_TLS_SERVER',
+                                                        'SSLProtocol' : 'PROTOCOL_TLS',
+                                                        'SSLCertFile' : './tests/ssl_key.crt',
+                                                        'SSLCheckHostName' : 'False',
+                                                        'SSLCertKeyFile' : './tests/ssl_key.key',
                                                         'StorageConnectionString': 'sqlite:///:memory:?check_same_thread=False',
                                                         'DataDictionary': '../spec/FIX42.xml',
                                                         'ConnectionStartTime': datetime.utcnow().time().strftime('%H:%M:%S'),
@@ -98,7 +66,9 @@ class Test(unittest.TestCase):
                                                                'SenderCompID': self._testMethodName,  # 'CLIENT',
                                                                'TargetCompID': 'HOST',
                                                                'SocketConnectPort': '5001',
-                                                               'SSLProtocol' : 'PROTOCOL_TLS_CLIENT',
+                                                               'SSLProtocol': 'PROTOCOL_TLS',
+                                                               'SSLCheckHostName': 'False',
+                                                               'SSLCAFile': './tests/ssl_key.crt',
                                                                'SocketConnectHost': 'localhost',
                                                                'StorageConnectionString': 'sqlite:///:memory:?check_same_thread=False',
                                                                'DataDictionary': '../spec/FIX42.xml',
@@ -128,7 +98,7 @@ class Test(unittest.TestCase):
                               fix_messages_4_2_0_base.Logout)
 
     """	Connect with SSL"""
-    def atest_ssl_connection(self):
+    def test_ssl_connection(self):
 
         self.server.start()
         self.client.start()

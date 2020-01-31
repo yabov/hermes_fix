@@ -82,7 +82,6 @@ SocketConnectHost=localhost
 
 
 
-### Whats left
+### What's missing
 * dynamic message generation from config file
-* SSL support
 * Days support for session logon and logout

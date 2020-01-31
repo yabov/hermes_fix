@@ -49,38 +49,40 @@ class SocketConnection:
         if protocol is None:
             return None
 
-        ssl_contex = ssl.SSLContext(
-            getattr(ssl._SSLMethod, protocol))  # pylint: disable=no-member
-        
+        ssl_context = ssl.SSLContext(
+            getattr(ssl, protocol))  # pylint: disable=no-member
+
         ssl_options = self.settings[section].get('SSLOptions', None)
         if ssl_options is not None:
             for option in ssl_options:
-                ssl_contex.options |= getattr(ssl, option.strip())
+                ssl_context.options |= getattr(ssl, option.strip())
 
         cert_file = self.settings[section].get('SSLCertFile', None)
         if cert_file:
             cert_key_file = self.settings[section].get('SSLCertKeyFile', None)
             cert_password = self.settings[section].get('SSLCertPassword', None)
-            ssl_contex.load_cert_chain(
+            ssl_context.load_cert_chain(
                 cert_file, keyfile=cert_key_file, password=cert_password)
-
+            
         ca_file = self.settings[section].get('SSLCAFile', None)
         if ca_file is not None:
-            ssl_contex.load_verify_locations(cafile=ca_file)
+            ca_path = self.settings[section].get('SSLCAPath', None)
+            ca_data = self.settings[section].get('SSLCAData', None)
+            ssl_context.load_verify_locations(cafile=ca_file, capath = ca_path, cadata= ca_data)
 
-        ssl_contex.check_hostname = self.settings[section].getboolean(
-            'SSLCheckHostName', False)
+        ssl_context.check_hostname = self.settings[section].getboolean(
+            'SSLCheckHostName', True)
 
         verify_mode = self.settings[section].get('SSLVerifyMode', None)
         if verify_mode is not None:
-            ssl_contex.verify_mode = getattr(
+            ssl_context.verify_mode = getattr(
                 ssl.VerifyMode, verify_mode)  # pylint: disable=no-member
 
         ciphers = self.settings[section].get('SSLCiphers', None)
         if ciphers is not None:
-            ssl_contex.set_ciphers(ciphers)
+            ssl_context.set_ciphers(ciphers)
 
-        return ssl_contex
+        return ssl_context
 
     async def main(self, event_sync):
         engines = []
