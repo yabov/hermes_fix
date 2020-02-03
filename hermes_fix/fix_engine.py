@@ -369,10 +369,12 @@ class FIXEngineAcceptor(session_manager_mixin.SessionManagerAcceptorMixin, FIXEn
         # TODO: move to on_logon. currently here because application's callbacks need to be registered before logon which needs session_name and the engine
         self.session_name, self.settings = self.find_session(
             msg.Header, self.session_settings)
+
         self.init_settings()
 
         self.register_admin_messages()
         self.application._on_register_callbacks(self.session_name)
+
         self.msg_queue.put(msg)
         self.do_callbacks_in_thread()
 

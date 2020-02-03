@@ -142,7 +142,8 @@ class Test(unittest.TestCase):
 
         self.client_app.send_message(self._testMethodName, reset_msg)
 
-        self.client_app.engines[self._testMethodName].store.new_day()
+        self.client_app.engines[self._testMethodName].store.new_day(
+            datetime.utcnow())
         self.client_app.engines[self._testMethodName].store.set_current_in_seq(
             1)
         self.client_app.engines[self._testMethodName].msg_seq_num_out = 2

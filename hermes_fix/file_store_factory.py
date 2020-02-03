@@ -3,6 +3,8 @@ import os
 import sqlite3
 import threading
 from typing import List
+from dateutil import tz
+
 
 from sqlalchemy import (Column, Float, ForeignKey, Integer, MetaData, String,
                         Table, and_, create_engine, not_, or_, select)
@@ -42,12 +44,15 @@ class SQLAlchemyStore:
         engine = create_engine(connection_string, echo=False)
         self.db = engine.connect()
         metadata.create_all(engine)
-        self._init_schema()
+        timezone = tz.gettz(session_settings.get(
+            'SessionTimeZone', fallback='UTC'))
+        self._init_schema(datetime.datetime.now(timezone))
 
-    def _init_schema(self):
+    def _init_schema(self, logon_time):
         self.db.execute(IN_SEQ.insert(), msg_num=0)
         self.db.execute(OUT_SEQ.insert(), msg_num=1)
-        self.db.execute(SESSION.insert(), session_date_time=datetime.datetime.utcnow().timestamp())
+        self.db.execute(SESSION.insert(),
+                        session_date_time=logon_time.timestamp())
 
     def get_session_time(self) -> str:
         result = self.db.execute(select([SESSION]))
@@ -88,12 +93,12 @@ class SQLAlchemyStore:
     def close(self) -> None:
         self.db.close()
 
-    def new_day(self) -> None:
+    def new_day(self, logon_time) -> None:
         self.db.execute(IN_SEQ.delete())
         self.db.execute(OUT_SEQ.delete())
         self.db.execute(MESSAGE_OUT.delete())
         self.db.execute(SESSION.delete())
-        self._init_schema()
+        self._init_schema(logon_time)
 
     def clean_up(self) -> None:
         self.db.close()

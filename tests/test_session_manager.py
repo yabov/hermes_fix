@@ -4,6 +4,7 @@ import queue
 import time
 import unittest
 from datetime import datetime, timedelta
+from dateutil.tz import gettz
 
 import hermes_fix as fix
 from hermes_fix import fix_engine, fix_errors
@@ -41,7 +42,6 @@ class FIXTestAppClient(fix.Application):
 
 class Test(unittest.TestCase):
     def setUp(self):
-        #print("Entering", self._testMethodName)
         self.store = fix.FileStoreFactory()
         self.settings = fix.SessionSettings([])
         self.settings.read_dict({self._testMethodName: {'ConnectionType': 'acceptor',
@@ -196,7 +196,7 @@ class Test(unittest.TestCase):
                                                         'StorageConnectionString': f'sqlite:///store/{self._testMethodName}.server.db?check_same_thread=False',
                                                         'DataDictionary': '../spec/FIX42.xml',
                                                         'ConnectionStartTime': datetime.utcnow().time().strftime('%H:%M:%S'),
-                                                        'ConnectionEndTime': (datetime.utcnow() + + timedelta(seconds=10)).time().strftime('%H:%M:%S'),
+                                                        'ConnectionEndTime': (datetime.utcnow() + timedelta(seconds=10)).time().strftime('%H:%M:%S'),
                                                         'LogonTime': (datetime.utcnow() + timedelta(seconds=8)).time().strftime('%H:%M:%S'),
                                                         'LogoutTime': (datetime.utcnow() + timedelta(seconds=10)).time().strftime('%H:%M:%S')}})
 
@@ -213,6 +213,37 @@ class Test(unittest.TestCase):
                               fix_errors.FIXInvalidFirstMessage)
         self.assertIsInstance(SERVER_QUEUE.get(timeout=3),
                               fix_errors.FIXDropMessageError)
+
+
+    """	Logon with New_York timezone"""
+    def test_timezone_logon(self):
+        self.settings = fix.SessionSettings([])
+        self.settings.read_dict({self._testMethodName: {'ConnectionType': 'acceptor',
+                                                        'BeginString': 'FIX.4.2',
+                                                        'SenderCompID': 'HOST',
+                                                        'TargetCompID': self._testMethodName,  # 'CLIENT',
+                                                        'SocketAcceptPort': '5001',
+                                                        'StorageConnectionString': f'sqlite:///store/{self._testMethodName}.server.db?check_same_thread=False',
+                                                        'DataDictionary': '../spec/FIX42.xml',
+                                                        'SessionTimeZone' : 'America/New_York',
+                                                        'ConnectionStartTime': datetime.now(gettz('America/New_York')).time().strftime('%H:%M:%S'),
+                                                        'ConnectionEndTime': (datetime.now(gettz('America/New_York')) + timedelta(seconds=10)).time().strftime('%H:%M:%S'),
+                                                        'LogonTime': (datetime.now(gettz('America/New_York')) + timedelta(seconds=0)).time().strftime('%H:%M:%S'),
+                                                        'LogoutTime': (datetime.now(gettz('America/New_York')) + timedelta(seconds=3)).time().strftime('%H:%M:%S')}})
+
+        self.server_app = FIXTestAppServer()
+        self.server = fix.SocketConnection(
+            self.server_app, self.store, self.settings)
+
+        self.server.start()
+        self.client.start()
+        resp_logon = SERVER_QUEUE.get(timeout=3)
+        sent_logon = CLIENT_QUEUE.get(timeout=3)
+
+        self.assertIsInstance(resp_logon, fix_messages_4_2_0_base.Logon)
+        self.assertIsInstance(sent_logon, fix_messages_4_2_0_base.Logon)
+
+        self.do_logout(self.client_app)
 
     def tearDown(self):
         self.server_app.close_connection(self._testMethodName)

@@ -17,6 +17,7 @@ setup(
     packages=find_packages(exclude=['tests*', 'examples*']),
     install_requires=[
         'sqlalchemy',
+        'dateutil',
     ],
     zip_safe=False
 )

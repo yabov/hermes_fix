@@ -3,6 +3,7 @@ import concurrent
 import datetime
 import heapq
 import logging
+from dateutil import tz, parser
 
 from .. import fix_engine, fix_errors, fix_message
 from ..fix_callbacks import CallbackRegistrar
@@ -18,12 +19,28 @@ class SessionManagerBaseMixin(object):
         self.logon_handle = None
         self.logout_handle = None
 
+
+    def init_settings(self, *args, **kwargs):
+        super().init_settings(*args, **kwargs)
+        self.time_zone = tz.gettz(self.settings.get(
+            'SessionTimeZone', fallback='UTC'))
+
+
     def check_new_day(self):
+        dt = datetime.datetime.now(self.time_zone)
+        self.logon_time = parser.parse(self.settings.get(
+            'LogonTime'), default=dt)
+        self.logout_time = parser.parse(self.settings.get(
+            'LogoutTime'), default=dt)
+        logger.debug(
+            f"{self.session_name} logon time: {self.logon_time}, logout time: {self.logout_time}, timezone: {self.time_zone}")
+
+
         session_time = datetime.datetime.fromtimestamp(
-            self.store.get_session_time())
-        next_logout = self.calc_next_time(session_time, self.logout_time, offset_by_day = False)
-        if next_logout < 0:
-            self.store.new_day()
+        self.store.get_session_time(), tz=self.time_zone)
+
+        if session_time < self.logon_time:
+            self.store.new_day(self.logon_time)
             self.msg_seq_num_out = self.store.get_current_out_seq()
 
     def handle_logout_timer(self):
@@ -36,14 +53,14 @@ class SessionManagerBaseMixin(object):
             #    f"Not inside logout window of {self.logon_time} to {self.logout_time}")
 
         next = self.calc_next_time(
-            datetime.datetime.utcnow(), self.logout_time)
+            datetime.datetime.now(self.time_zone), self.logout_time)
         logger.debug(f"Next Logout scheduled in {next} seconds")
         self.logout_handle = self.loop.call_later(
             next, self.handle_logout_timer)
 
     def calc_next_time(self, from_date_time, time, offset_by_day = True):
-        next = datetime.datetime.combine(from_date_time, time)
-        now = datetime.datetime.utcnow()
+        next = time #datetime.datetime.combine(from_date_time, time, tzinfo=self.time_zone)
+        now = datetime.datetime.now(self.time_zone)
 
         delta = next - now
         seconds = delta.total_seconds()
@@ -55,11 +72,12 @@ class SessionManagerBaseMixin(object):
         else:
             return seconds
 
-    def inside_time_range(self, start, end):
-        current_time = datetime.datetime.utcnow()
-        start_time = datetime.datetime.combine(current_time, start)
-        end_time = datetime.datetime.combine(current_time, end)
-
+    def inside_time_range(self, start_time, end_time):
+        current_time = datetime.datetime.now(self.time_zone)
+        #start_time = datetime.datetime.combine(
+        #    current_time, start, tzinfo=self.time_zone)
+        #end_time = datetime.datetime.combine(
+        #    current_time, end, tzinfo=self.time_zone)
         if start_time <= end_time:
             if (current_time > start_time) and (current_time < end_time):
                 return True
@@ -72,12 +90,6 @@ class SessionManagerBaseMixin(object):
 class SessionManagerInitiatorMixin(SessionManagerBaseMixin):
     def init_settings(self, *args, **kwargs):
         super().init_settings(*args, **kwargs)
-        self.logon_time = datetime.datetime.strptime(
-            self.settings.get('LogonTime'), '%H:%M:%S').time()
-        self.logout_time = datetime.datetime.strptime(
-            self.settings.get('LogoutTime'), '%H:%M:%S').time()
-        logger.debug(
-            f"Initiator {self.session_name} logon time: {self.logon_time}, logout time: {self.logout_time}")
         self.check_new_day()
 
     def reconnect(self):
@@ -121,9 +133,9 @@ class SessionManagerInitiatorMixin(SessionManagerBaseMixin):
             logger.debug("Sending logon for initiator")
             self.send_logon()
         else:
-            #pass
-            logger.debug(f"Not inside logon window of {self.logon_time} to {self.logout_time}")
-        next = self.calc_next_time(datetime.datetime.utcnow(), self.logon_time)
+            pass
+            #logger.debug(f"Not inside logon window of {self.logon_time} to {self.logout_time}")
+        next = self.calc_next_time(datetime.datetime.now(self.time_zone), self.logon_time)
         logger.debug(f"Next Logon scheduled in {next} seconds")
         self.logon_handle = self.loop.call_later(next, self.handle_logon_timer)
 
@@ -131,16 +143,10 @@ class SessionManagerInitiatorMixin(SessionManagerBaseMixin):
 class SessionManagerAcceptorMixin(SessionManagerBaseMixin):
     def init_settings(self, *args, **kwargs):
         super().init_settings(*args, **kwargs)
-        self.logon_time = datetime.datetime.strptime(
-            self.settings.get('LogonTime'), '%H:%M:%S').time()
-        self.logout_time = datetime.datetime.strptime(
-            self.settings.get('LogoutTime'), '%H:%M:%S').time()
-        logger.debug(
-            f"Acceptor {self.session_name} logon time: {self.logon_time}, logout time: {self.logout_time}")
+        self.check_new_day()
 
         self.handle_logout_timer()
 
-        self.check_new_day()
 
     def register_admin_messages(self, *args, **kwargs):
         self.register_admin_callback(self.message_lib.fix_messages.Logon, self.on_logon_check_time,
