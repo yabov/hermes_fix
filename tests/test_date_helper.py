@@ -154,6 +154,45 @@ class Test(unittest.TestCase):
         self.assertEqual(end,  datetime(2020, 2, 10, 12, 0, 0, tzinfo=self.tz))
         self.assertEqual(increment, timedelta(days=7))
 
+    """Weekly Same day: time < end < start"""
+    def test_weekly_sd_t_e_s(self):
+        self.tz = tz.gettz("UTC")
+
+        dt = datetime(2020, 2, 7, 9, 0, 0, tzinfo=self.tz)
+        start, end, increment = date_helper.get_session_times(
+            dt, self.tz, "Friday 12:00:00", "Friday 10:00:00")
+
+        self.assertEqual(start, datetime(
+            2020, 1, 31, 12, 0, 0, tzinfo=self.tz))
+        self.assertEqual(end,  datetime(2020, 2, 7, 10, 0, 0, tzinfo=self.tz))
+        self.assertEqual(increment, timedelta(days=7))
+
+    """Weekly Same day: end < time < start"""
+    def test_weekly_sd_e_t_s(self):
+        self.tz = tz.gettz("UTC")
+
+        dt = datetime(2020, 2, 7, 11, 0, 0, tzinfo=self.tz)
+        start, end, increment = date_helper.get_session_times(
+            dt, self.tz, "Friday 12:00:00", "Friday 10:00:00")
+
+        self.assertEqual(start,  datetime(
+            2020, 2, 7, 12, 0, 0, tzinfo=self.tz))
+        self.assertEqual(end,  datetime(2020, 2, 14, 10, 0, 0, tzinfo=self.tz))
+        self.assertEqual(increment, timedelta(days=7))
+
+    """Weekly Same day: end < start < time"""
+    def test_weekly_sd_e_s_t(self):
+        self.tz = tz.gettz("UTC")
+
+        dt = datetime(2020, 2, 7, 14, 0, 0, tzinfo=self.tz)
+        start, end, increment = date_helper.get_session_times(
+            dt, self.tz, "Friday 12:00:00", "Friday 10:00:00")
+
+        self.assertEqual(start,  datetime(
+            2020, 2, 7, 12, 0, 0, tzinfo=self.tz))
+        self.assertEqual(end,  datetime(2020, 2, 14, 10, 0, 0, tzinfo=self.tz))
+        self.assertEqual(increment, timedelta(days=7))
+
     def tearDown(self):
         pass
 

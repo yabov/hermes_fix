@@ -6,12 +6,13 @@ import ssl
 import threading
 from datetime import datetime, timedelta
 from threading import Thread
+from dateutil import parser, tz
 
 from .application import Application
 from .file_store_factory import FileStoreFactory
 from .fix_engine import FIXEngineAcceptor, FIXEngineInitiator
 from .session_settings import SessionSettings
-from .utils import constants
+from .utils import constants, date_helper
 from .utils.log import logger
 
 
@@ -63,12 +64,13 @@ class SocketConnection:
             cert_password = self.settings[section].get('SSLCertPassword', None)
             ssl_context.load_cert_chain(
                 cert_file, keyfile=cert_key_file, password=cert_password)
-            
+
         ca_file = self.settings[section].get('SSLCAFile', None)
         if ca_file is not None:
             ca_path = self.settings[section].get('SSLCAPath', None)
             ca_data = self.settings[section].get('SSLCAData', None)
-            ssl_context.load_verify_locations(cafile=ca_file, capath = ca_path, cadata= ca_data)
+            ssl_context.load_verify_locations(
+                cafile=ca_file, capath=ca_path, cadata=ca_data)
 
         ssl_context.check_hostname = self.settings[section].getboolean(
             'SSLCheckHostName', True)
@@ -119,7 +121,7 @@ class SocketConnection:
             else:
                 logger.debug(f"Creating Acceptor on {ip}:{port}")
                 try:
-                    server = await asyncio.start_server(self.on_connected_client, ip, port, ssl = self.build_ssl_context(section))
+                    server = await asyncio.start_server(self.on_connected_client, ip, port, ssl=self.build_ssl_context(section))
                 except:
                     logger.exception(f"Failed to start server on {ip}:{port}")
                 self.server_map[(ip, port)] = (
@@ -136,12 +138,13 @@ class SocketConnection:
         logger.debug("-----------------Ending Server-----------------")
 
     async def start_initiator(self, section):
-        connection_start_time = datetime.strptime(
-            self.settings[section].get('ConnectionStartTime'), '%H:%M:%S').time()
-        connection_end_time = datetime.strptime(
-            self.settings[section].get('ConnectionEndTime'), '%H:%M:%S').time()
-        connection_retry = self.settings[section].get(
+        # def get_session_times(dt, time_zone, start_time_str, end_time_str):
+        time_zone = tz.gettz(self.settings[section].get(
+            'SessionTimeZone', fallback='UTC'))
+
+        connection_retry = self.settings[section].getint(
             "ConnectionRetryInterval", fallback=2)
+
         ip = self.settings[section].get(
             'SocketConnectHost', fallback='localhost')
         port = self.settings[section]['SocketConnectPort']
@@ -149,7 +152,16 @@ class SocketConnection:
         engine = FIXEngineInitiator(
             self.application, self.storeFactory, self.session_settings, section)
         while not self.stop_called:
-            reader, writer = await self.open_connection(ip, port, connection_retry, connection_start_time, connection_end_time, ssl = self.build_ssl_context(section))
+            dt = datetime.now(time_zone)
+
+            connection_start_time, connection_end_time, _ = \
+                date_helper.get_session_times(dt, time_zone, self.settings[section].get(
+                    'ConnectionStartTime'), self.settings[section].get(
+                    'ConnectionEndTime'))
+
+            reader, writer = await self.open_connection(ip, port, 
+                                    connection_retry, dt, connection_start_time, 
+                                    connection_end_time, ssl=self.build_ssl_context(section))
             addr = writer.get_extra_info('peername')
             sockname = writer.get_extra_info('sockname')
             logger.info(f"Opened Connection on [{sockname}]<-->[{addr}]")
@@ -166,22 +178,12 @@ class SocketConnection:
                 await asyncio.sleep(connection_retry)
                 logger.info("Reconnection client...")
 
-    def inside_time_range(self, start, end):
-        current_time = datetime.utcnow().time()
-        if start <= end:
-            if current_time > start and current_time < end:
-                return True
-        else:
-            if current_time > start or current_time < end:
-                return True
-        return False
-
-    async def open_connection(self, ip, port, connection_retry, connection_start_time, connection_end_time, ssl):
+    async def open_connection(self, ip, port, connection_retry, current_time, connection_start_time, connection_end_time, ssl):
         while not self.stop_called:
-            if self.inside_time_range(connection_start_time, connection_end_time):
+            if date_helper.inside_time_range(current_time, connection_start_time, connection_end_time):
                 try:
                     logger.debug(f"Creating Initiator on {ip}:{port}")
-                    return await asyncio.open_connection(ip, port, ssl = ssl)
+                    return await asyncio.open_connection(ip, port, ssl=ssl)
                 except:
                     logger.exception(f"Failed to connect to {ip}:{port}")
 

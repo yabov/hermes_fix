@@ -13,8 +13,9 @@ def get_session_times(dt, time_zone, start_time_str, end_time_str):
     end_time = parser.parse(end_time_str, default=dt)
     increment = timedelta(days=1)
 
-    #weekly if different dates
-    if start_time.date() != end_time.date():
+    #To test if the weekly compare day of week in dt with offset by day dt
+    dt_offset = dt + timedelta(days=1)
+    if parser.parse(start_time_str, default=dt).weekday() == parser.parse(start_time_str, default=dt_offset).weekday():
         increment = timedelta(days=7)
 
     #if logout is before logon, move it forward
