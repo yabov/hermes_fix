@@ -65,6 +65,11 @@ SocketConnectHost=localhost
 |TargetCompID| Their identifier when sending messages| String| |
 |ConnectionType| Identifies the session as acceptor or initiator| acceptor <br> initiator| |
 |StorageConnectionString| sqlalchemy style connect string to database| ex: sqlite:///:memory:?check_same_thread=False <br> for sqlite must use check_same_thread=False| |
+|LogonTime| Time at which session logs on and performs a sequence reset| 'Monday 08:00:00am' for weekly <br> '6:00:00' for daily <br>|
+|LogoutTime| Time at which session sends a logoff| same format as LogonTime, can be before LogonTime for inverted times |
+|SessionTimeZone| Standard Time Zone format | ex: America/New_York | UTC |
+|ConnectionStartTime| Time when initiator opens the socket to the server||
+|ConnectionStartTime| Time when initiator closes connection to the server, will not close before LogoutTime||
 |SocketAcceptHost|For acceptor the machine name to listen for connections| ip address<br>machine name| localhost|
 |SocketAcceptPort|Port to listen for connections| integer||
 |SocketConnectHost|For initiator the machine to connect to| ip address<br>machine name| |
@@ -72,7 +77,7 @@ SocketConnectHost=localhost
 |TimeFormat| Syntax for format sent over FIX| '%Y%m%d-%H:%M:%S.%f'<br><br>'%Y%m%d-%H:%M:%S' | '%Y%m%d-%H:%M:%S.%f'|
 |HeartBeatInt|  Initiator's Heartbeat Interval in seconds |  Positive float | 30 |
 |AcceptUnknownFields| Accept and ignore FIX fields not defined in dictionary| True<br> False| False|
-|SendingTimeTolerance | Grace Period in checking Sending Time<52> in minutes.<br>Reject if outside sending window. Setting SendingTimeTolerance=0 will never reject| Positive float | 2|
+|SendingTimeTolerance | Grace Period in checking Sending Time<52> in minutes.<br>Reject if outside sending window. <br> Setting SendingTimeTolerance=0 will never reject| Positive float | 2|
 |ValidateCompIDs | Checks for Target and Sender CompIDs to be defined correct on each message| True<br>False | True|
 |ValidateRequiredFields| Send Reject if a Required field is not sent| True<br>False  || True
 |MessageReadTimeout |  Timeout in seconds to wait for a complete FIX message to be sent from first byte received | Positive float| 2 |
@@ -95,7 +100,5 @@ SocketConnectHost=localhost
 |SSLVerifyMode| https://docs.python.org/3/library/ssl.html#ssl.SSLContext.verify_mode | | |
 |SSLCiphers| https://docs.python.org/3/library/ssl.html#ssl.SSLContext.set_ciphers | | |
 
-
 ### What's missing
 * dynamic message generation from config file
-* Days support for session logon and logout
