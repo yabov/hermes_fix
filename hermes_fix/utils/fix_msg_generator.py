@@ -103,16 +103,14 @@ def camel_to_snake(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).upper()
 
 
-def generate_fix_classes(file_name):
+def generate_fix_classes(file_name, path_to_msg_lib, gen_file_name = None):
     tree = ET.parse(file_name)
     root = tree.getroot()
-
-    path_to_msg_lib = os.path.join('..', 'message_lib')
 
     os.makedirs(path_to_msg_lib, exist_ok=True)
 
     fix_root = root.findall('fix')
-    header_writer = open(os.path.join(path_to_msg_lib, '__init__.py'), 'w')
+    #header_writer = open(os.path.join(path_to_msg_lib, '__init__.py'), 'w')
 
     for fix in fix_root:
         global TAG_NAME_MAP, FIELD_TYPE_MAP
@@ -122,9 +120,14 @@ def generate_fix_classes(file_name):
         if fix_version == 'FIXT.1.1':
             continue
 
-        header_writer.write(f"from . import {fix_version.replace('.','_')}\n")
+        if gen_file_name is None:
+            gen_file_name = fix_version
 
-        path = os.path.join(path_to_msg_lib, fix_version.replace('.', '_'))
+        gen_file_name = gen_file_name.replace('.', '_')
+
+        #header_writer.write(f"from . import {gen_file_name.replace('.','_')}\n")
+
+        path = os.path.join(path_to_msg_lib, gen_file_name)
         os.makedirs(path, exist_ok=True)
 
         with open(os.path.join(path, '__init__.py'), 'w') as message_writer:
@@ -144,8 +147,8 @@ def generate_fix_classes(file_name):
             generate_components(fix, fix_version, message_writer)
             generate_messages(fix, fix_version, message_writer)
 
-    header_writer.close()
-
+    #header_writer.close()
+    return gen_file_name
 
 def generate_fields_types(root, fix_version, writer):
     writer.write(FIELD_TYPE_HEADER)
@@ -246,8 +249,6 @@ def generate_body(component, fix_version, writer, indent='    '):
             writer.write(COMPONENT_FORMATTER.format(
                 indent=indent, component=child.get('name'), instance='self'))
         elif child.tag == 'repeatingGroup':
-            #writer.write(GROUP_FORMATTER.format(indent = indent, group = TAG_NAME_MAP[child.get('id')]))
-            #generate_body(child,fix_version, writer, indent + ' '*8)
             writer.write(GROUP_FORMATTER_TRAILER.format(indent=indent, group_no_name=TAG_NAME_MAP[child.get(
                 'id')], group=TAG_NAME_MAP[child.get('id')], required='True' if child.get('required') == '1' else 'False'))
 
@@ -265,4 +266,9 @@ def generate_messages(root, fix_version, writer, indent='    '):
 
 if __name__ == '__main__':
     file_name = sys.argv[1]
-    generate_fix_classes(file_name, *sys.argv[2:])
+    path_to_msg_lib = os.path.join('..', 'message_lib')
+    with open(os.path.join(path_to_msg_lib, '__init__.py'), 'w') as header_writer:
+        header_writer.write(f"from . import *\n")
+
+
+    generate_fix_classes(file_name, path_to_msg_lib)

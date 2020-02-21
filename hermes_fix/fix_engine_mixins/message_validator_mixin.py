@@ -73,7 +73,7 @@ class MessageValidatorMixin(object):
             raise
 
     def on_first_message(self, session_name, msg):
-        if not isinstance(msg, self.message_lib.fix_messages.Logon):
+        if msg._msgtype != self.message_lib.fix_messages.Logon._msgtype:
             raise fix_errors.FIXInvalidFirstMessage(
                 "First message not a logon")
 

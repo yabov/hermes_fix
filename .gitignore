@@ -6,3 +6,5 @@ hermes_fix.egg-info/
 coverage.xml
 .coverage
 build/
+hermes_fix/message_lib/*
+!hermes_fix/message_lib/FIX_*

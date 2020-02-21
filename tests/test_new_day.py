@@ -50,7 +50,6 @@ class Test(unittest.TestCase):
                                                         'TargetCompID': self._testMethodName,  # 'CLIENT',
                                                         'SocketAcceptPort': '5001',
                                                         'StorageConnectionString': f'sqlite:///store/{self._testMethodName}.server.db?check_same_thread=False',
-                                                        'DataDictionary': '../spec/FIX42.xml',
                                                         'ConnectionStartTime': datetime.utcnow().time().strftime('%H:%M:%S'),
                                                         'ConnectionEndTime': (datetime.utcnow() + timedelta(seconds=10)).time().strftime('%H:%M:%S'),
                                                         'LogonTime': (datetime.utcnow() + timedelta(seconds=6)).time().strftime('%H:%M:%S'),
@@ -64,8 +63,7 @@ class Test(unittest.TestCase):
                                                                'SocketConnectPort': '5001',
                                                                'SocketConnectHost': 'localhost',
                                                                'StorageConnectionString': f'sqlite:///store/{self._testMethodName}.client.db?check_same_thread=False',
-                                                               'DataDictionary': '../spec/FIX42.xml',
-                                                               'ConnectionStartTime': datetime.utcnow().time().strftime('%H:%M:%S'),
+                                                                      'ConnectionStartTime': datetime.utcnow().time().strftime('%H:%M:%S'),
                                                                'ConnectionEndTime': (datetime.utcnow() + timedelta(seconds=10)).time().strftime('%H:%M:%S'),
                                                                'LogonTime': (datetime.utcnow() + timedelta(seconds=6)).time().strftime('%H:%M:%S'),
                                                                'LogoutTime': (datetime.utcnow() + timedelta(seconds=3)).time().strftime('%H:%M:%S')}})

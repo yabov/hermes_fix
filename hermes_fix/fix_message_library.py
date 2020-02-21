@@ -2,11 +2,14 @@ import asyncio
 import concurrent
 import io
 import logging
+import importlib
+import os
 
-from . import fix_errors, fix_message
+from . import fix_errors, fix_message, message_lib
 from .message_lib import *
 from .utils.constants import EQU, SEP, b_EQU, b_SEP
 from .utils.log import logger
+from .utils import fix_msg_generator
 
 MESSAGE_BASE_LIBRARY = {}
 MESSAGE_BASE_LIBRARY[FIX_4_0.fix_messages.BEGINSTRING] = FIX_4_0
@@ -20,6 +23,12 @@ MESSAGE_BASE_LIBRARY[FIX_5_0SP2.fix_messages.BEGINSTRING] = FIX_5_0SP2
 
 DEFAULT_MESSAGE_READ_TIMEOUT = 2
 
+def load_data_dict(data_dict, engine_key):
+    gen_file_name = fix_msg_generator.generate_fix_classes(data_dict, message_lib.__path__[0], '_'.join(engine_key))
+
+    #mod = importlib.import_module('.' + gen_file_name, 'hermes_fix.message_lib')
+    mod = importlib.import_module('.' + gen_file_name, message_lib.__name__)
+    return mod
 
 async def create_message_from_stream(reader, messages, settings):
     read_timeout = settings.get(

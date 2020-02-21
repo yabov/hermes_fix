@@ -99,12 +99,15 @@ class FIXEngineBase():
         self.message_lib = fix_message_library.MESSAGE_BASE_LIBRARY[begin_string]
 
     def init_settings(self):
-        # TODO generate messages and swap in for generated class
         self.store = self.store_factory.create_storage(self.settings)
         self.time_format = self.settings.get(
             'TimeFormat', fallback='%Y%m%d-%H:%M:%S.%f')
         self.msg_seq_num_out = self.store.get_current_out_seq()
         self.engine_key = self.make_engine_key()
+
+        data_dict = self.settings.get('DataDictionary', None)
+        if data_dict:
+            self.message_lib = fix_message_library.load_data_dict(data_dict, self.engine_key)
 
         # pass in the engine to the application
         self.application._on_engine_initialized(self.session_name, self)
