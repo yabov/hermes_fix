@@ -100,5 +100,3 @@ SocketConnectHost=localhost
 |SSLVerifyMode| https://docs.python.org/3/library/ssl.html#ssl.SSLContext.verify_mode | | |
 |SSLCiphers| https://docs.python.org/3/library/ssl.html#ssl.SSLContext.set_ciphers | | |
 
-### What's missing
-* dynamic message generation from config file
